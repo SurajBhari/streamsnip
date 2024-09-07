@@ -138,11 +138,9 @@
                         new_html += '<div class="col-3">'+'<span title="'+ data[i]['last_clip']['timesince'] + '"><a href="' + data[i].link + '"><div class="card noborder"><img class="card-img-top rounded" src="' + data[i].image + '" alt="Card image cap"><div class="card-body card-no-left-right-padding"><h6 class="card-title" id="' + data[i].id +'">' + data[i].name + '</h6></div></div></a></div> </span>';
                     }
                 }
-                document.getElementById("clips-container").innerHTML = new_html;
-                console.log("changed");
+                document.getElementById("clips-container").innerHTML = new_html;                
             }
             else{
-                console.log("not changed");
             }
         }
         
@@ -155,7 +153,6 @@
 
             fetch(link).then((response) => response.json()).then((last_clip) => {
                 var last_clip_time = document.getElementById("last_clip_time");
-                console.log(last_clip);
                 if(last_clip_time){
                     last_clip_time.innerHTML = `   Last Clip - ${last_clip.last_clip.timesince}`;
                     var today_count = last_clip.today_count;
