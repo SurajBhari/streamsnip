@@ -861,7 +861,7 @@ def channel_stats(channel_id=None):
         k: 5 + 5 * v
         for k, v in sorted(notes.items(), key=lambda item: item[1], reverse=True)
     }
-    notes = dict(list(notes.items())[:200])
+    notes = dict(list(notes.items())[:150])
     new_dict = {}
     # replace dict_keys with actual channel
     max_count = 0
@@ -1083,7 +1083,7 @@ def time_stats(start=None, end=None):
         k:  v
         for k, v in sorted(notes.items(), key=lambda item: item[1], reverse=True)
     }
-    notes = dict(list(notes.items())[:200])
+    notes = dict(list(notes.items())[:150])
     # replace dict_keys with actual channel
     new_dict = {}
     for k, v in user_clips.items():
@@ -1274,7 +1274,7 @@ def user_stats(channel_id=None):
         k: 5 + 5 * v
         for k, v in sorted(notes.items(), key=lambda item: item[1], reverse=True)
     }
-    notes = dict(list(notes.items())[:200])
+    notes = dict(list(notes.items())[:150])
     user_clips = {
         k: v
         for k, v in sorted(user_clips.items(), key=lambda item: item[1], reverse=True)
@@ -1491,7 +1491,7 @@ def stats():
         k:  v
         for k, v in sorted(notes.items(), key=lambda item: item[1], reverse=True)
     }
-    notes = dict(list(notes.items())[:200])
+    notes = dict(list(notes.items())[:150])
     # replace dict_keys with actual channel
     new_dict = {}
     for k, v in user_clips.items():

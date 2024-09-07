@@ -126,20 +126,28 @@
         if(Object.keys(wordcloud_data).length == 0){
             wordcloud_data = {"": 0};
         }
-        max_in_notes = Math.max(...Object.values(wordcloud_data));
-        min_in_notes = Math.min(...Object.values(wordcloud_data));
         // make sure max is not more than 200 if it is then divide all by max
-        tmax = 275;
-        if (max_in_notes > tmax){
-            console.log("max is more than 250");    
-            minus_by = max_in_notes - tmax;
-            for (const [key, value] of Object.entries(wordcloud_data)) {
-                wordcloud_data[key] = value - minus_by;
-                if(wordcloud_data[key] < 1){
-                    wordcloud_data[key] = min_in_notes;
-                }
-            };
+        console.log(wordcloud_data)
+        const values = Object.values(wordcloud_data);
+        const currentMin = Math.min(...values);
+        const currentMax = Math.max(...values);
+
+        // Set the desired min and max values for normalization
+        const desiredMin = 40;
+        const desiredMax = 150;
+
+        // Function to normalize the value
+        const normalizeValue = (value) => {
+            return ((value - currentMin) / (currentMax - currentMin)) * (desiredMax - desiredMin) + desiredMin;
         };
+
+        // Normalize all values in the wordcloud_data object
+        const normalizedWordcloudData = {};
+        for (let key in wordcloud_data) {
+            normalizedWordcloudData[key] = normalizeValue(wordcloud_data[key]);
+        }
+        wordcloud_data = normalizedWordcloudData;
+        console.log(wordcloud_data);
         var wordcloud = new Chart(ctx, {
             type: "wordCloud",
             data: {
