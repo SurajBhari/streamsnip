@@ -498,6 +498,10 @@ def before_request():
     else:
         pass
 
+@app.route("/cache")
+def cache():
+    return dumps(channel_info, indent=4)
+
 @app.route("/mini_stats")
 @app.route("/mini_stats/all")
 def mini_stats_r():
@@ -1776,6 +1780,11 @@ def edit_delete():
         return jsonify(creds)
     elif request.form.get("show") == "show":
         return jsonify(get_creds())
+    elif request.form.get("refresh") == "refresh cache":
+        global channel_info
+        channel_info = {} # set channel_info to empty
+        write_channel_cache(channel_info)
+        return redirect(url_for("admin"))
     else:
         return f"what ? {request.form}" 
 
