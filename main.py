@@ -2397,6 +2397,12 @@ def extension_clips(video_id):
     clips = get_video_clips(video_id)
     return jsonify([clip.json() for clip in clips])
 
+@app.route("/loaderio-2d4d6795c8021a56f6052f095f181fe8.txt")
+@app.route("/loaderio-2d4d6795c8021a56f6052f095f181fe8.html")
+@app.route("/loaderio-2d4d6795c8021a56f6052f095f181fe8/")
+def loaderio():
+    return "loaderio-2d4d6795c8021a56f6052f095f181fe8"
+
 
 @app.route("/video/<clip_id>")
 def video(clip_id):
