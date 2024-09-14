@@ -275,7 +275,7 @@
             }
             var badges = "";
             if(clip['discord']['webhook']){
-                badges += `<i class="fa-brands fa-discord"></i> `;
+                badges += `<a href=${clip['discord_url']}><i class="fa-brands fa-discord"></i> </a>`;
             }
             var sd_thumbnail = `https://i.ytimg.com/vi/${clip['stream_id']}/sddefault.jpg`;
             var hq_live_thumbnail = `https://i.ytimg.com/vi/${clip['stream_id']}/hqdefault_live.jpg`;

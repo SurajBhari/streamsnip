@@ -103,6 +103,7 @@ class Clip:
         x["private"] = self.private
         x["message_level"] = self.message_level
         x["timesince"] = self.timesince
+        x['channel'] = self.channel
         return x
 
     

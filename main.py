@@ -716,6 +716,23 @@ def export():
 def clips():
     data = get_channel_clips()
     data = [x.json() for x in data if not x.private]
+    for clip in data:
+        """
+        if clip['discord']['webhook']:
+            if clip['channel'] in prefix_webhook:
+                clip['discord_url'] = f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
+            else:
+                webhook_url = creds.get(clip['channel'])
+                if not webhook_url:
+                    continue
+                response = get(webhook_url)
+                if response.status_code != 200:
+                    prefix_webhook[clip['channel']] = None
+                    continue
+                j = response.json()
+                prefix_webhook[clip['channel']] = f"https://discord.com/channels/{j['guild_id']}/{j['channel_id']}"
+                clip['discord_url'] = f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"""
+        clip['discord_url'] = "#a" # we don't want to do it for all clips. cuz its slowwwww
     return render_template(
         "export.html",
         data=data,
@@ -795,6 +812,22 @@ def exports(channel_id=None):
         return redirect(url_for("slash"))
     data = get_channel_clips(channel_id)
     data = [x.json() for x in data if not x.private]
+    print(prefix_webhook)
+    for clip in data:
+        if clip['discord']['webhook']:
+            if clip['channel'] in prefix_webhook:
+                clip['discord_url'] = f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
+            else:
+                webhook_url = creds.get(clip['channel'])
+                if not webhook_url:
+                    continue
+                response = get(webhook_url)
+                if response.status_code != 200:
+                    prefix_webhook[clip['channel']] = None
+                    continue
+                j = response.json()
+                prefix_webhook[clip['channel']] = f"https://discord.com/channels/{j['guild_id']}/{j['channel_id']}"
+                clip['discord_url'] = f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
     return render_template(
         "export.html",
         data=data,
@@ -2464,6 +2497,7 @@ for ch_id in data:
     get_channel_name_image(ch_id[0])
 
 write_channel_cache(channel_info)
+prefix_webhook = {}
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80, debug=True)
