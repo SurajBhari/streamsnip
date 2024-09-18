@@ -1472,7 +1472,9 @@ def stats():
         cur.execute("SELECT * FROM QUERIES WHERE private is not '1'")
         data = cur.fetchall()
     clips = []
-    three_months_ago = (datetime.now() - timedelta(days=28)).timestamp()
+    today = datetime.today()
+    today = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    three_months_ago = (today - timedelta(days=28)).timestamp()
     for x in data:
         c = Clip(x)
         clips.append(c)
