@@ -815,7 +815,7 @@ def exports(channel_id=None):
     print(prefix_webhook)
     for clip in data:
         if clip['discord']['webhook']:
-            if clip['channel'] in prefix_webhook:
+            if clip['channel'] in prefix_webhook and prefix_webhook.get(clip['channel']) is not None:
                 clip['discord_url'] = f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
             else:
                 webhook_url = creds.get(clip['channel'])
@@ -828,6 +828,8 @@ def exports(channel_id=None):
                 j = response.json()
                 prefix_webhook[clip['channel']] = f"https://discord.com/channels/{j['guild_id']}/{j['channel_id']}"
                 clip['discord_url'] = f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
+        else:
+            clip['discord_url'] = "#"
     return render_template(
         "export.html",
         data=data,
