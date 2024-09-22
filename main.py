@@ -2440,6 +2440,15 @@ def extension_clips(video_id):
 def loaderio():
     return "loaderio-2d4d6795c8021a56f6052f095f181fe8"
 
+@app.route("/test")
+def test():
+    # test if we can still retrieve the live streams. main part of the bot
+    try:
+        ll = get_latest_live("UCaWd5_7JhbQBe4dknZhsHJg")
+    except:
+        return 500, "Failed"
+    else:
+        return ll['title']
 
 @app.route("/video/<clip_id>")
 def video(clip_id):
