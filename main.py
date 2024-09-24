@@ -589,6 +589,8 @@ def data():
 def session_data():
     if session:
         return dumps(session, indent=4)
+    else:
+        return "No session data"
     
 @app.route("/login", methods=["POST", "GET"])
 def login():
