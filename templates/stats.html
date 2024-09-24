@@ -15,6 +15,7 @@
 
 {% block content %}
     <div class="container">
+        {% if search_route %}
         <div class="row">
             <div class="col-md-12">
                 <div class="form-group">
@@ -22,6 +23,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
         <center>
         <div class="row">
             <h1> {{message}} </h1>
@@ -106,7 +108,11 @@
     </div>
 <script>
     graphs = [];
+    {% if search_route %}
     var search_route = {{search_route|tojson}};
+    {% else %}
+    var search_route = null;
+    {% endif %}
     const autocolors = window['chartjs-plugin-autocolors'];
     Chart.register(ChartDeferred);
     //Chart.register(autocolors);
@@ -120,8 +126,8 @@
         var a = 0.5;
         return "rgba("+r+","+g+","+b+" ,"+a+")";
     }
-    
-    document.getElementById("search").addEventListener("keyup", function () {
+    if(search_route){
+        document.getElementById("search").addEventListener("keyup", function () {
         var search = document.getElementById("search").value;
         // if len of search is less than 3 then return
         if(search.length < 3){
@@ -168,7 +174,9 @@
                     document.getElementById("search-dropdown").appendChild(a);
                 }
             });
-    });
+        });
+    }
+    
     function drawCharts(){
         // destroy old chart
         for(var i=0;i<graphs.length;i++){

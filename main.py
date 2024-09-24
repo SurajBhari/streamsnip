@@ -1264,6 +1264,8 @@ def time_stats(start=None, end=None):
         channel_image="https://streamsnip.com/static/logo-grey.png",
         most_clipped_streams=most_clipped_streams,
         best_days={},
+        search_route=None,
+        search_for = None,
     )
 
 @app.route("/userstats/<channel_id>")
