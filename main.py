@@ -133,7 +133,9 @@ def is_it_expired(t:int): # we add some randomness so that not all of the cache 
 def get_creds():
     try:
         with open("config.json", "r") as f:
-            creds = load(f)['creds']
+            jcreds = load(f)
+            creds = jcreds['creds']
+            creds['password'] = jcreds['password']  
     except (FileNotFoundError, KeyError):
         creds = {}
     return creds
