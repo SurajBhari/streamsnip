@@ -2464,12 +2464,19 @@ def searchuser(query=None):
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT user_id, user_name FROM QUERIES WHERE user_name LIKE ? OR user_id LIKE ? GROUP BY user_id"""
+            SELECT user_id, 
+            user_name, 
+            COUNT(*) AS row_count 
+            FROM QUERIES 
+            WHERE user_name LIKE ? 
+            OR user_id LIKE ? 
+            GROUP BY user_id, user_name;
+            """
             , (f"%{query}%", f"%{query}%")
         )
         data = cur.fetchall()
     for user in data:
-        answer.append([user[1], url_for("user_stats", channel_id=user[0])])
+        answer.append([f"{user[1]} ({user[2]} clips)", url_for("user_stats", channel_id=user[0])])
     return answer
 
 
