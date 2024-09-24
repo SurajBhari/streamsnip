@@ -80,7 +80,7 @@ else:
 
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("WSGISecretKey", "".join(random.choices(ascii_letters + digits, k=32))) # if we are running on apache we have a WSGISecretKey if not then we generate one (hopefully in single threaded mode)
+app.secret_key = os.environ.get("WSGISecretKey", "supersecretkey") # if we are running on apache we have a WSGISecretKey, its not really secret.
 CORS(app)
 ext = Sitemap(app=app)
 
