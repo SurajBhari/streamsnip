@@ -2444,8 +2444,7 @@ def searchchannel(query=None):
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT channel_id FROM QUERIES WHERE channel_id LIKE ? GROUP BY channel_id"""
-            , (f"%{query}%",)
+            SELECT channel_id FROM QUERIES GROUP BY channel_id"""
         )
         data = cur.fetchall()
     channel_ids = [x[0] for x in data]
