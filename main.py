@@ -2440,11 +2440,22 @@ def searchchannel(query=None):
     if not query:
         return []
     answer = []
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT channel_id FROM QUERIES WHERE channel_id LIKE ? GROUP BY channel_id"""
+            , (f"%{query}%",)
+        )
+        data = cur.fetchall()
+    channel_ids = [x[0] for x in data]
     for channel in channel_info:
+        if channel not in channel_ids: 
+            continue # we don't provide who don't have any clips 
         if query.lower() in channel_info[channel]['name'].lower():
             answer.append([channel_info[channel]['name'], url_for("channel_stats", channel_id=channel)])
     return answer
-        
+
 @app.route("/searchuser/<query>")
 def searchuser(query=None):
     if not query:
