@@ -14,8 +14,15 @@
 {% endblock %}
 
 {% block content %}
-<center>
     <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group">
+                    <input class="form-control" type="text" id="search" placeholder="Search for {{search_for}}...">
+                </div>
+            </div>
+        </div>
+        <center>
         <div class="row">
             <h1> {{message}} </h1>
         </div>
@@ -97,9 +104,9 @@
         {% endif %}
         </br>
     </div>
-</center>
 <script>
     graphs = [];
+    var search_route = {{search_route|tojson}};
     const autocolors = window['chartjs-plugin-autocolors'];
     Chart.register(ChartDeferred);
     //Chart.register(autocolors);
@@ -113,6 +120,55 @@
         var a = 0.5;
         return "rgba("+r+","+g+","+b+" ,"+a+")";
     }
+    
+    document.getElementById("search").addEventListener("keyup", function () {
+        var search = document.getElementById("search").value;
+        // if len of search is less than 3 then return
+        if(search.length < 3){
+            // destroy old dropdown menu
+            var older = document.getElementById("search-dropdown");
+            if(older){
+                older.parentElement.removeChild(older);
+            } // if there is another dropdown. KILL IT
+            return;
+        }
+        var url = search_route + "/" + search;
+        var isDarkTheme = localStorage.getItem("darkTheme") === "true";
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                // data is array of array in format of [['option', 'link'], ['option', 'link']....]
+                console.log(data.length);
+                // create a dropdown
+                let div = document.createElement("div");
+                div.setAttribute("id", "search-dropdown");
+                div.setAttribute("class", "dropdown-c");
+                
+                var older = document.getElementById("search-dropdown");
+                if(older){
+                    older.parentElement.removeChild(older);
+                } // if there is another dropdown. KILL IT 
+                document.getElementById("search").parentElement.parentElement.appendChild(div);
+                var options = Array();
+                for(var i=0;i<data.length;i++){
+                    let a = document.createElement("a");
+                    a.classList.add("dropdown-item-c");
+                    a.classList.add("btn");                    
+                    if(isDarkTheme){
+                        //a.classList.add("dark-theme");
+                        a.classList.add("btn-outline-light");
+                    }
+                    else{
+                        a.classList.add("btn-outline-dark");
+                    }   
+                    a.style.width = "100%";                 
+                    a.innerHTML = data[i][0];
+                    a.setAttribute("href", data[i][1]);
+                    a.style.fontSize = "1em";
+                    document.getElementById("search-dropdown").appendChild(a);
+                }
+            });
+    });
     function drawCharts(){
         // destroy old chart
         for(var i=0;i<graphs.length;i++){

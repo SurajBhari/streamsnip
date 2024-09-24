@@ -1043,6 +1043,8 @@ def channel_stats(channel_id=None):
         channel_image=streamer_image,
         most_clipped_streams=most_clipped_streams,
         best_days=best_days,
+        search_route="/searchchannel",
+        search_for = "channel",
     )
 
 @app.route("/timestats/<start>/<end>")
@@ -1463,6 +1465,8 @@ def user_stats(channel_id=None):
         channel_image=streamer_image,
         most_clipped_streams=most_clipped_streams,
         best_days=best_days,
+        search_route = "/searchuser",
+        search_for = "user",
     )
 
 
@@ -1661,7 +1665,9 @@ def stats():
         channel_name="All channels",
         channel_image="https://streamsnip.com/static/logo-grey.png",
         most_clipped_streams=most_clipped_streams,
-        best_days=best_days
+        best_days=best_days,
+        search_route = "/searchchannel",
+        search_for = "channel",
     )
 
 
@@ -2428,6 +2434,34 @@ def searchx(clip_desc=None):
     if clip:
         return clip.json()
     return "{}"
+
+@app.route("/searchchannel/<query>")
+def searchchannel(query=None):
+    if not query:
+        return []
+    answer = []
+    for channel in channel_info:
+        if query.lower() in channel_info[channel]['name'].lower():
+            answer.append([channel_info[channel]['name'], url_for("channel_stats", channel_id=channel)])
+    return answer
+        
+@app.route("/searchuser/<query>")
+def searchuser(query=None):
+    if not query:
+        return []
+    answer = []
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT user_id, user_name FROM QUERIES WHERE user_name LIKE ? OR user_id LIKE ? GROUP BY user_id"""
+            , (f"%{query}%", f"%{query}%")
+        )
+        data = cur.fetchall()
+    for user in data:
+        answer.append([user[1], url_for("user_stats", channel_id=user[0])])
+    return answer
+
 
 @app.route("/extension/clips/<video_id>")
 def extension_clips(video_id):
