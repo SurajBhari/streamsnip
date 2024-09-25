@@ -149,7 +149,12 @@
             if(!is_first_load && document.hidden){
                 return; // why care to update if the page is not visible
             }
-            link = "/mini_stats/all"
+            if(is_home){
+                link = "/mini_stats/all";
+            }
+            else{
+                link = "/mini_stats";
+            }
             count = 51;
 
             fetch(link).then((response) => response.json()).then((last_clip) => {
