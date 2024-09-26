@@ -19,20 +19,7 @@
         var is_first_load = true;
         var all = false; 
         
-        function set_all(){
-            all = true;
-            var moree_img = document.getElementById("more-img");
-            moree_img.src = "https://media.tenor.com/wpSo-8CrXqUAAAAi/loading-loading-forever.gif";
-            update_mini_stats();
-            // remove the element 
-            // var elem = document.getElementById("more-card");
-            // if (elem){
-            //     elem.parentNode.removeChild(elem);
-            // }
-            return true;
-        }
-        document.addEventListener("DOMContentLoaded", function () {
-            // Check user preference and set the initial theme
+        function update_theme(){
             var isDarkTheme = localStorage.getItem("darkTheme") === "true";
             const darkThemeMq = window.matchMedia("(prefers-color-scheme: dark)");
             var form_control = document.getElementsByClassName("form-control");
@@ -58,6 +45,15 @@
                     a[i].classList.toggle("dark-theme");
                 }
             }
+            else{
+                body.classList.remove("dark-theme");
+                for (var i = 0; i < form_control.length; i++) {
+                    form_control[i].classList.remove("dark-theme");
+                }
+                for (var i = 0; i < a.length; i++) {
+                    a[i].classList.toggle("dark-theme");
+                }
+            }
             if(isDarkTheme){
                 theme_button.innerHTML = '<i class="fa-solid fa-moon"></i>';
                 navbar.classList.add("bg-dark");
@@ -73,90 +69,28 @@
                 navbar.classList.add("navbar-light");
                 site_icon.src = "/static/logo-grey.svg";
             }
+        }
+        document.addEventListener("DOMContentLoaded", function () {
+            // Check user preference and set the initial theme
+            update_theme();
         });
         function toggleDarkTheme() {
-            var body = document.body;
-            body.classList.toggle("dark-theme");
-            var form_control = document.getElementsByClassName("form-control");
-            var a = document.getElementsByTagName("a");
-            var isDarkTheme = body.classList.contains("dark-theme");
-            for (var i = 0; i < form_control.length; i++) {
-                form_control[i].classList.toggle("dark-theme");
-            }
-            for (var i = 0; i < a.length; i++) {
-                a[i].classList.toggle("dark-theme");
-            }
-            localStorage.setItem("darkTheme", isDarkTheme);
-            var theme_button = document.getElementById("theme_button");
-            var navbar = document.getElementById("navbar_id");
-            var site_icon = document.getElementById("site_icon");
+            isDarkTheme = document.body.classList.contains("dark-theme");
             if(isDarkTheme){
-                theme_button.innerHTML = '<i class="fa-solid fa-moon"></i>';
-                navbar.classList.add("bg-dark");
-                navbar.classList.remove("bg-light");
-                navbar.classList.add("navbar-dark");
-                navbar.classList.remove("navbar-light");
-                site_icon.src = "/static/logo.svg";
+                document.body.classList.remove("dark-theme");
             } else {
-                theme_button.innerHTML = '<i class="fa-solid fa-sun"></i>';
-                navbar.classList.remove("bg-dark");
-                navbar.classList.add("bg-light");
-                navbar.classList.remove("navbar-dark");
-                navbar.classList.add("navbar-light");
-                site_icon.src = "/static/logo-grey.svg";
+                document.body.classList.add("dark-theme");
             }
+            localStorage.setItem("darkTheme", !isDarkTheme);
+            update_theme();
         }
 
-        function update_channels(data){
-            var search_query = document.getElementById("search").value.toLowerCase();
-            if(search_query){
-                data = data.filter(channel => channel.name.toLowerCase().includes(search_query));
-                all = true;
-            }
-            if(!all){
-                data = data.slice(0, count);
-            }
-            prev_order = [];
-            elems = document.getElementsByClassName("card");
-            for (var i = 0; i < elems.length; i++) {
-                var id = elems[i].getElementsByTagName("h6")[0].id.trim();
-                if(id){
-                    prev_order.push(id);
-                }
-            }
-            new_order = [];
-            for(var i=0; i < data.length; i++){
-                new_order.push(data[i].id.trim()); 
-            }
-            
-            if(JSON.stringify(prev_order) != JSON.stringify(new_order)){
-                new_html = "";
-                for(var i=0; i < data.length; i++){
-                    if(data[i].name.includes(("deleted channel"))){
-                        new_html += '<div class="col-3"><div class="card noborder"><img class="card-img-top rounded" src="' + data[i].image + '" alt="Card image cap"><div class="card-body card-no-left-right-padding"><h6 class="card-title" id="' + data[i].id +'"> DELETED CHANNEL ( ' + data[i].id + ' )</h6></div></div></div>';
-                    }
-                    else{  
-                        new_html += '<div class="col-3">'+'<span title="'+ data[i]['last_clip']['timesince'] + '"><a href="' + data[i].link + '"><div class="card noborder"><img class="card-img-top rounded" src="' + data[i].image + '" alt="Card image cap"><div class="card-body card-no-left-right-padding"><h6 class="card-title" id="' + data[i].id +'">' + data[i].name + '</h6></div></div></a></div> </span>';
-                    }
-                }
-                document.getElementById("clips-container").innerHTML = new_html;                
-            }
-            else{
-            }
-        }
         
         function update_mini_stats(){
             if(!is_first_load && document.hidden){
                 return; // why care to update if the page is not visible
             }
-            if(is_home){
-                link = "/mini_stats/all";
-            }
-            else{
-                link = "/mini_stats";
-            }
-            count = 51;
-
+            link = "/mini_stats";
             fetch(link).then((response) => response.json()).then((last_clip) => {
                 var last_clip_time = document.getElementById("last_clip_time");
                 if(last_clip_time){
@@ -167,7 +101,7 @@
                 }
                 var data = last_clip.data;
                 if(is_home){
-                    update_channels(data);
+                    add_channel_to_container(all=all);
                 }
                 is_first_load = false;
             });

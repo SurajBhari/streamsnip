@@ -442,38 +442,20 @@ def download_and_store(clip_id) -> str:
         return files[0]
 
 
-def mini_stats(all:bool = False):
+def mini_stats():
     today = datetime.strptime(
         datetime.now().strftime("%Y-%m-%d"), "%Y-%m-%d"
     ).timestamp()
     with conn:
         cur = conn.cursor()
-        cur.execute(
-            "SELECT COUNT(*) FROM QUERIES WHERE time >= ? AND private is not '1' ",
-            (today,),
-        )
-        data = cur.fetchall()
-        today_count = data[0][0]
-        cur.execute(
-            "SELECT * FROM QUERIES where private is not '1' ORDER BY time DESC LIMIT 1"
-        )
-        data = cur.fetchall()
-    if data:
-        last_clip = Clip(data[0])
-        last_clip = last_clip.json()
-    else:
+        todays_clips = cur.execute("SELECT * FROM QUERIES WHERE time >= ?", (today,))
+        todays_clips = todays_clips.fetchall()
+        today_count = len(todays_clips)
         last_clip = None
-    home_data = generate_home_data() if all else generate_home_data(51)
-    return dict(today_count=today_count, last_clip=last_clip, data=home_data)
+        if today_count:
+            last_clip = Clip(todays_clips[-1]).json()
+    return dict(today_count=today_count, last_clip=last_clip)
 
-@app.context_processor
-def inject_mini_stats():
-    # todays count
-    if "user-agent" not in request.headers:
-        return "bro where is your user-agent"
-    if "nightbot" in request.headers["user-agent"].lower():
-        return {}
-    return mini_stats()
 
 
 @app.before_request
@@ -505,12 +487,8 @@ def cache():
     return dumps(channel_info, indent=4)
 
 @app.route("/mini_stats")
-@app.route("/mini_stats/all")
 def mini_stats_r():
-    if "all" not in request.path:
-        return mini_stats()
-    else:
-        return mini_stats(all=True)
+    return mini_stats()
 
 # this function exists just because google chrome assumes that the favicon is at /favicon.ico
 @app.route("/favicon.ico")
@@ -522,7 +500,8 @@ def favicon():
 def robots():
     return send_file("static/robots.txt")
 
-def generate_home_data(limit=None):
+
+def generate_home_data():
     with conn:
         cur = conn.cursor()
         cur.execute(f"SELECT * FROM QUERIES GROUP BY channel_id ORDER BY MAX(time) DESC;")
@@ -550,28 +529,12 @@ def generate_home_data(limit=None):
             ch['link'] = f"{htt}{request.host}{url_for('exports', channel_id=get_channel_id_any(clip[0]))}" # we can't get channel @ as its a deleted channel
         #ch["last_clip"] = get_channel_clips(ch_id[0])[0].json()
         returning.append(ch)
-    today = datetime.strptime(
-            datetime.now().strftime("%Y-%m-%d"), "%Y-%m-%d"
-    ).timestamp()
-    for clip in today_clips:
-        # today in seconds
-        if clip.time.timestamp() < today:
-            break
-        for ch in returning:
-            if ch["id"] == clip.channel:
-                ch['today_clip_count'] += 1
-                break
-    """
-    for ch in returning:
-        ch["clips"] = get_channel_clips(ch["id"])
-    NOT A GOOD IDEA. THIS WILL MAKE THE PAGE LOAD SLOWLY. rather show that on admin page.
-    """
-    if limit:
-        return returning[:limit]
-    
     return returning
 
-
+@app.route("/channels")
+def channels():
+    returning = generate_home_data()
+    return render_template("channels.html", data=returning)
 @app.route("/")
 def slash():
     returning = generate_home_data()

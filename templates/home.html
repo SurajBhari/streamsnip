@@ -31,43 +31,87 @@
                 </div>
             </div>
             <div id="clips-container" class="row">
-            {% for channel in data[:51] %}
-                <div class="col-3">
-                    <span title="{{channel['last_clip']['timesince']}}">
-                        <a href="{{ channel['link'] }}">
-                            <div class="card noborder">
-                                <img class="card-img-top rounded" src="{{ channel['image'] }}" alt="Card image cap" load="lazy">
-                                <div class="card-body card-no-left-right-padding">
-                                    {% if channel['deleted'] %}
-                                    <h6 class="card-title" id="{{ channel['id'] }}"> DELETED CHANNEL ( {{ channel['id'] }} )</h6>
-                                    {% else %}
-                                    <h6 class="card-title" id="{{ channel['id'] }}">{{ channel['name'] }}</h6>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </a>
-                    </span>
-                </div>
-            {% endfor %}
-            <div class="col-3" id="more-card">
-                <a href="#a" onclick="set_all()">
-                    <div class="card noborder">
-                        <img class="card-img-top rounded" src="/static/right.png" alt="Card image cap" load="lazy" id="more-img">
-                        <div class="card-body card-no-left-right-padding">
-                            <h6 class="card-title"> See More </h6>
-                        </div>
-                    </div>
-                </a>
-            </div>
             </div>
         </div>
     </div>
 </center>
 <script>
     var data = {{ data|tojson }};
-
+    var all=false;
+    function set_all(){
+        all = true;
+        var moree_img = document.getElementById("more-img");
+        moree_img.src = "https://media.tenor.com/wpSo-8CrXqUAAAAi/loading-loading-forever.gif";
+        add_channel_to_container(all=all);
+        return true;
+    }
+    function add_channel_to_container(all=false){
+        console.log("Adding channels to container");
+        var container = document.getElementById("clips-container");
+        var limit = 50;
+        if(all){
+            limit = data.length;
+        }
+        search_query = document.getElementById("search").value;
+        container.innerHTML = "";
+        for(var i=0; i<limit;i++){
+            if(search_query){
+                if(!data[i]['name'].toLowerCase().includes(search_query.toLowerCase())){
+                    continue;
+                }
+            }
+            var html = ""
+            var html = html + '<div class="col-3">';
+            html = html + '<span title="'+data[i]['last_clip']['timesince']+'">';
+            html = html + '<a href="'+data[i]['link']+'">';
+            html = html + '<div class="card noborder">';
+            html = html + '<img class="card-img-top rounded" src="'+data[i]['image']+'" alt="Card image cap" load="lazy">';
+            html = html + '<div class="card-body card-no-left-right-padding">';
+            if(data[i]['deleted']){
+                html = html + '<h6 class="card-title" id="'+data[i]['id']+'"> DELETED CHANNEL ( '+data[i]['id']+' )</h6>';
+            }else{
+                html = html + '<h6 class="card-title" id="'+data[i]['id']+'">'+data[i]['name']+'</h6>';
+            }
+            html = html + '</div>';
+            html = html + '</div>';
+            html = html + '</a>';
+            html = html + '</span>';
+            html = html + '</div>';
+            container.innerHTML = container.innerHTML + html;
+        }
+        if(all){
+            // destroy the more card
+            var more_card = document.getElementById("more-card");
+            if(more_card){
+                more_card.innerHTML = "";
+            }
+        }
+        else{
+            // create a more card
+            var html = ""
+            var html = html + '<div class="col-3" id="more-card">';
+            html = html + '<a href="#a" onclick="set_all()">';
+            html = html + '<div class="card noborder">';
+            html = html + '<img class="card-img-top rounded" src="/static/right.png" alt="Card image cap" load="lazy" id="more-img">';
+            html = html + '<div class="card-body card-no-left-right-padding">';
+            html = html + '<h6 class="card-title"> See More </h6>';
+            html = html + '</div>';
+            html = html + '</div>';
+            html = html + '</a>';
+            html = html + '</div>';
+            container.innerHTML = container.innerHTML + html;
+        }
+    }
+    document.addEventListener("DOMContentLoaded", function(event) {
+        add_channel_to_container(all=false);
+    });
     document.getElementById("search").addEventListener('input', function(event) {
-        update_channels(data);
+        if(!all){
+            set_all();
+        }
+        else{
+            add_channel_to_container(all=all);
+        }
     });
 </script>
 {% endblock %}
