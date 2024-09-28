@@ -488,6 +488,11 @@ def cache():
 
 @app.route("/mini_stats")
 def mini_stats_r():
+    if request.args.get("home") == "true":
+        ms = mini_stats()
+        ms['data'] = generate_home_data()
+        return dict(ms)
+    
     return mini_stats()
 
 # this function exists just because google chrome assumes that the favicon is at /favicon.ico

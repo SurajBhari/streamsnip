@@ -90,16 +90,22 @@
             if(!is_first_load && document.hidden){
                 return; // why care to update if the page is not visible
             }
-            link = "/mini_stats";
-            fetch(link).then((response) => response.json()).then((last_clip) => {
+            if(is_home){
+                link = "/mini_stats?home=true";
+            }
+            else{
+                link = "/mini_stats";
+            }
+            fetch(link).then((response) => response.json()).then((data) => {
+                var last_clip = data.last_clip;
                 var last_clip_time = document.getElementById("last_clip_time");
                 if(last_clip_time){
-                    last_clip_time.innerHTML = `   Last Clip - ${last_clip.last_clip.timesince}`;
-                    var today_count = last_clip.today_count;
+                    last_clip_time.innerHTML = `   Last Clip - ${last_clip.timesince}`;
+                    var today_count = data.today_count;
                     var today_count_element = document.getElementById("today_count");
                     today_count_element.innerHTML = '<i class="fa-solid fa-clipboard-list"></i>' + today_count + " Clips Today";
                 }
-                var data = last_clip.data;
+                var data = data.data;
                 if(is_home){
                     add_channel_to_container(all=all);
                 }
