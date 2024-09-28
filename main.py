@@ -1656,7 +1656,10 @@ def admin():
     channel_info_admin = {}
     for key, value in creds.items():
         get_channel_name_image(key)
-        channel_info_admin[key] = channel_info[key]
+        try:
+            channel_info_admin[key] = channel_info[key]
+        except KeyError:
+            continue
         if request.is_secure:
             htt = "https://"
         else:
