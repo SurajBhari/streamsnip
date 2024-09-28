@@ -53,7 +53,7 @@
             limit = data.length;
         }
         search_query = document.getElementById("search").value;
-        container.innerHTML = "";
+        temporary_html = "";
         for(var i=0; i<limit;i++){
             if(search_query){
                 if(!data[i]['name'].toLowerCase().includes(search_query.toLowerCase())){
@@ -77,8 +77,9 @@
             html = html + '</a>';
             html = html + '</span>';
             html = html + '</div>';
-            container.innerHTML = container.innerHTML + html;
+            temporary_html = temporary_html + html;
         }
+        container.innerHTML = temporary_html;
         if(all){
             // destroy the more card
             var more_card = document.getElementById("more-card");
