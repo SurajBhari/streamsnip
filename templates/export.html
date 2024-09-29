@@ -300,7 +300,7 @@
             var cardHtml = `<div class="col-md-4 col-lg-3">
                                 <div class="card ${getBorderStyle(clip['author']['level'])}" id="${clip['id']}" style="width: 100%;">
                                     <a href="${clip['link']}" target="_blank" class=${a_class}>
-                                        <img class="card-img-top" src="${thumbnail}" alt="Card image cap" onerror="this.src='${alternative}';" onload="if(this.naturalHeight==90 && this.naturalWidth==120){this.src='${hq_live_thumbnail}'}">
+                                        <img class="card-img-top" src="${thumbnail}" alt="Card image cap" onerror="this.src='${alternative}';" onload="if(this.naturalHeight==90 && this.naturalWidth==120){this.src='${hq_live_thumbnail}';this.onload='';}">
                                     </a>
                                     <center><a title="More clip from this stream" href="#search" onclick="addtosearch('${clip['stream_id']}')"> <i class="fa-solid fa-plus"></i> </a>${clip['id']} <a href="#${clip['id']}"> <i class="fa-solid fa-link"></i> </a> </br>${badges}</center>
                                     <div class="card-body">
@@ -344,6 +344,7 @@
         document.getElementById("total-page1").innerHTML = maxPage;
         end = endIndex > filteredData.length ? filteredData.length : endIndex;
         document.getElementById("total-clips1").innerHTML = `${startIndex + 1}-${end} of ${filteredData.length}`;
+        console.log("Updated clips");
     }
     function getUserChannelLink(authorId) {
         return `https://www.youtube.com/channel/${authorId}`;
@@ -462,6 +463,8 @@
     }
 
     // Initial update when the page loads
-    updateClips();
+    document.addEventListener("DOMContentLoaded", function () {
+        updateClips();
+    });
 </script>
 {% endblock %}
