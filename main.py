@@ -509,7 +509,7 @@ def robots():
 def generate_home_data():
     with conn:
         cur = conn.cursor()
-        cur.execute(f"SELECT * FROM QUERIES GROUP BY channel_id ORDER BY MAX(time) DESC;")
+        cur.execute(f"SELECT * FROM QUERIES WHERE private is not '1' GROUP BY channel_id ORDER BY MAX(time) DESC;")
         data = cur.fetchall()
     returning = []
     today_clips = get_channel_clips()
