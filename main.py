@@ -448,7 +448,7 @@ def mini_stats():
     ).timestamp()
     with conn:
         cur = conn.cursor()
-        todays_clips = cur.execute("SELECT * FROM QUERIES WHERE time >= ?", (today,))
+        todays_clips = cur.execute("SELECT * FROM QUERIES WHERE time >= ? AND private is not '1'", (today,))
         todays_clips = todays_clips.fetchall()
         today_count = len(todays_clips)
         last_clip = None
