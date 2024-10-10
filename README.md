@@ -1,7 +1,7 @@
 # Streamsnip/Clip_nightbot: Stream Clipping Simplified
 
-| **Status** | **![Streamsnip](https://cronitor.io/badges/l4zGl5/production/rOa5oshJWmlCgt3t1OQ4Yh5xXGc.svg)** | **![StreamsnipClipsPerformance](https://cronitor.io/badges/kGZGWA/production/I_QFoL2euGXq7gGih2r6U4u9YDw.svg)** |
-|:---:|:---:|:---:|
+| **Status** | **![Streamsnip](https://cronitor.io/badges/l4zGl5/production/rOa5oshJWmlCgt3t1OQ4Yh5xXGc.svg)** | **![StreamsnipClipsPerformance](https://cronitor.io/badges/kGZGWA/production/I_QFoL2euGXq7gGih2r6U4u9YDw.svg)** | **![Streamsnip Test page](https://cronitor.io/badges/AqQpAK/production/ZOmdj9plznMoZ7iXxU6auDELV1M.svg)**
+|:---:|:---:|:---:|:---:|
 
 | Tech Stack |  |
 |---|---| 
