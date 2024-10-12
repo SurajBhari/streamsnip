@@ -2549,5 +2549,5 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    #app.run(host="0.0.0.0", port=80, debug=True)
-    print(get_latest_live("UCHlNgSzo7EOG5M3H8ksixWw"))
+    app.run(host="0.0.0.0", port=80, debug=True)
+    
