@@ -1,7 +1,7 @@
 # Streamsnip/Clip_nightbot: Stream Clipping Simplified
 
-| **Status** | **![Streamsnip](https://cronitor.io/badges/l4zGl5/production/rOa5oshJWmlCgt3t1OQ4Yh5xXGc.svg)** | **![StreamsnipClipsPerformance](https://cronitor.io/badges/kGZGWA/production/I_QFoL2euGXq7gGih2r6U4u9YDw.svg)** |
-|:---:|:---:|:---:|
+| **Status** | **![Streamsnip](https://cronitor.io/badges/l4zGl5/production/rOa5oshJWmlCgt3t1OQ4Yh5xXGc.svg)** | **![StreamsnipClipsPerformance](https://cronitor.io/badges/kGZGWA/production/I_QFoL2euGXq7gGih2r6U4u9YDw.svg)** | **![Streamsnip Test page](https://cronitor.io/badges/AqQpAK/production/ZOmdj9plznMoZ7iXxU6auDELV1M.svg)**
+|:---:|:---:|:---:|:---:|
 
 | Tech Stack |  |
 |---|---| 
@@ -58,7 +58,9 @@ You would pass `webhook=1211440693168447599/ieU15QcFI_PcAun88TFGpUuRMK6E7Me14jio
 - `message_level` (default: 0) - Customize how the discord message should look like. to support "anonymity"
   ![image](https://github.com/SurajBhari/streamsnip/assets/45149585/bf5e5ced-0472-4a5a-9a84-9b03f4364596)
 - `take_delays` (default: false) - Do you consider your viewers to be smarter than average person ? if you turn this on. the first and last `word` will be evaluted to add/subtract delay.
-  The following screenshot was taken with delay=0. but it still gave a delay of `20 seconds` as the author wrote `-20` as first word.  
+  The following screenshot was taken with delay=0. but it still gave a delay of `20 seconds` as the author wrote `-20` as first word. <br>
+  Remember. this doesn't Override the delay parameter. it only add the delay. so if you had -40 in `delay` arg. then delay in the below example would be -60. and not -40.
+  
   ![image](https://github.com/SurajBhari/streamsnip/assets/45149585/361dac19-192a-4a75-aa8f-0d94a480790d)
 
 
