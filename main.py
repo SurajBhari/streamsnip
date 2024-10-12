@@ -2478,6 +2478,14 @@ def test():
     else:
         return ll['title']
 
+@app.route("/globals")
+def globals_():
+    given_pass = request.form.get("password")
+    if (not given_pass) or password != config['password']:
+        return "Wrong password or no password"
+    else:
+        return globals()
+
 @app.route("/video/<clip_id>")
 def video(clip_id):
     if not clip_id:
@@ -2541,4 +2549,5 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80, debug=True)
+    #app.run(host="0.0.0.0", port=80, debug=True)
+    print(get_latest_live("UCHlNgSzo7EOG5M3H8ksixWw"))
