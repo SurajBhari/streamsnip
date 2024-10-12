@@ -2481,7 +2481,7 @@ def test():
 @app.route("/globals")
 def globals_():
     given_pass = request.form.get("password")
-    if (not given_pass) or password != config['password']:
+    if (not given_pass) or given_pass != config['password']:
         return "Wrong password or no password"
     else:
         return globals()
