@@ -65,7 +65,7 @@
             html = html + '<span title="'+data[i]['last_clip']['timesince']+'">';
             html = html + '<a href="'+data[i]['link']+'">';
             html = html + '<div class="card noborder">';
-            html = html + '<img class="card-img-top rounded" src="'+data[i]['image']+'" alt="Card image cap" load="lazy">';
+            html = html + '<img class="card-img-top rounded" src="'+data[i]['image']+`" alt="Card image cap" load="lazy" onerror="this.src='https://i.pinimg.com/564x/3b/27/a8/3b27a87fcf7d90ae564be23d7a37f778.jpg';this.onerror=''">`;
             html = html + '<div class="card-body card-no-left-right-padding">';
             if(data[i]['deleted']){
                 html = html + '<h6 class="card-title" id="'+data[i]['id']+'"> DELETED CHANNEL ( '+data[i]['id']+' )</h6>';
