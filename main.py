@@ -114,7 +114,7 @@ else:
     cookies = None
 
 if "youtubeemoji.json" in os.listdir("./helper"):
-    with open("./helper/youtubeemoji.json", "r") as f:
+    with open("./helper/youtubeemoji.json", "r", encoding="utf-8") as f:
         emoji_lookup_table = load(f)
 else:
     emoji_lookup_table = {}
@@ -130,7 +130,7 @@ def is_it_expired(t:int): # we add some randomness so that not all of the cache 
 
 def get_creds():
     try:
-        with open("config.json", "r") as f:
+        with open("config.json", "r", encoding="utf-8") as f:
             jcreds = load(f)
             creds = jcreds['creds']
             creds['password'] = jcreds['password']  
@@ -142,10 +142,10 @@ def write_creds(new_creds:dict):
     if not new_creds:
         return
     # load the config as whole and then update the creds
-    with open("config.json", "r") as f:
+    with open("config.json", "r", encoding="utf-8") as f:
         config = load(f)
     config['creds'] = new_creds
-    with open("config.json", "w") as f:
+    with open("config.json", "w", encoding="utf-8") as f:
         dump(config, f, indent=4)
     return True
 
@@ -211,7 +211,7 @@ except KeyError:
 
 def is_blacklisted(channel_id):
     try:
-        with open("blacklisted.json", "r") as f:
+        with open("blacklisted.json", "r", encoding="utf-8") as f:
             data = load(f)
     except FileNotFoundError:
         data = []
@@ -310,7 +310,7 @@ def get_channel_name_image(channel_id: str) -> Tuple[str, str]:
         get_json_from_html(html_data, "var ytInitialData = ", 0, "};") + "}"
     )
     # put this in a local file for test purposes
-    # with open("yt_initial_data.json", "w") as f:
+    # with open("yt_initial_data.json", "w", encoding="utf-8") as f:
     #     dump(yt_initial_data, f, indent=4)
     soup = BeautifulSoup(html_data, "html.parser")
     try:
@@ -2523,11 +2523,11 @@ def index():
 
 channel_info = {}
 if 'channel_cache.json' in os.listdir('./helper'):
-    with open("helper/channel_cache.json","r") as f:
+    with open("helper/channel_cache.json","r", encoding="utf-8") as f:
         channel_info = load(f)
 
 def write_channel_cache(channel_info=channel_info):
-    with open("helper/channel_cache.json","w") as f:
+    with open("helper/channel_cache.json","w", encoding="utf-8") as f:
         dump(channel_info, f, indent=4)
     return True
 
@@ -2539,8 +2539,6 @@ with conn:
 
 
 for ch_id in data:
-    if local:
-        pass  # don't build cache on locally running.
     get_channel_name_image(ch_id[0])
 
 write_channel_cache(channel_info)
