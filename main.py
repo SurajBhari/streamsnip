@@ -2484,7 +2484,7 @@ def globals_():
     if (not given_pass) or given_pass != config['password']:
         return "Wrong password or no password"
     else:
-        return globals()
+        return dumps(globals(), indent=4, sort_keys=True, default=str)
 
 @app.route("/video/<clip_id>")
 def video(clip_id):
