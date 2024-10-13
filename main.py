@@ -51,8 +51,6 @@ except FileNotFoundError:
     pass
 else:
     local = False
-    if __name__ != "__main__":
-        local = True
 
 if not local:
     logging.basicConfig(
