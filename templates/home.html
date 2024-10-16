@@ -45,7 +45,10 @@
         add_channel_to_container(all=all);
         return true;
     }
-    function add_channel_to_container(all=false){
+    function add_channel_to_container(all=false, data_=null){
+        if(data_){
+            data = data_;
+        }
         console.log("Adding channels to container");
         var container = document.getElementById("clips-container");
         var limit = 50;
