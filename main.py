@@ -318,8 +318,11 @@ def get_channel_name_image(channel_id: str) -> Tuple[str, str]:
     try:
         channel_image = soup.find("meta", property="og:image")["content"]
         channel_name = soup.find("meta", property="og:title")["content"]
-        sub_count = yt_initial_data['header']['pageHeaderRenderer']['content']['pageHeaderViewModel']['metadata']['contentMetadataViewModel']['metadataRows'][1]['metadataParts'][0]['text']['content']
-        sub_count = convert_sub_count(sub_count)
+        try:
+            sub_count = yt_initial_data['header']['pageHeaderRenderer']['content']['pageHeaderViewModel']['metadata']['contentMetadataViewModel']['metadataRows'][1]['metadataParts'][0]['text']['content']
+            sub_count = convert_sub_count(sub_count)
+        except:
+            sub_count = 0
         try:
             channel_username = yt_initial_data['metadata']['channelMetadataRenderer']['vanityChannelUrl'].split("/")[-1]
         except KeyError:
