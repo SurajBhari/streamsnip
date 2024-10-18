@@ -289,6 +289,8 @@ def get_channel_name_image(channel_id: str) -> Tuple[str, str]:
     if channel_id in channel_info:
         if "last_updated" not in channel_info[channel_id]:
             channel_info[channel_id]["last_updated"] = 0 # forcing to outdate the value so that it gets updated
+        if "sub_count" not in channel_info[channel_id]:
+            channel_info[channel_id]["last_updated"] = 0 # forcing to outdate the value so that it gets updated
         if is_it_expired(channel_info[channel_id]["last_updated"]):
             del channel_info[channel_id]
             return get_channel_name_image(channel_id)
@@ -316,6 +318,8 @@ def get_channel_name_image(channel_id: str) -> Tuple[str, str]:
     try:
         channel_image = soup.find("meta", property="og:image")["content"]
         channel_name = soup.find("meta", property="og:title")["content"]
+        sub_count = yt_initial_data['header']['pageHeaderRenderer']['content']['pageHeaderViewModel']['metadata']['contentMetadataViewModel']['metadataRows'][1]['metadataParts'][0]['text']['content']
+        sub_count = convert_sub_count(sub_count)
         try:
             channel_username = yt_initial_data['metadata']['channelMetadataRenderer']['vanityChannelUrl'].split("/")[-1]
         except KeyError:
@@ -324,17 +328,35 @@ def get_channel_name_image(channel_id: str) -> Tuple[str, str]:
         channel_image = "https://yt3.googleusercontent.com/a/default-user=s100-c-k-c0x00ffffff-no-rj"
         channel_name = "<deleted channel>"
         channel_username = "@deleted"
+        sub_count = 0
     last_updated = int(time.time())
     channel_info[channel_id] = {
         "name": channel_name, 
         "image": channel_image, 
         "username": channel_username, 
-        "last_updated": last_updated
+        "last_updated": last_updated,
+        "sub_count": sub_count
     }
     # write channel_info to channel_cache.json
     write_channel_cache(channel_info)
     
     return channel_name, channel_image
+
+def convert_sub_count(sub_count:str) -> int:
+    sub_count = sub_count.split(" ")[0]
+    sub_count = sub_count.upper()
+    if "K" in sub_count:
+        sub_count = sub_count.replace("K", "")
+        sub_count = float(sub_count) * 1000
+    elif "M" in sub_count:
+        sub_count = sub_count.replace("M", "")
+        sub_count = float(sub_count) * 1000000
+    elif "B" in sub_count: # lmao like this is ever gonna happen xd 
+        sub_count = sub_count.replace("B", "")
+        sub_count = float(sub_count) * 1000000000 
+    else:
+        sub_count = int(sub_count)
+    return int(sub_count)
 
 
 def take_screenshot(video_url: str, seconds: int) -> str:
