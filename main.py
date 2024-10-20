@@ -620,7 +620,6 @@ def webedit():
     except KeyError:
         return "Invalid request", 400
     if not session.get("logged_in"):
-        print("Not logged in")
         return "Not logged in", 401
     clip = get_clip(clip_id=clip_id)
     
@@ -652,7 +651,6 @@ def webdelete():
     except KeyError:
         return "Invalid request", 400
     if not session.get("logged_in"):
-        print("Not logged in")
         return "Not logged in", 401
     clip = get_clip(clip_id=clip_id)
     if not clip:
@@ -793,7 +791,6 @@ def get_channel_at(channel_id): # returns the @username of the channel
     for x in channel_info:
         if channel_info[x]["name"].lower() == channel_id.lower():
             return channel_info[x]["username"]
-    print(f"Channel id {channel_id} not found returning to {channel_id}")
     return channel_id
 
 # this is for specific channel
@@ -810,7 +807,6 @@ def exports(channel_id=None):
         return redirect(url_for("slash"))
     data = get_channel_clips(channel_id)
     data = [x.json() for x in data if not x.private]
-    print(prefix_webhook)
     for clip in data:
         if clip['discord']['webhook']:
             if clip['channel'] in prefix_webhook and prefix_webhook.get(clip['channel']) is not None:
@@ -1241,8 +1237,6 @@ def time_stats(start=None, end=None):
     for x in mcs:
         most_clipped_streams[get_video_id(x[0])] = x[1]
     message = f"{user_count} users clipped\n{clip_count} clips on \n{channel_count} channels on {start.strftime('%Y-%m-%d')} till {end.strftime('%Y-%m-%d')}."
-    print(streamers_trend_days)
-    print(len(streamers_trend_days))
     return render_template(
         "stats.html",
         message=message,
@@ -1676,7 +1670,6 @@ def admin():
     clips = get_channel_clips()
     t = time.time()
     clip_ids = [x.id for x in clips]
-    print(f"took {time.time()-t} to get clips")
     t = time.time()
     creds = get_creds()
     channel_info_admin = {}
@@ -1693,7 +1686,6 @@ def admin():
         channel_info_admin[key][
             "link"
         ] = f"{htt}{request.host}{url_for('exports', channel_id=key)}"
-    print(f"took {time.time()-t} to get channel info")
     return render_template("admin.html", ids=clip_ids, channel_info=channel_info_admin)
 
 def get_channel_id(path):
@@ -1765,7 +1757,6 @@ def edit_delete():
     if password != actual_password:
         return "Invalid password"
     # get the clip id
-    print(request.form)
     clip_id = request.form.get("clip")
     # get the action
     if request.form.get("rename") == "Rename":
