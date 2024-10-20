@@ -541,6 +541,10 @@ def generate_home_data():
         channel_name, channel_image = get_channel_name_image(clip[0])
         ch["image"] = channel_image
         ch["name"] = channel_name
+        try:
+            ch['sub_count'] = channel_info[clip[0]]['sub_count']
+        except KeyError:
+            ch['sub_count'] = 0
         ch["id"] = clip[0]
         ch["image"] = channel_image.replace(
             "s900-c-k-c0x00ffffff-no-rj", "s300-c-k-c0x00ffffff-no-rj"
