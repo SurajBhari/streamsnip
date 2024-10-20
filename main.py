@@ -532,10 +532,9 @@ def robots():
 def generate_home_data():
     with conn:
         cur = conn.cursor()
-        cur.execute(f"SELECT * FROM QUERIES WHERE private is not '1' GROUP BY channel_id ORDER BY MAX(time) DESC;")
+        cur.execute(f"SELECT *, COUNT(*) AS channel_count FROM QUERIES WHERE private is not '1' GROUP BY channel_id ORDER BY MAX(time) DESC;")
         data = cur.fetchall()
     returning = []
-    today_clips = get_channel_clips()
     for clip in data:
         ch = {} 
         channel_name, channel_image = get_channel_name_image(clip[0])
@@ -555,7 +554,7 @@ def generate_home_data():
         else:
             htt = "http://"
         ch["link"] = f"{htt}{request.host}{url_for('exports', channel_id=get_channel_at(clip[0]))}"
-        ch['today_clip_count'] = 0 
+        ch['clip_count'] = clip[-1]
         ch['deleted'] = True if "deleted channel" in channel_name else False
         if ch['deleted']:
             ch['link'] = f"{htt}{request.host}{url_for('exports', channel_id=get_channel_id_any(clip[0]))}" # we can't get channel @ as its a deleted channel
