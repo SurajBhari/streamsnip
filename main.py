@@ -483,9 +483,10 @@ def mini_stats():
 
 @app.before_request
 def before_request():
+    print(request.path)
     # if request is for /clip or /delete or /edit then check if its from real
     if "/clip" in request.path or "/delete" in request.path or "/edit" in request.path:
-        if "/extension/clips/" in request.path:
+        if "/extension/" in request.path: # make an exception for all the /extension routes
             return
         ip = request.remote_addr
         if ip in allowed_ip:
