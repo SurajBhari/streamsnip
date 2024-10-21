@@ -137,7 +137,7 @@
     var currentPage = 1;
     var iview = true;
     var logged_in_for = "{{ session['username']}}"
-    var can_edit = logged_in_for == channel_name;
+    var can_edit = logged_in_for == channel_name; // can also be used as can_download 
     if(logged_in_for == "admin"){
         can_edit = true;
     }
@@ -290,15 +290,18 @@
             }
             var is_checked = localStorage.getItem(clip['id']) ? 'true' : '';
             var edit_button = "";
+            var download_button = "";
             if(can_edit){
                 edit_button = `<a href="#${clip['id']}" onclick="edit(this)"> <i class="fa-solid fa-pencil"></i></a>`;
             }
             var delete_button = "";
             if(can_edit){
                 delete_button = `<button style="position: absolute; right: 2px; bottom: 2px;" type="button" class="btn btn-outline-danger " onclick="del(this)"><i class="fa-regular fa-trash-can"></i></button>`;
+                download_button = `<a href="${clip.download_link}"> <button style="position: absolute; right: 2px; top: 2px;" type="button" class="btn btn-outline-primary ")"><i class="fa-solid fa-download"></i></button> </a>`;
             }
             var cardHtml = `<div class="col-md-4 col-lg-3">
                                 <div class="card ${getBorderStyle(clip['author']['level'])}" id="${clip['id']}" style="width: 100%;">
+                                    ${download_button}
                                     <a href="${clip['link']}" target="_blank" class=${a_class}>
                                         <img class="card-img-top" src="${thumbnail}" alt="Card image cap" onerror="this.src='${alternative}';" onload="if(this.naturalHeight==90 && this.naturalWidth==120){this.src='${hq_live_thumbnail}';this.onload='';}">
                                     </a>
@@ -317,7 +320,7 @@
                                     </div>
                                     <div class="card-footer checkbox-wrapper-2">
                                         <input type="checkbox" class="sc-gJwTLC ikxBAC" id=${clip['id']} value=${clip['id']} onclick='handleClick(this);' ${is_checked ? 'checked' : ''}>
-                                        ${delete_button}
+                                    ${delete_button}
                                         </div>
                                 </div>
                             </div>`;
