@@ -32,8 +32,17 @@ DiscordWebhook(url=management_webhook_url, content="Maintainer started").execute
 def periodic_task():
     management_webhook = DiscordWebhook(url=management_webhook_url)
     management_webhook.add_file(file=open("../queries.db", "rb"), filename="queries.db")
-    management_webhook.add_file(file=open("../record.log", "rb"), filename="record.log")
+    #management_webhook.add_file(file=open("../record.log", "rb"), filename="record.log")
     management_webhook.content = f"<t:{int(time.time())}:F>"
+    download_clips = os.listdir("../clips")
+    deleted_clips = []
+    not_deleted_clips = []
+    for clip in download_clips:
+        if ".part" in clip:
+            not_deleted_clips.append(clip)
+            continue # skip incomplete downloads
+        os.remove(f"../clips/{clip}")
+        deleted_clips.append(clip)
     os.system("ps auxf > file.txt")
     time.sleep(1)
     management_webhook.add_file(file=open("file.txt", "rb"), filename="processes.txt")
@@ -48,6 +57,7 @@ def periodic_task():
     # and send it to the webhook
     system_vitals = f"{task_count} CPU: {psutil.cpu_percent()}%\nMemory: {psutil.virtual_memory().percent}%\nDisk: {psutil.disk_usage('/').percent}%"
     management_webhook.content += system_vitals
+    management_webhook.content += f"\nDeleted {(deleted_clips)} \nNot deleted {(not_deleted_clips)} clips"
     if task_count % 5 == 0:
         management_webhook.add_file(file=open("../config.json", "r"), filename="config.json")
     try:
