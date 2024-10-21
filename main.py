@@ -2479,6 +2479,26 @@ def extension_clips(video_id):
     clips = get_video_clips(video_id)
     return jsonify([clip.json() for clip in clips])
 
+@app.route("/extension/channel/clips/<stream_id>")
+def extension_channel_clips(stream_id):
+    with conn:
+        cur = conn.cursor()
+        # stream_link must contain the stream_id
+        cur.execute(
+            """
+            SELECT * FROM QUERIES WHERE stream_link LIKE ?;
+            """,
+            (f"%{stream_id}%",),
+        )
+        data = cur.fetchall()
+    return ([Clip(x).json() for x in data])
+
+@app.route("/extension/clip/<clip_id>")
+def extension_clip(clip_id):
+    clip = get_clip(clip_id)
+    return clip.json()
+
+
 @app.route("/loaderio-2d4d6795c8021a56f6052f095f181fe8.txt")
 @app.route("/loaderio-2d4d6795c8021a56f6052f095f181fe8.html")
 @app.route("/loaderio-2d4d6795c8021a56f6052f095f181fe8/")
