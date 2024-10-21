@@ -7,6 +7,7 @@ from flask import (
     send_file,
     session,
     jsonify,
+    send_from_directory
 )
 import random
 from requests import get as GET
@@ -441,6 +442,7 @@ def download_and_store(clip_id) -> str:
     start_time = min(l)
     end_time = max(l)
     params = {
+        "cookies": cookies,
         "download_ranges": yt_dlp.utils.download_range_func(
             [], [[start_time, end_time]]
         ),
@@ -483,7 +485,6 @@ def mini_stats():
 
 @app.before_request
 def before_request():
-    print(request.path)
     # if request is for /clip or /delete or /edit then check if its from real
     if "/clip" in request.path or "/delete" in request.path or "/edit" in request.path:
         if "/extension/" in request.path: # make an exception for all the /extension routes
@@ -2528,21 +2529,28 @@ def globals_():
 def video(clip_id):
     if not clip_id:
         return redirect(url_for("slash"))
-    global download_lock
-    if download_lock:
-        return "Disabled for now. We don't have enough resources to serve you at the moment."
+    creds = get_creds()
+
+    try:
+        if creds["password"] == session["password"]: # for admin
+            pass
+        elif creds[clip.channel] == session["password"]:
+            pass
+        else:
+            return redirect("/login")
+    except KeyError:
+        return redirect("/login")
+
     clip = get_clip(clip_id)
-    delay = clip.delay
-    timestamp = clip.time_in_seconds
-    timestamp += -1 * delay
-    if not delay:
-        delay = -60
-    l = [timestamp, timestamp + delay]
-    start_time = min(l)
-    end_time = max(l)
-    return redirect(
-        f"{downloader_base_url}/download/{clip.stream_id}/{start_time}/{end_time}"
-    )
+    if not clip:
+        return 404, "Clip not found"
+    download_and_store(clip.id)
+    if f"{clip.id}" not in [x.split(".")[0] for x in os.listdir("./clips")]:
+        return "Couldn't download the clip"
+    for file in os.listdir("./clips"):
+        if file.startswith(clip.id) and "part" not in file:
+            return send_from_directory("clips", file) # we don't know what filetype it may come with it can be mp4 or mkv or webm
+    return "Couldn't find the file"
 
 
 @ext.register_generator
