@@ -442,7 +442,7 @@ def download_and_store(clip_id) -> str:
     start_time = min(l)
     end_time = max(l)
     params = {
-        "cookies": cookies,
+        "cookiefile": cookies,
         "download_ranges": yt_dlp.utils.download_range_func(
             [], [[start_time, end_time]]
         ),
