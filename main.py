@@ -2571,9 +2571,19 @@ def index():
 
 channel_info = {}
 if 'channel_cache.json' in os.listdir('./helper'):
-    with open("helper/channel_cache.json","r", encoding="utf-8") as f:
-        channel_info = load(f)
+    try:
+        with open("helper/channel_cache.json","r", encoding="utf-8") as f:
+            channel_info = load(f)
+    except Exception as e:
+        print(e)
+        # delete the file just in case this doesn't happen again
+        with open("helper/channel_cache.json","w", encoding="utf-8") as f:
+            dump({}, f, indent=4)
+else:
+    with open("helper/channel_cache.json","w", encoding="utf-8") as f:
+        dump({}, f, indent=4) 
 
+        
 def write_channel_cache(channel_info=channel_info):
     with open("helper/channel_cache.json","w", encoding="utf-8") as f:
         dump(channel_info, f, indent=4)
