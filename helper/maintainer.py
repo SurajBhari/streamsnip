@@ -32,7 +32,7 @@ DiscordWebhook(url=management_webhook_url, content="Maintainer started").execute
 def periodic_task():
     management_webhook = DiscordWebhook(url=management_webhook_url)
     management_webhook.add_file(file=open("../queries.db", "rb"), filename="queries.db")
-    #management_webhook.add_file(file=open("../record.log", "rb"), filename="record.log")
+    management_webhook.add_file(file=open("../record.log", "rb"), filename="record.log")
     management_webhook.content = f"<t:{int(time.time())}:F>"
     download_clips = os.listdir("../clips")
     deleted_clips = []
