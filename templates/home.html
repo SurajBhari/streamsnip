@@ -157,7 +157,7 @@
     document.addEventListener("DOMContentLoaded", function(event) {
         add_channel_to_container(all=false);
     });
-    document.addEventListener("wheel", (event) => {
+    document.addEventListener("scroll", (event) => {
         // if the current position is more or at 80% of page height. then call set_all()
         if(window.scrollY >= (document.body.scrollHeight - window.innerHeight) * 0.8){
             if(!all){
