@@ -2500,6 +2500,10 @@ def extension_clip(clip_id):
     clip = get_clip(clip_id)
     return clip.json()
 
+@app.route("/extension/channel/<channel_id>")
+def extension_channel(channel_id):
+    clips = get_channel_clips(channel_id)
+    return jsonify([clip.json() for clip in clips])
 
 @app.route("/loaderio-2d4d6795c8021a56f6052f095f181fe8.txt")
 @app.route("/loaderio-2d4d6795c8021a56f6052f095f181fe8.html")
