@@ -232,6 +232,39 @@
         search.value = to_add;
         updateClips();
     }
+    function do_magic(clip_id){
+        var clip = null;
+        for(i=0; i<data.length; i++){
+            if(data[i]['id'] == clip_id){
+                clip = data[i];
+                break;
+            }
+        }
+        if(clip == null){
+                return;
+        }
+        var link = clip['link'].replaceAll("youtu.be/", "www.youtube.com/embed/").replaceAll("?t=", "?start=");
+        // make a new element that comes on top of the screen with the video
+        // make the video autoplay
+        var div = document.createElement("div");
+        div.id = "video";
+        div.style.position = "fixed";
+        div.style.zIndex = "1";
+        div.style.left = "0";
+        div.style.top = "0";
+        div.style.width = "100%";
+        div.style.height = "100%";
+        div.style.overflow = "hidden";
+        div.style.backgroundColor = "rgb(0,0,0)";
+        div.style.backgroundColor = "rgba(0,0,0,0.4)";
+        div.innerHTML = `<iframe height="80%" width="80%" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);" transform src="${link}&autoplay=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe> `;
+        document.body.appendChild(div);
+        div.addEventListener("click", function(){
+            div.remove();
+        });
+        
+
+    };
     function updateClips() {
         var container = document.getElementById("clips-container");
         var search = document.getElementById("search").value.toLowerCase().trim();
@@ -299,11 +332,12 @@
                 delete_button = `<button style="position: absolute; right: 2px; bottom: 2px;" type="button" class="btn btn-outline-danger " onclick="del(this)"><i class="fa-regular fa-trash-can"></i></button>`;
                 download_button = `<a href="${clip.download_link}"> <button style="position: absolute; right: 2px; top: 2px;" type="button" class="btn btn-outline-primary ")"><i class="fa-solid fa-download"></i></button> </a>`;
             }
+            var card_img = `<img class="card-img-top" src="${thumbnail}" alt="Card image cap" onerror="this.src='${alternative}';" onload="if(this.naturalHeight==90 && this.naturalWidth==120){this.src='${hq_live_thumbnail}';this.onload='';}">`
             var cardHtml = `<div class="col-md-4 col-lg-3">
                                 <div class="card ${getBorderStyle(clip['author']['level'])}" id="${clip['id']}" style="width: 100%;">
                                     ${download_button}
-                                    <a href="${clip['link']}" target="_blank" class=${a_class}>
-                                        <img class="card-img-top" src="${thumbnail}" alt="Card image cap" onerror="this.src='${alternative}';" onload="if(this.naturalHeight==90 && this.naturalWidth==120){this.src='${hq_live_thumbnail}';this.onload='';}">
+                                    <a href="#${clip.id}" class=${a_class} onclick='console.log("yes");do_magic("${clip.id}");'id='${clip.id}-thumbnail'>
+                                        ${card_img}
                                     </a>
                                     <center><a title="More clip from this stream" href="#search" onclick="addtosearch('${clip['stream_id']}')"> <i class="fa-solid fa-plus"></i> </a>${clip['id']} <a href="#${clip['id']}"> <i class="fa-solid fa-link"></i> </a> </br>${badges}</center>
                                     <div class="card-body">
