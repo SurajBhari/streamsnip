@@ -9,6 +9,8 @@ from flask import (
     jsonify,
     send_from_directory
 )
+import smtplib
+import ssl
 import random
 from requests import get as GET
 from flask_cors import CORS
@@ -1748,8 +1750,37 @@ def approve():
         embed.set_color(0xebf0f7)
         webhook.add_embed(embed)
         webhook.execute()
+    email = config.get("email", None)
+    if email:
+        send_email(email, f"Welcome to {project_name}! I will send clips for {channel_name} on your discord channel. If you haven't already, add Nightbot commands from {project_repo_link}")
     return "Done"
 
+def send_email(email=None, message="New webhook added"):
+    try:
+        user = config['smtp']['auth']['user']
+        if not user:
+            raise KeyError
+    except KeyError:
+        return "Email not configured"
+    smtp = config['smtp']
+    host = smtp['host']
+    port = smtp['port']
+    password = smtp['auth']['pass']
+    if not all([host, port, password]):
+        return "Email not configured"
+    context = ssl.create_default_context()
+    print(smtp, host, port, user, password)
+    with smtplib.SMTP(host, port) as server:
+        print("connected")
+        server.starttls(context=context)
+        print("tls")
+        server.login(user, password)
+        print("logged in")
+        mail = server.sendmail(user, email, message)
+        print("sent")
+    return mail
+
+    
 @app.route("/ed", methods=["POST"])
 def edit_delete():
     actual_password = config['password']
@@ -2607,5 +2638,5 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80, debug=True)
+    print(send_email("surajbhari159@gmail.com", "Server started"))
     

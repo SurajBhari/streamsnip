@@ -8,5 +8,14 @@
     },
     "password": "webpanel and admin password",
     "management_webhook": "where to send backups to, discord webhook",
-    "update_webhook": "where to send notification for new entries to creds"
+    "update_webhook": "where to send notification for new entries to creds",
+    "smtp":{
+        "host": "smtp.gmail.com",
+        "port": 587,
+        "secure": false,
+        "auth": {
+            "user": "",
+            "pass": ""
+        }
+    }
 }
