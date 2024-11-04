@@ -36,6 +36,7 @@
                                 <option value="alphabetical">Alphabetical</option>
                                 <option value="sub_count">Sub Count</option>
                                 <option value="clip_count">Clip Count</option>
+                                <option value="first_clip">First Clip Time</option>
                             </select>
                         </li>
                         <li class="page-item" id="invert-page">
@@ -93,6 +94,12 @@
         else if(sort_by == "clip_count"){
             data.sort((a, b) => (a['clip_count'] < b['clip_count']) ? 1 : -1);
         }
+        else if(sort_by == "first_clip"){
+            data.sort((a, b) => (a['first_clip_time'] > b['first_clip_time']) ? 1 : -1);
+        }
+        else{
+            data = original_data;
+        }
         if(inverse){
             data.reverse();
         }
@@ -112,7 +119,7 @@
             }
             var html = ""
             var html = html + '<div class="col-3">';
-            html = html + `<span title="Last Clip - ${data[i]['last_clip']['timesince']}\n${data[i]['sub_count']} Subscribers\n${data[i]['clip_count']} Clips">`
+            html = html + `<span title="Last Clip - ${data[i]['last_clip']['timesince']}\n${data[i]['sub_count']} Subscribers\nFirst Clip - ${data[i]['first_clip_timesince']}\n${data[i]['clip_count']} Clips">`
             html = html + '<a href="'+data[i]['link']+'">';
             html = html + '<div class="card noborder">';
             html = html + '<img class="card-img-top rounded" src="'+data[i]['image']+`" alt="Card image cap" load="lazy" onerror="this.src='https://i.pinimg.com/564x/3b/27/a8/3b27a87fcf7d90ae564be23d7a37f778.jpg';this.onerror=''">`;

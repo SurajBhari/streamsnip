@@ -5,7 +5,7 @@ from discord_webhook import DiscordWebhook
 import sqlite3
 
 
-def time_since(time):
+def time_since(time:datetime) -> str:
     current = datetime.now(timezone.utc)
     elapsed = current - time
     elapsed = elapsed.total_seconds()
@@ -15,16 +15,28 @@ def time_since(time):
     msPerMonth = msPerDay * 30
     msPerYear = msPerDay * 365
     if elapsed < msPerMinute:
+        if int(elapsed) == 1:
+            return f"1 second ago"
         return f"{int(elapsed)} seconds ago"
     elif elapsed < msPerHour:
+        if int(elapsed / 60) == 1:
+            return f"1 minute ago"
         return f"{int(elapsed / 60)} minutes ago"
     elif elapsed < msPerDay:
+        if int(elapsed / 3600) == 1:
+            return f"1 hour ago"
         return f"{int(elapsed / 3600)} hours ago"
     elif elapsed < msPerMonth:
+        if int(elapsed / 86400) == 1:
+            return f"~ 1 day ago"
         return f"~ {int(elapsed / 86400)} days ago"
     elif elapsed < msPerYear:
+        if int(elapsed / 2592000) == 1:
+            return f"~ 1 month ago"
         return f"~ {int(elapsed / 2592000)} months ago"
     else:
+        if int(elapsed / 31536000) == 1:
+            return f"~ 1 year ago"
         return f"~ {int(elapsed / 31536000)} years ago"
     
 

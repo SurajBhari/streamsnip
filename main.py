@@ -33,12 +33,12 @@ import scrapetube
 from chat_downloader.sites import YouTubeChatDownloader
 from chat_downloader import ChatDownloader
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import cronitor
 
 from string import ascii_letters, digits
 from helper.util import *
-from helper.Clip import Clip
+from helper.Clip import Clip, time_since 
 
 # we are in /var/www/streamsnip
 import os
@@ -534,7 +534,7 @@ def robots():
 def generate_home_data():
     with conn:
         cur = conn.cursor()
-        cur.execute(f"SELECT *, COUNT(*) AS channel_count FROM QUERIES WHERE private is not '1' GROUP BY channel_id ORDER BY MAX(time) DESC;")
+        cur.execute(f"SELECT *, COUNT(*) AS channel_count, MIN(time) AS first_clip_time FROM QUERIES WHERE private is not '1' GROUP BY channel_id ORDER BY MAX(time) DESC;")
         data = cur.fetchall()
     returning = []
     for clip in data:
@@ -556,7 +556,9 @@ def generate_home_data():
         else:
             htt = "http://"
         ch["link"] = f"{htt}{request.host}{url_for('exports', channel_id=get_channel_at(clip[0]))}"
-        ch['clip_count'] = clip[-1]
+        ch['clip_count'] = clip[-2]
+        ch['first_clip_time'] = clip[-1]
+        ch['first_clip_timesince'] = time_since(datetime.fromtimestamp(clip[-1], tz=timezone.utc))
         ch['deleted'] = True if "deleted channel" in channel_name else False
         if ch['deleted']:
             ch['link'] = f"{htt}{request.host}{url_for('exports', channel_id=get_channel_id_any(clip[0]))}" # we can't get channel @ as its a deleted channel
