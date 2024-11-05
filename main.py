@@ -2536,6 +2536,7 @@ def video(clip_id):
     if not clip_id:
         return redirect(url_for("slash"))
     creds = get_creds()
+    clip = get_clip(clip_id)
 
     try:
         if creds["password"] == session["password"]: # for admin
