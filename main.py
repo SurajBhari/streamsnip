@@ -1701,6 +1701,28 @@ def get_channel_id(path):
     channel_id = identifier['content']
     return channel_id
 
+@app.route("/autoapprove")
+def autoapprove():
+    # verify if the entry is eligible to be autoapproved i.e there have been no previous creds. 
+    key = request.args.get("key")
+    value = request.args.get("value")
+    channel_id = get_channel_id(key)
+
+    if "youtube.com" not in key:
+        return f"Key isn't of youtube {key}"
+    if "discord.com/api/webhooks" not in value:
+        return f"Value isn't of discord webhook {value}"
+    if not channel_id:
+        return "Channel id not found"
+    
+    creds = get_creds()
+    if channel_id in creds:
+        return "Channel already has a webhook, can't auto-approve"
+    password = config['password']
+    request.args = {"pass": password, "key": key, "value": value}
+    return approve()
+
+
 
 @app.route("/approve")
 def approve():
