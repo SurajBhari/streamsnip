@@ -1774,7 +1774,7 @@ def approve():
         embed.set_color(0xebf0f7)
         webhook.add_embed(embed)
         webhook.execute()
-    email = config.get("email", None)
+    email = config.get("smtp", None)
     if email and applier_email:
         send_email(applier_email, f"Welcome to {project_name}! I will send clips for {channel_name} on your discord channel. If you haven't already, add Nightbot commands from [github]({project_repo_link}?tab=readme-ov-file#nightbot-command) .\n\n\n\nBest Of Luck\n{project_name}")
     return "Done"
