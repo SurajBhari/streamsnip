@@ -2633,5 +2633,5 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    print(send_email("surajbhari159@gmail.com", "Server started"))
+    app.run(host="0.0.0.0", port=80, debug=True)
     
