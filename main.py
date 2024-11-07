@@ -9,8 +9,7 @@ from flask import (
     jsonify,
     send_from_directory
 )
-import smtplib
-import ssl
+import yagmail
 import random
 from requests import get as GET
 from flask_cors import CORS
@@ -1708,6 +1707,7 @@ def approve():
     password = request.args.get("pass")
     key = request.args.get("key")
     value = request.args.get("value")
+    applier_email = request.args.get("email")
     
     value = value.replace("discordapp.com", "discord.com")
 
@@ -1751,8 +1751,8 @@ def approve():
         webhook.add_embed(embed)
         webhook.execute()
     email = config.get("email", None)
-    if email:
-        send_email(email, f"Welcome to {project_name}! I will send clips for {channel_name} on your discord channel. If you haven't already, add Nightbot commands from {project_repo_link}")
+    if email and applier_email:
+        send_email(applier_email, f"Welcome to {project_name}! I will send clips for {channel_name} on your discord channel. If you haven't already, add Nightbot commands from [github]({project_repo_link}?tab=readme-ov-file#nightbot-command) .\n\n\n\nBest Of Luck\n{project_name}")
     return "Done"
 
 def send_email(email=None, message="New webhook added"):
@@ -1768,17 +1768,12 @@ def send_email(email=None, message="New webhook added"):
     password = smtp['auth']['pass']
     if not all([host, port, password]):
         return "Email not configured"
-    context = ssl.create_default_context()
-    print(smtp, host, port, user, password)
-    with smtplib.SMTP(host, port) as server:
-        print("connected")
-        server.starttls(context=context)
-        print("tls")
-        server.login(user, password)
-        print("logged in")
-        mail = server.sendmail(user, email, message)
-        print("sent")
-    return mail
+    try:
+        yag = yagmail.SMTP(user=user, password=password, host=host, port=port)
+        yag.send(to=email, subject=f"Welcome to {project_name}!", contents=message)
+    except Exception as e:
+        return str(e)
+    return "Email sent"
 
     
 @app.route("/ed", methods=["POST"])
@@ -1832,7 +1827,7 @@ def edit_delete():
                 title=f"Welcome to {project_name}!", 
                 description=f"I will send clips for {channel_name} here",
                 )
-            embed.add_embed_field(name="Add Nightbot command", value=f"If you haven't already. add Nightbot commands from [github]({project_repo_link}) .")
+            embed.add_embed_field(name="Add Nightbot command", value=f"If you haven't already. add Nightbot commands from [github]({project_repo_link}?tab=readme-ov-file#nightbot-command) .")
             embed.set_thumbnail(url=project_logo_discord)
             embed.set_color(0xebf0f7)
             webhook.add_embed(embed)
@@ -2226,9 +2221,9 @@ def clip(message_id, clip_desc=None):
         webhook_name = ""
         channel_name, channel_image = "", ""
     else:
-        webhook_name = "Streamsnip"
+        webhook_name = project_name
         channel_name, channel_image = (
-            "Streamsnip",
+            project_name,
             project_logo_discord,
         )
 
