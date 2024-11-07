@@ -1708,6 +1708,7 @@ def autoapprove():
     key = request.args.get("key")
     value = request.args.get("value")
     channel_id = get_channel_id(key)
+    email = request.args.get("email")
 
     if "youtube.com" not in key:
         return f"Key isn't of youtube {key}"
@@ -1720,7 +1721,7 @@ def autoapprove():
     if channel_id in creds:
         return "Channel already has a webhook, can't auto-approve"
     password = config['password']
-    request.args = {"pass": password, "key": key, "value": value}
+    request.args = {"pass": password, "key": key, "value": value, "email": email}
     return approve()
 
 
