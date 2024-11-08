@@ -500,7 +500,7 @@ def before_request():
                 ".nightbot.net."
             ):
                 raise ValueError("Not a nightbot request")
-        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, ValueError):
+        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, ValueError, dns.resolver.LifetimeTimeout):
             return f"You are not Nightbot. are you ?, your ip {ip}"
         else:
             # print(f"Request from {ip} is allowed")
@@ -1707,6 +1707,8 @@ def autoapprove():
     # verify if the entry is eligible to be autoapproved i.e there have been no previous creds. 
     key = request.args.get("key")
     value = request.args.get("value")
+    if not any([key, value]):
+        return "Key or Value not found"
     channel_id = get_channel_id(key)
     email = request.args.get("email")
 
@@ -2212,8 +2214,10 @@ def clip(message_id, clip_desc=None):
     if message_id in chat_id_video:
         vid = chat_id_video[message_id]
     else:
-        vid = get_latest_live(channel_id)
-        chat_id_video[message_id] = vid
+        try:
+            vid = get_latest_live(channel_id)
+        except:
+            vid = None
     # if there is a video id passed through headers. we may want to use it instead
     h_vid = request.headers.get("videoID")
     if is_blacklisted(channel_id):
@@ -2224,7 +2228,7 @@ def clip(message_id, clip_desc=None):
     if h_vid:
         vid = YouTubeChatDownloader(cookies=cookies).get_video_data(video_id=h_vid)
     if not vid:
-        return "No LiveStream Found."
+        return "No LiveStream Found. or failed to fetch the stream. Please try again later."
     clip_time = request_time - vid["start_time"] / 1000000 + 5
     clip_time += delay
     url = "https://youtu.be/" + vid["original_video_id"] + "?t=" + str(int(clip_time))
