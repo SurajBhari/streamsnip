@@ -500,7 +500,7 @@ def before_request():
                 ".nightbot.net."
             ):
                 raise ValueError("Not a nightbot request")
-        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, ValueError, dns.resolver.LifetimeTimeout):
+        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, ValueError, dns.resolver.LifetimeTimeout, dns.resolver.NoNameservers):
             return f"You are not Nightbot. are you ?, your ip {ip}"
         else:
             # print(f"Request from {ip} is allowed")
