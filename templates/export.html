@@ -336,7 +336,7 @@
             var cardHtml = `<div class="col-md-4 col-lg-3">
                                 <div class="card ${getBorderStyle(clip['author']['level'])}" id="${clip['id']}" style="width: 100%;">
                                     ${download_button}
-                                    <a href="#${clip.id}" class=${a_class} onclick='console.log("yes");do_magic("${clip.id}");'id='${clip.id}-thumbnail'>
+                                    <a href="#${clip.id}" class='${a_class}' onclick='console.log("yes");do_magic("${clip.id}");'id='${clip.id}-thumbnail'>
                                         ${card_img}
                                     </a>
                                     <center><a title="More clip from this stream" href="#search" onclick="addtosearch('${clip['stream_id']}')"> <i class="fa-solid fa-plus"></i> </a>${clip['id']} <a href="#${clip['id']}"> <i class="fa-solid fa-link"></i> </a> </br>${badges}</center>
