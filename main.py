@@ -414,7 +414,7 @@ def get_clip_with_desc(clip_desc: str, channel_id: str) -> Optional[Clip]:
     return None
 
 
-def download_and_store(clip_id) -> str:
+def download_and_store(clip_id, format:str = None) -> str:
     with conn:
         cur = conn.cursor()
         data = cur.execute(
@@ -429,11 +429,13 @@ def download_and_store(clip_id) -> str:
     timestamp = clip.time_in_seconds
     output_filename = f"./clips/{clip_id}"
     # if there is a file that start with that clip in current directory then don't download it
-    files = [
-        os.path.join("clips", x) for x in os.listdir("./clips") if x.startswith(clip_id)
-    ]
-    if files:
-        return files[0]
+    for file in os.listdir("./clips"):
+        if format:
+            if file.startswith(clip_id) and file.endswith(format):
+                return file
+        else:
+            if file.startswith(clip_id):
+                return file
     # real thing happened at 50. but we stored timestamp with delay. take back that delay
     delay = clip.delay
     timestamp += -1 * delay
@@ -453,8 +455,12 @@ def download_and_store(clip_id) -> str:
         "no_warnings": True,
         "noprogress": True,
         "outtmpl": {"default": output_filename},
-        "quiet": True,
+        "overwrites": True,
+        "silent": True,
     }
+    if format:
+        params["final_ext"] = format
+        params['postprocessors'] = [{'key': 'FFmpegVideoConvertor', 'preferedformat': 'mp4'}]
     with yt_dlp.YoutubeDL(params) as ydl:
         try:
             ydl.download([video_url])
@@ -2590,7 +2596,7 @@ def video(clip_id):
         return redirect(url_for("slash"))
     creds = get_creds()
     clip = get_clip(clip_id)
-
+    format = request.args.get("format", None)
     try:
         if creds["password"] == session["password"]: # for admin
             pass
@@ -2604,12 +2610,17 @@ def video(clip_id):
     clip = get_clip(clip_id)
     if not clip:
         return 404, "Clip not found"
-    download_and_store(clip.id)
+    download_and_store(clip_id=clip.id, format=format)
     if f"{clip.id}" not in [x.split(".")[0] for x in os.listdir("./clips")]:
         return "Couldn't download the clip"
     for file in os.listdir("./clips"):
         if file.startswith(clip.id) and "part" not in file:
-            return send_from_directory("clips", file) # we don't know what filetype it may come with it can be mp4 or mkv or webm
+            if format:
+                if format in file:
+                    return send_from_directory("clips", file) 
+            else:
+                return send_from_directory("clips", file)
+        
     return "Couldn't find the file"
 
 
