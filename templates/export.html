@@ -341,10 +341,10 @@
                                     </a>
                                     <center><a title="More clip from this stream" href="#search" onclick="addtosearch('${clip['stream_id']}')"> <i class="fa-solid fa-plus"></i> </a>${clip['id']} <a href="#${clip['id']}"> <i class="fa-solid fa-link"></i> </a> </br>${badges}</center>
                                     <div class="card-body">
-                                        <a href="${getUserChannelLink(clip['author']['id'])}" target="_blank" class=${a_class}>
+                                        <a href="${getUserChannelLink(clip['author']['id'])}" target="_blank" class='${a_class}'>
                                             <h5 class="card-title"><i class="fa-solid fa-user"></i>${getAuthorTitle(clip['author']['level'])} ${escape(clip['author']['name'])}</h5>
                                         </a>
-                                        <a href="${clip['link']}" target="_blank" class=${a_class}>
+                                        <a href="${clip['link']}" target="_blank" class='${a_class}'>
                                             <p class="card-text">
                                                 <i class="fa-solid fa-clipboard-list"></i> ${add_yt_emojis(escape(clip['message']))}${edit_button}</br>
                                                 <i class="fa-solid fa-clock"></i> At ${clip['hms']} (+${clip['delay']*-1}s)</br>
