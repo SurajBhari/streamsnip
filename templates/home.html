@@ -109,6 +109,9 @@
         if(all){
             limit = data.length;
         }
+        if(data.length < limit){
+            limit = data.length;
+        }
         search_query = document.getElementById("search").value;
         temporary_html = "";
         for(var i=0; i<limit;i++){
