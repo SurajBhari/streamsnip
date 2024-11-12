@@ -754,56 +754,44 @@ def clips():
         emoji_lookup_table=emoji_lookup_table
     )
 
-def get_channel_id_any(channel_id): # returns the UC id of the channel 
-    if channel_id.startswith("UC"):
-        return channel_id
-    elif channel_id.startswith("@"):
-        found_flag = False
-        for x in channel_info:
-            try:
-                if channel_info[x]["username"].lower() == channel_id.lower():
-                    return x
-            except KeyError:
-                del channel_info[x]
-                try:
-                    get_channel_name_image(x)
-                except Exception as e:
-                    continue
-                if channel_info[x]["username"].lower() == channel_id.lower():
-                    return x
-            except AttributeError: # None
-                continue
-        if not found_flag:
-            try:
-                get_channel_name_image(channel_id)
-            except Exception as e:
-                return None
-        try:
-            return channel_info[channel_id]["id"]
-        except KeyError:    
-            return None
-    else:
-        for x in channel_info:
-            if channel_info[x]["name"].lower() == channel_id.lower():
-                return x
-        return None
+def get_channel_id_any(hint): # returns the UC id of the channel 
+    if hint.startswith("UC"):
+        return hint # already a channel id
+    if hint.startswith("@"):
+        available = [x for x in channel_info if channel_info[x].get("username") == hint]
+        if available:
+            return available[0]
+    available = [x for x in channel_info if channel_info[x].get("name") == hint]
+    if available:
+        return available[0]
+    available = [x for x in channel_info if hint.lower() in channel_info[x].get("name").lower()]
+    if available:
+        return available[0]
+    return None
+    
     
 
 def get_channel_at(channel_id): # returns the @username of the channel
+    """
+    channel_info = {
+        "UCnSgtnvG74e9nxI9SibI-LA":{
+            "name":"Pakshi",
+            "image":"https://yt3.googleusercontent.com/Av-rtdhg7TzN6LWwhaMbilRgMz_cQmecp3NwgU9m_NtpzEt0VQ1KvJqYfMs-LSCeR9bIRkh9Pw=s900-c-k-c0x00ffffff-no-rj",
+            "username":"@Pakshi_Udd",
+            "last_updated":1731360906,
+            "sub_count":836
+        }
+    }
+    """
     if channel_id.startswith("@"):
         return channel_id
-    for x in channel_info:
-        if x == channel_id:
-            if channel_info[x]['username']:
-                return channel_info[x]["username"]
-            else:
-                get_channel_name_image(x)
-                return x  # we don't have the username in cache, we return id as of now. but we will get the username and update the cache
-    for x in channel_info:
-        if channel_info[x]["name"].lower() == channel_id.lower():
-            return channel_info[x]["username"]
-    return channel_id
+    get_channel_name_image(channel_id) # this will just come back if there is already a channel_id. 
+    channel = channel_info.get(channel_id)
+    if not channel:
+        return channel_id
+    return channel["username"]
 
+        
 # this is for specific channel
 @app.route("/exports/<channel_id>")
 @app.route("/e/<channel_id>")
