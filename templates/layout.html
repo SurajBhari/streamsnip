@@ -108,7 +108,7 @@
             fetch(link).then((response) => response.json()).then((data) => {
                 var last_clip = data.last_clip;
                 var last_clip_time = document.getElementById("last_clip_time");
-                if(last_clip_time){
+                if(last_clip){
                     last_clip_time.innerHTML = `   Last Clip - ${last_clip.timesince}`;
                     var today_count = data.today_count;
                     var today_count_element = document.getElementById("today_count");
