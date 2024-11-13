@@ -87,6 +87,8 @@ ext = Sitemap(app=app)
 
 global download_lock
 download_lock = True
+global DEFAULT_SETTINGS
+DEFAULT_SETTINGS = UserSettings()
 conn = sqlite3.connect("queries.db", check_same_thread=False)
 # cur = db.cursor() # this is not thread safe. we will create a new cursor for each thread
 owner_icon = "👑"
@@ -206,7 +208,7 @@ with conn:
     cur.execute("""
         CREATE TABLE IF NOT EXISTS SETTINGS (
         channel_id VARCHAR(40) UNIQUE,
-        showlink VARCHAR(40) DEFAULT 'False',
+        showlink VARCHAR(40) DEFAULT 'True',
         screenshot VARCHAR(40) DEFAULT 'False',
         delay INT DEFAULT 0,
         forcedesc VARCHAR(40) DEFAULT 'False',
@@ -2142,21 +2144,39 @@ def nstats():
 @app.route("/clip/<message_id>/")
 @app.route("/clip/<message_id>/<clip_desc>")
 def clip(message_id, clip_desc=None):
+    try:
+        channel = parse_qs(request.headers["Nightbot-Channel"])
+        user = parse_qs(request.headers["Nightbot-User"])
+    except KeyError:
+        return "Headers not found. Are you sure you are using nightbot ?"
+    channel_id = channel.get("providerId")[0]
+    user_level = user.get("userLevel")[0]
+    user_id = user.get("providerId")[0]
+    user_name = user.get("displayName")[0]
+
     arguments = {k.replace("?", ""): request.args[k] for k in request.args}
-    show_link = arguments.get("showlink", True)
-    screenshot = arguments.get("screenshot", False)
-    silent = arguments.get("silent", 2)  # silent level. if not then 2
-    private = arguments.get("private", False)
-    webhook = arguments.get("webhook", False)
-    take_delays = arguments.get("take_delays", False)
-    force_desc = arguments.get("force_desc", False)
+
+
+    channel_settings = get_channel_settings(channel_id)
+    show_link = arguments.get("showlink", channel_settings.show_link)
+    screenshot = arguments.get("screenshot", channel_settings.screenshot)
+    silent = arguments.get("silent", channel_settings.silent)  # silent level. if not then 2
+    private = arguments.get("private", channel_settings.private)
+    webhook = arguments.get("webhook", channel_settings.webhook)
+    if not webhook.startswith("https://discord.com/api/webhooks/"):
+        webhook = f"https://discord.com/api/webhooks/{webhook}"
+    webhook_url = get_webhook_url(channel_id) if not webhook else webhook
+
+    take_delays = arguments.get("take_delays", channel_settings.take_delays)
+    force_desc = arguments.get("force_desc", channel_settings.force_desc)
+    delay = arguments.get("delay", channel_settings.delay)
     message_level = arguments.get(
-        "message_level", 0
+        "message_level", channel_settings.message_level
     )  # 0 is normal. 1 is to persist the defautl webhook name. 2 is for no record on discord message. 3 is for service badging
     try:
         message_level = int(message_level)
     except ValueError:
-        message_level = 0
+        message_level = DEFAULT_SETTINGS.message_level
     logging.log(
         level=logging.INFO,
         msg=f"A request for clip with arguments {arguments} and headers {request.headers}",
@@ -2166,19 +2186,19 @@ def clip(message_id, clip_desc=None):
     try:
         silent = int(silent)
     except ValueError:
-        silent = 2
-    delay = arguments.get("delay", 0)
+        silent = DEFAULT_SETTINGS.silent
+    
     show_link = False if show_link == "false" else show_link
-    screenshot = True if screenshot == "true" else False
-    private = True if private == "true" else False
-    take_delays = True if take_delays == "true" else False
-    force_desc = True if force_desc == "true" else False
+    screenshot = True if screenshot == "true" else screenshot
+    private = True if private == "true" else private
+    take_delays = True if take_delays == "true" else take_delays
+    force_desc = True if force_desc == "true" else force_desc
     
     if type(show_link) != bool:
         try:
             show_link = int(show_link)
         except ValueError:
-            show_link = True # default value
+            show_link = DEFAULT_SETTINGS.show_link
     show_link_message = ""
     try:
         delay = 0 if not delay else int(delay)
@@ -2220,22 +2240,14 @@ def clip(message_id, clip_desc=None):
     if not message_id:
         return "No message id provided, You have configured it wrong. please contact AG at https://discord.gg/2XVBWK99Vy"
     
-    try:
-        channel = parse_qs(request.headers["Nightbot-Channel"])
-        user = parse_qs(request.headers["Nightbot-User"])
-    except KeyError:
-        return "Headers not found. Are you sure you are using nightbot ?"
-
-    channel_id = channel.get("providerId")[0]
-    webhook_url = get_webhook_url(channel_id) if not webhook else webhook
-    user_level = user.get("userLevel")[0]
-    user_id = user.get("providerId")[0]
-    user_name = user.get("displayName")[0]
+    
+    
     if message_id in chat_id_video:
         vid = chat_id_video[message_id]
     else:
         try:
             vid = get_latest_live(channel_id)
+            chat_id_video[message_id] = vid
         except:
             vid = None
     # if there is a video id passed through headers. we may want to use it instead
@@ -2699,7 +2711,7 @@ with conn:
     for ch_id in data:
         if ch_id not in channels_in_settings:
             add_default_settings(ch_id)
-    
+
 
 write_channel_cache(channel_info)
 prefix_webhook = {}

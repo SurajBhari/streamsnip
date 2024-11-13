@@ -29,6 +29,8 @@ class UserSettings:
         self.silent = data[5]
         self.private = data[6]
         self.webhook = data[7]
+        if self.webhook and not self.webhook.startswith("https://discord.com/api/webhooks/"):
+            self.webhook =  "https://discord.com/api/webhooks/" + self.webhook
         self.message_level = data[8]
         self.take_delays = data[9]
 
