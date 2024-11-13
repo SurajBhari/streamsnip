@@ -40,6 +40,7 @@ import cronitor
 from string import ascii_letters, digits
 from helper.util import *
 from helper.Clip import Clip, time_since 
+from helper.UserSettings import UserSettings
 
 # we are in /var/www/streamsnip
 import os
@@ -199,6 +200,31 @@ with conn:
         )  # we store this for the sole purpose of rebuilding the message on !edit
         conn.commit()
         print("Added message_level column to QUERIES table")
+
+with conn:
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS SETTINGS (
+        channel_id VARCHAR(40) UNIQUE,
+        showlink VARCHAR(40) DEFAULT 'False',
+        screenshot VARCHAR(40) DEFAULT 'False',
+        delay INT DEFAULT 0,
+        forcedesc VARCHAR(40) DEFAULT 'False',
+        silent INT DEFAULT 2,
+        private VARCHAR(40) DEFAULT 'False',
+        webhook VARCHAR(128) DEFAULT NULL,
+        messagelevel INT DEFAULT 0,
+        takedelays INT DEFAULT 'False'
+        )""")
+    conn.commit()
+
+def get_channel_settings(user_id):
+    with conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM SETTINGS WHERE channel_id=?", (user_id,))
+        data = list(cur.fetchone())
+        
+    return UserSettings(list(data))
 
 # if there is no folder named clips then make one
 if not os.path.exists("clips"):
@@ -2651,16 +2677,37 @@ def write_channel_cache(channel_info=channel_info):
     
 with conn:
     cur = conn.cursor()
-    cur.execute(f"SELECT channel_id FROM QUERIES ORDER BY time DESC")
-    data = cur.fetchall()
-
+    cur.execute(f"SELECT DISTINCT channel_id FROM QUERIES ORDER BY time DESC")
+    data = [d[0] for d in cur.fetchall()]
 
 for ch_id in data:
-    get_channel_name_image(ch_id[0])
+    get_channel_name_image(ch_id)
+
+
+# add default settings to everyone who is not in the settings table
+def add_default_settings(channel_id:str):
+    with conn:
+        cur = conn.cursor()
+        cur.execute(f"INSERT INTO settings(channel_id) VALUES(?)", (channel_id,))
+        conn.commit()
+    return True 
+
+with conn:
+    cur = conn.cursor()
+    cur.execute(f"SELECT * from settings")
+    channels_in_settings = [x[0] for x in cur.fetchall()]
+    for ch_id in data:
+        if ch_id not in channels_in_settings:
+            add_default_settings(ch_id)
+    
 
 write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80, debug=True)
-    
+    app.run(debug=True, host="0.0.0.0", port=80)
+
+    # TO DO: Remove this before pushing to production
+    channel_settings = get_channel_settings("UCQzWBsu-vJkFdSaTMYWNzTg")
+    for v in vars(channel_settings):
+        print(v, getattr(channel_settings, v), type(getattr(channel_settings, v)))
