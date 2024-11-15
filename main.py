@@ -214,18 +214,22 @@ with conn:
         forcedesc VARCHAR(40) DEFAULT 'False',
         silent INT DEFAULT 2,
         private VARCHAR(40) DEFAULT 'False',
-        webhook VARCHAR(128) DEFAULT NULL,
+        webhook VARCHAR(128) DEFAULT 'None',
         messagelevel INT DEFAULT 0,
         takedelays INT DEFAULT 'False'
         )""")
     conn.commit()
 
-def get_channel_settings(user_id):
+def get_channel_settings(user_id) -> UserSettings:
     with conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM SETTINGS WHERE channel_id=?", (user_id,))
-        data = list(cur.fetchone())
-        
+        data = cur.fetchone()
+        if not data:
+            x = UserSettings()
+            x.channel_id = user_id
+            add_default_settings(x.channel_id)
+            return x
     return UserSettings(list(data))
 
 # if there is no folder named clips then make one
@@ -637,10 +641,12 @@ def login():
                     session["admin"] = True
                     session["username"] = "admin"
                     session["image"] = "https://images.freeimages.com/fic/images/icons/2526/bloggers/256/admin.png?fmt=webp&h=350"
+                    session['id'] = "admin"
                 else:
                     username, image = get_channel_name_image(cred)
                     session["username"] = username
                     session["image"] = image
+                    session["id"] = cred
                 session['logged_in'] = True
                 return redirect(url_for("slash"))
         return render_template("login.html", msg="INVALID PASSWORD")
@@ -727,6 +733,41 @@ def get_video_id(video_link):
 def get_ip():
     return request.remote_addr
 
+@app.route("/settings/default", methods=["POST"])
+def default_settings():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    if not session.get("id"):
+        return redirect(url_for("login"))
+    settings = UserSettings()
+    settings.channel_id = session["id"]
+    if not settings.write(conn):
+        return "Failed to write settings", 500
+    return "OK", 200
+
+@app.route("/settings" , methods=["POST", "GET"])
+def settings():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    if not session.get("id"):
+        return redirect(url_for("login"))
+    settings = get_channel_settings(session["id"])
+    if request.method == "POST":
+        settings.show_link = request.json.get("show_link")
+        settings.screenshot = request.json.get("screenshot")
+        settings.delay = request.json.get("delay")
+        settings.force_desc = request.json.get("force_desc")
+        settings.silent = request.json.get("silent")
+        settings.private = request.json.get("private")
+        settings.webhook = request.json.get("webhook")
+        settings.message_level = request.json.get("message_level")
+        settings.take_delays = request.json.get("take_delays")
+        
+        if not settings.write(conn):
+            return "Failed to write settings", 500
+        return "OK", 200
+    return render_template("settings.html", session=session, settings=settings)
+    
 
 # this is for nightbot to give back export link
 @app.route("/export")
@@ -2710,7 +2751,8 @@ with conn:
     channels_in_settings = [x[0] for x in cur.fetchall()]
     for ch_id in data:
         if ch_id not in channels_in_settings:
-            add_default_settings(ch_id)
+            #add_default_settings(ch_id)
+            pass
 
 
 write_channel_cache(channel_info)
@@ -2718,8 +2760,3 @@ prefix_webhook = {}
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=80)
-
-    # TO DO: Remove this before pushing to production
-    channel_settings = get_channel_settings("UCQzWBsu-vJkFdSaTMYWNzTg")
-    for v in vars(channel_settings):
-        print(v, getattr(channel_settings, v), type(getattr(channel_settings, v)))
