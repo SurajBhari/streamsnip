@@ -3,7 +3,7 @@ class UserSettings:
     def __init__(self, data: list = None):
         # default values
         self.channel_id = None
-        self.show_link = False
+        self.show_link = True
         self.screenshot = False
         self.delay = 0
         self.force_desc = False
