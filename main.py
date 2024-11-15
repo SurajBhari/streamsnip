@@ -2204,7 +2204,7 @@ def clip(message_id, clip_desc=None):
     silent = arguments.get("silent", channel_settings.silent)  # silent level. if not then 2
     private = arguments.get("private", channel_settings.private)
     webhook = arguments.get("webhook", channel_settings.webhook)
-    if not webhook.startswith("https://discord.com/api/webhooks/"):
+    if webhook and not webhook.startswith("https://discord.com/api/webhooks/"):
         webhook = f"https://discord.com/api/webhooks/{webhook}"
     webhook_url = get_webhook_url(channel_id) if not webhook else webhook
 
