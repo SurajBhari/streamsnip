@@ -9,3 +9,4 @@ cookies.txt
 config.json
 __pycache__/*
 test*
+clips/*

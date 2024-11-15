@@ -40,6 +40,7 @@ import cronitor
 from string import ascii_letters, digits
 from helper.util import *
 from helper.Clip import Clip, time_since 
+from helper.UserSettings import UserSettings
 
 # we are in /var/www/streamsnip
 import os
@@ -86,6 +87,8 @@ ext = Sitemap(app=app)
 
 global download_lock
 download_lock = True
+global DEFAULT_SETTINGS
+DEFAULT_SETTINGS = UserSettings()
 conn = sqlite3.connect("queries.db", check_same_thread=False)
 # cur = db.cursor() # this is not thread safe. we will create a new cursor for each thread
 owner_icon = "👑"
@@ -199,6 +202,35 @@ with conn:
         )  # we store this for the sole purpose of rebuilding the message on !edit
         conn.commit()
         print("Added message_level column to QUERIES table")
+
+with conn:
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS SETTINGS (
+        channel_id VARCHAR(40) UNIQUE,
+        showlink VARCHAR(40) DEFAULT 'True',
+        screenshot VARCHAR(40) DEFAULT 'False',
+        delay INT DEFAULT 0,
+        forcedesc VARCHAR(40) DEFAULT 'False',
+        silent INT DEFAULT 2,
+        private VARCHAR(40) DEFAULT 'False',
+        webhook VARCHAR(128) DEFAULT 'None',
+        messagelevel INT DEFAULT 0,
+        takedelays INT DEFAULT 'False'
+        )""")
+    conn.commit()
+
+def get_channel_settings(user_id) -> UserSettings:
+    with conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM SETTINGS WHERE channel_id=?", (user_id,))
+        data = cur.fetchone()
+        if not data:
+            x = UserSettings()
+            x.channel_id = user_id
+            add_default_settings(x.channel_id)
+            return x
+    return UserSettings(list(data))
 
 # if there is no folder named clips then make one
 if not os.path.exists("clips"):
@@ -609,10 +641,12 @@ def login():
                     session["admin"] = True
                     session["username"] = "admin"
                     session["image"] = "https://images.freeimages.com/fic/images/icons/2526/bloggers/256/admin.png?fmt=webp&h=350"
+                    session['id'] = "admin"
                 else:
                     username, image = get_channel_name_image(cred)
                     session["username"] = username
                     session["image"] = image
+                    session["id"] = cred
                 session['logged_in'] = True
                 return redirect(url_for("slash"))
         return render_template("login.html", msg="INVALID PASSWORD")
@@ -699,6 +733,41 @@ def get_video_id(video_link):
 def get_ip():
     return request.remote_addr
 
+@app.route("/settings/default", methods=["POST"])
+def default_settings():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    if not session.get("id"):
+        return redirect(url_for("login"))
+    settings = UserSettings()
+    settings.channel_id = session["id"]
+    if not settings.write(conn):
+        return "Failed to write settings", 500
+    return "OK", 200
+
+@app.route("/settings" , methods=["POST", "GET"])
+def settings():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    if not session.get("id"):
+        return redirect(url_for("login"))
+    settings = get_channel_settings(session["id"])
+    if request.method == "POST":
+        settings.show_link = request.json.get("show_link")
+        settings.screenshot = request.json.get("screenshot")
+        settings.delay = request.json.get("delay")
+        settings.force_desc = request.json.get("force_desc")
+        settings.silent = request.json.get("silent")
+        settings.private = request.json.get("private")
+        settings.webhook = request.json.get("webhook")
+        settings.message_level = request.json.get("message_level")
+        settings.take_delays = request.json.get("take_delays")
+        
+        if not settings.write(conn):
+            return "Failed to write settings", 500
+        return "OK", 200
+    return render_template("settings.html", session=session, settings=settings)
+    
 
 # this is for nightbot to give back export link
 @app.route("/export")
@@ -2116,21 +2185,39 @@ def nstats():
 @app.route("/clip/<message_id>/")
 @app.route("/clip/<message_id>/<clip_desc>")
 def clip(message_id, clip_desc=None):
+    try:
+        channel = parse_qs(request.headers["Nightbot-Channel"])
+        user = parse_qs(request.headers["Nightbot-User"])
+    except KeyError:
+        return "Headers not found. Are you sure you are using nightbot ?"
+    channel_id = channel.get("providerId")[0]
+    user_level = user.get("userLevel")[0]
+    user_id = user.get("providerId")[0]
+    user_name = user.get("displayName")[0]
+
     arguments = {k.replace("?", ""): request.args[k] for k in request.args}
-    show_link = arguments.get("showlink", True)
-    screenshot = arguments.get("screenshot", False)
-    silent = arguments.get("silent", 2)  # silent level. if not then 2
-    private = arguments.get("private", False)
-    webhook = arguments.get("webhook", False)
-    take_delays = arguments.get("take_delays", False)
-    force_desc = arguments.get("force_desc", False)
+
+
+    channel_settings = get_channel_settings(channel_id)
+    show_link = arguments.get("showlink", channel_settings.show_link)
+    screenshot = arguments.get("screenshot", channel_settings.screenshot)
+    silent = arguments.get("silent", channel_settings.silent)  # silent level. if not then 2
+    private = arguments.get("private", channel_settings.private)
+    webhook = arguments.get("webhook", channel_settings.webhook)
+    if not webhook.startswith("https://discord.com/api/webhooks/"):
+        webhook = f"https://discord.com/api/webhooks/{webhook}"
+    webhook_url = get_webhook_url(channel_id) if not webhook else webhook
+
+    take_delays = arguments.get("take_delays", channel_settings.take_delays)
+    force_desc = arguments.get("force_desc", channel_settings.force_desc)
+    delay = arguments.get("delay", channel_settings.delay)
     message_level = arguments.get(
-        "message_level", 0
+        "message_level", channel_settings.message_level
     )  # 0 is normal. 1 is to persist the defautl webhook name. 2 is for no record on discord message. 3 is for service badging
     try:
         message_level = int(message_level)
     except ValueError:
-        message_level = 0
+        message_level = DEFAULT_SETTINGS.message_level
     logging.log(
         level=logging.INFO,
         msg=f"A request for clip with arguments {arguments} and headers {request.headers}",
@@ -2140,19 +2227,19 @@ def clip(message_id, clip_desc=None):
     try:
         silent = int(silent)
     except ValueError:
-        silent = 2
-    delay = arguments.get("delay", 0)
+        silent = DEFAULT_SETTINGS.silent
+    
     show_link = False if show_link == "false" else show_link
-    screenshot = True if screenshot == "true" else False
-    private = True if private == "true" else False
-    take_delays = True if take_delays == "true" else False
-    force_desc = True if force_desc == "true" else False
+    screenshot = True if screenshot == "true" else screenshot
+    private = True if private == "true" else private
+    take_delays = True if take_delays == "true" else take_delays
+    force_desc = True if force_desc == "true" else force_desc
     
     if type(show_link) != bool:
         try:
             show_link = int(show_link)
         except ValueError:
-            show_link = True # default value
+            show_link = DEFAULT_SETTINGS.show_link
     show_link_message = ""
     try:
         delay = 0 if not delay else int(delay)
@@ -2194,22 +2281,14 @@ def clip(message_id, clip_desc=None):
     if not message_id:
         return "No message id provided, You have configured it wrong. please contact AG at https://discord.gg/2XVBWK99Vy"
     
-    try:
-        channel = parse_qs(request.headers["Nightbot-Channel"])
-        user = parse_qs(request.headers["Nightbot-User"])
-    except KeyError:
-        return "Headers not found. Are you sure you are using nightbot ?"
-
-    channel_id = channel.get("providerId")[0]
-    webhook_url = get_webhook_url(channel_id) if not webhook else webhook
-    user_level = user.get("userLevel")[0]
-    user_id = user.get("providerId")[0]
-    user_name = user.get("displayName")[0]
+    
+    
     if message_id in chat_id_video:
         vid = chat_id_video[message_id]
     else:
         try:
             vid = get_latest_live(channel_id)
+            chat_id_video[message_id] = vid
         except:
             vid = None
     # if there is a video id passed through headers. we may want to use it instead
@@ -2651,16 +2730,33 @@ def write_channel_cache(channel_info=channel_info):
     
 with conn:
     cur = conn.cursor()
-    cur.execute(f"SELECT channel_id FROM QUERIES ORDER BY time DESC")
-    data = cur.fetchall()
-
+    cur.execute(f"SELECT DISTINCT channel_id FROM QUERIES ORDER BY time DESC")
+    data = [d[0] for d in cur.fetchall()]
 
 for ch_id in data:
-    get_channel_name_image(ch_id[0])
+    get_channel_name_image(ch_id)
+
+
+# add default settings to everyone who is not in the settings table
+def add_default_settings(channel_id:str):
+    with conn:
+        cur = conn.cursor()
+        cur.execute(f"INSERT INTO settings(channel_id) VALUES(?)", (channel_id,))
+        conn.commit()
+    return True 
+
+with conn:
+    cur = conn.cursor()
+    cur.execute(f"SELECT * from settings")
+    channels_in_settings = [x[0] for x in cur.fetchall()]
+    for ch_id in data:
+        if ch_id not in channels_in_settings:
+            #add_default_settings(ch_id)
+            pass
+
 
 write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80, debug=True)
-    
+    app.run(debug=True, host="0.0.0.0", port=80)

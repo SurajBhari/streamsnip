@@ -1,0 +1,260 @@
+{% extends 'layout.html' %}
+
+{% block head_content %}
+<title>{{ session['username'] }} | Settings </title>
+<link rel="icon" href="{{ session['image'] }}" type="image/x-icon">
+<meta property="og:title" content="{{ channel_name }}" />
+<meta property="og:description" content="Clips from {{ session['username'] }}'s stream" />
+<meta property="og:image" content="{{ session['image'] }}" />
+{% endblock %}
+
+{% block content %}
+<center>
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <a href = "https://youtube.com/channel/{{ session['id'] }}">
+            <img src="{{ session['image'] }}" alt="{{ session['username'] }}" class="rounded-circle" style="width: 200px; height: 200px;">
+            <h1> {{session['username']}} </h1></a>
+        </div>
+    </div>
+    <div class="row">
+        <!--
+        show_link
+        screenshot 
+        delay 
+        force_desc 
+        silent 
+        private 
+        webhook 
+        message_level 
+        take_delays -->
+        <table>
+            <tr>
+                <td>
+                    Show Link
+                </td>
+                <td>
+                    <select id="show_link">
+                        {% if settings['show_link'] == 1 %}
+                            <option value="True" selected>Yes - Will show that 'See all clips at ....' message on clipping.</option>
+                            <option value="False">No - Will not show that message.</option>
+                        {% else %}
+                            <option value="True">Yes - Will show that 'See all clips at ....' message on clipping.</option>
+                            <option value="False" selected>No - Will not show that message.</option>
+                        {% endif %}
+                    </select>
+                </td>
+                </tr>
+            <tr>
+                <td>
+                    Screenshot
+                </td>
+                <td>
+                    <select id="screenshot">
+                        {% if settings['screenshot'] == 1 %}
+                            <option value="True" selected>Yes - NOT RECOMMENDED. Will post a screenshot of stream alongside the message in discord for better context. </option>
+                            <option value="False">No - Will not do any screenshots to discord.</option>
+                        {% else %}
+                            <option value="True">Yes - NOT RECOMMENDED. Will post a screenshot of stream alongside the message in discord for better context. </option>
+                            <option value="False" selected>No - Will not do any screenshots to discord.</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Delay
+                </td>
+                <td>
+                    <input type="number" id="delay" class="form-control" style="width: 100%;" value="{{ settings['delay'] }}">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Force Description
+                </td>
+                <td>
+                    <select id="force_desc">
+                        {% if settings['force_desc'] == 1 %}
+                            <option value="True" selected>Yes - Will decline any clips made without any description.</option>
+                            <option value="False">No - Will take every clip with or without description</option>
+                        {% else %}
+                            <option value="True">Yes - Will decline any clips made without any description.</option>
+                            <option value="False" selected>No - Will take every clip with or without description</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Silent
+                </td>
+                <td>
+                    <select id="silent">
+                        <!-- silent can be 0, 1, 2-->
+                        {% if settings['silent'] == 0 %}
+                            <option value="0" selected>0 - Will give back empty message.</option>
+                            <option value="1">1 - Will give back only the Clip ID</option>
+                            <option value="2">2 - Default Will give back everything </option>
+                        {% elif settings['silent'] == 1 %}
+                            <option value="0">0 - Will give back empty message.</option>
+                            <option value="1" selected>1 - Will give back only the Clip ID</option>
+                            <option value="2">2 - Default Will give back everything </option>
+                        {% else %}
+                            <option value="0">0 - Will give back empty message.</option>
+                            <option value="1">1 - Will give back only the Clip ID</option>
+                            <option value="2" selected>2 - Default Will give back everything </option>
+                        {% endif %} 
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Private
+                </td>
+                <td>
+                    <select id="private">
+                        {% if settings['private'] == 1 %}
+                            <option value="True" selected>Yes - Will not show any clips on web nor impact stats. will only return 'clipped 😉'</option>
+                            <option value="False">No</option>
+                        {% else %}
+                            <option value="True">Yes - Will not show any clips on web nor impact stats. will only return 'clipped 😉'</option>
+                            <option value="False" selected>No</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Webhook
+                </td>
+                <td>
+                    <input type="text" id="webhook" class="form-control" style="width: 100%;" value="{{ settings['webhook'] }}">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Message Level
+                </td>
+                <td>
+                    <select id="message_level">
+                        <!-- can be 0 or 1 or 2 or 3 -->
+                        {%if settings['message_level'] == 0 %}
+                            <option value="0" selected>0 - Default - In Discord Show clip message alongside username as webhook user </option>
+                            <option value="1">1 - will prevent the IMAGE of the clipper from being shown, Name is still shown within the message </option>
+                            <option value="2">2 - Will not show any image/name of the user anywhere in message</option>
+                            <option value="3">3 - Will use StreamSnip Branding</option>
+                        {% elif settings['message_level'] == 1 %}
+                            <option value="0">0 - Default - In Discord Show clip message alongside username as webhook user </option>
+                            <option value="1" selected>1 - will prevent the IMAGE of the clipper from being shown, Name is still shown within the message </option>
+                            <option value="2">2 - Will not show any image/name of the user anywhere in message</option>
+                            <option value="3">3 - Will use StreamSnip Branding</option>
+                        {% elif settings['message_level'] == 2 %}
+                            <option value="0">0 - Default - In Discord Show clip message alongside username as webhook user </option>
+                            <option value="1">1 - will prevent the IMAGE of the clipper from being shown, Name is still shown within the message </option>
+                            <option value="2" selected>2 - Will not show any image/name of the user anywhere in message</option>
+                            <option value="3">3 - Will use StreamSnip Branding</option>
+                        {% else %}
+                            <option value="0">0 - Default - In Discord Show clip message alongside username as webhook user </option>
+                            <option value="1">1 - will prevent the IMAGE of the clipper from being shown, Name is still shown within the message </option>
+                            <option value="2">2 - Will not show any image/name of the user anywhere in message</option>
+                            <option value="3" selected>3 - Will use StreamSnip Branding</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Take Delays
+                </td>
+                <td>
+                    <select id="take_delays">
+                        {% if settings['take_delays'] == 1 %}
+                            <option value="True" selected>Yes - will evaluate the first and last word of description to add/substract delay.</option>
+                            <option value="False">No</option>
+                        {% else %}
+                            <option value="True">Yes - will evaluate the first and last word of description to add/substract delay.</option>
+                            <option value="False" selected>No</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <button onclick="save_settings()">Save</button>
+                    <button onclick="reset_settings()">Reset</button>
+                </td>
+            </tr>
+
+        </table>
+    </div>
+</center>
+
+</div>
+<script>
+    function reset_settings(){
+        console.log("Resetting settings to default");
+        fetch("/settings/default", {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reset: true
+            })
+        }).then(response => {
+            if(response.ok){
+                alert("Settings reset to default");
+            }else{
+                alert("Error resetting settings");
+            }
+        }).catch(error => {
+            console.log(error);
+            alert("Error resetting settings");
+        });
+        window.location.reload();
+    }
+    function save_settings(){
+        console.log("Saving settings");
+        var show_link = document.getElementById("show_link").value;
+        var screenshot = document.getElementById("screenshot").value;
+        var delay = document.getElementById("delay").value;
+        var force_desc = document.getElementById("force_desc").value;
+        var silent = document.getElementById("silent").value;
+        var private = document.getElementById("private").value;
+        var webhook = document.getElementById("webhook").value;
+        var message_level = document.getElementById("message_level").value;
+        var take_delays = document.getElementById("take_delays").value;
+
+        fetch("/settings", {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                show_link: show_link,
+                screenshot: screenshot,
+                delay: delay,
+                force_desc: force_desc,
+                silent: silent,
+                private: private,
+                webhook: webhook,
+                message_level: message_level,
+                take_delays: take_delays
+            })
+        }).then(response => {
+            if(response.ok){
+                alert("Settings saved");
+            }else{
+                console.log(response);
+                alert("Error saving settings");
+            }
+        }).catch(error => {
+            console.log(error);
+            alert("Error saving settings");
+        });
+        window.location.reload();
+    }
+</script>
+{% endblock %}
