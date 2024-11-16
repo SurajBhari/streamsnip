@@ -399,8 +399,11 @@ def convert_sub_count(sub_count:str) -> int:
 def take_screenshot(video_url: str, seconds: int) -> str:
     # Get the video URL using yt-dlp
     try:
+        cmds = ["yt-dlp", "-f", "bestvideo", "--get-url", video_url]
+        if cookies:
+            cmds.append(f"--cookies {cookies}")
         video_info = subprocess.check_output(
-            ["yt-dlp", "-f", "bestvideo", "--get-url", video_url],
+            cmds,
             universal_newlines=True,
         )
     except subprocess.CalledProcessError as e:
