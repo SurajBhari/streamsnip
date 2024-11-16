@@ -401,7 +401,8 @@ def take_screenshot(video_url: str, seconds: int) -> str:
     try:
         cmds = ["yt-dlp", "-f", "bestvideo", "--get-url", video_url]
         if cookies:
-            cmds.append(f"--cookies {cookies}")
+            cmds.append(f"--cookies")
+            cmds.append(cookies)
         video_info = subprocess.check_output(
             cmds,
             universal_newlines=True,
