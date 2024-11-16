@@ -9,6 +9,7 @@ from flask import (
     jsonify,
     send_from_directory
 )
+from http.cookiejar import MozillaCookieJar
 import yagmail
 import random
 from requests import get as GET
@@ -36,7 +37,7 @@ from chat_downloader import ChatDownloader
 import logging
 from datetime import datetime, timedelta, timezone
 import cronitor
-
+from pathlib import Path
 from string import ascii_letters, digits
 from helper.util import *
 from helper.Clip import Clip, time_since 
@@ -113,8 +114,10 @@ project_logo = base_domain + "/static/logo.png"
 project_repo_link = "https://github.com/SurajBhari/streamsnip"
 project_logo_discord = "https://raw.githubusercontent.com/SurajBhari/streamsnip/main/static/256_discord_ss.png" # link to logo that is used in discord 
 
+jar = None
 if "cookies.txt" in os.listdir("./helper"):
     cookies = "./helper/cookies.txt"
+    jar = MozillaCookieJar(Path(cookies))
 else:
     cookies = None
 
@@ -414,7 +417,7 @@ def take_screenshot(video_url: str, seconds: int) -> str:
     # Remove leading/trailing whitespace and newline characters from the video URL
     video_url = video_info['url']
     file_name = "ss.jpg"
-    r = GET(video_url, cookies=cookies)
+    r = GET(video_url, cookies=jar) # this uses Jar because it can't parse a txt file with cookies
     if r.status_code != 200:
         return None
     index = 'index.m3u8'
@@ -2772,4 +2775,5 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=80)
+    take_screenshot("3JYldCxLBWM", 50)
+    #app.run(debug=True, host="0.0.0.0", port=80)
