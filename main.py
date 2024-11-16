@@ -2775,5 +2775,4 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    take_screenshot("3JYldCxLBWM", 50)
-    #app.run(debug=True, host="0.0.0.0", port=80)
+    app.run(debug=True, host="0.0.0.0", port=80)
