@@ -398,31 +398,40 @@ def convert_sub_count(sub_count:str) -> int:
 
 def take_screenshot(video_url: str, seconds: int) -> str:
     # Get the video URL using yt-dlp
-    try:
-        cmds = ["yt-dlp", "-f", "bestvideo", "--get-url", video_url]
-        if cookies:
-            cmds.append(f"--cookies")
-            cmds.append(cookies)
-        video_info = subprocess.check_output(
-            cmds,
-            universal_newlines=True,
-        )
-    except subprocess.CalledProcessError as e:
-        print("Error:", e)
-        exit(1)
+    params = {
+        'forceurl': True,
+        'format':   'bestvideo',
+        'noprogress': True,
+        'quiet': True,
+        'simulate': True,
+    }
+    if cookies:
+        params['cookiesfile'] = cookies
 
+    with yt_dlp.YoutubeDL(params) as ydl:
+        video_info = ydl.extract_info(video_url, download=False)
+    
     # Remove leading/trailing whitespace and newline characters from the video URL
-    video_url = video_info.strip()
+    video_url = video_info['url']
     file_name = "ss.jpg"
-
+    r = GET(video_url, cookies=cookies)
+    if r.status_code != 200:
+        return None
+    index = 'index.m3u8'
+    with open(index, "wb") as f:
+        f.write(r.content)
+        
+    # Think Think 
     # FFmpeg command
     ffmpeg_command = [
         "ffmpeg",
+        "-protocol_whitelist",
+        "file,http,https,tcp,tls,crypto",  # Protocol whitelist
         "-y",  # say yes to prompts
         "-ss",
         str(seconds),  # Start time
         "-i",
-        video_url,  # Input video URL
+        index,  # Input video URL
         "-vframes",
         "1",  # Number of frames to extract (1)
         "-q:v",
@@ -2763,4 +2772,5 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=80)
+    print(take_screenshot('3JYldCxLBWM', 1120))
+    #app.run(debug=True, host="0.0.0.0", port=80)

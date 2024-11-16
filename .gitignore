@@ -10,3 +10,6 @@ config.json
 __pycache__/*
 test*
 clips/*
+index.m3u8
+ss.jpg
+player_response_info.json
