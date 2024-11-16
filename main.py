@@ -406,7 +406,7 @@ def take_screenshot(video_url: str, seconds: int) -> str:
         'simulate': True,
     }
     if cookies:
-        params['cookiesfile'] = cookies
+        params['cookiefile'] = cookies
 
     with yt_dlp.YoutubeDL(params) as ydl:
         video_info = ydl.extract_info(video_url, download=False)
