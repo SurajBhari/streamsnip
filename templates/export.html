@@ -136,7 +136,7 @@
     var clipsPerPage = 50;
     var currentPage = 1;
     var iview = true;
-    var logged_in_for = "{{ session['username']}}"
+    var logged_in_for = "{{ current_user.username}}"
     var can_edit = logged_in_for == channel_name; // can also be used as can_download 
     if(logged_in_for == "admin"){
         can_edit = true;

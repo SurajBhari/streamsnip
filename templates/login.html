@@ -10,11 +10,12 @@
 
 <div class="login form-control">
     <h1>Login</h1>
-    <form action="{{ url_for('login') }}" method="post">
+    <form action="{{ url_for('login') }}{{next}}" method="post">
         <label for="username">
             <i class="fas fa-user"></i>
         </label>
         <input type="password" name="password" placeholder="Password" id="password" required>
+        <input type="checkbox" id="remember" name="remember" value="remember" style="margin:3px 3px 3px 4px"> Remember Me
         <div class="msg">{{ msg }}</div>
         <input type="submit" value="Login">
     </form>

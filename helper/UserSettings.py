@@ -70,8 +70,17 @@ class UserSettings:
                 takedelays = ?
                 WHERE channel_id = ?
                 """,
-                (self.show_link, self.screenshot, self.delay, self.force_desc, self.silent, self.private, self.webhook, self.message_level, self.take_delays, self.channel_id)
+                (self.show_link, 
+                self.screenshot, 
+                self.delay, 
+                self.force_desc, 
+                self.silent, 
+                self.private, 
+                self.webhook, 
+                self.message_level, 
+                self.take_delays, 
+                self.channel_id)
             )
             conn.commit()
+            return True
         return True
-

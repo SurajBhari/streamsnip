@@ -1,3 +1,29 @@
+# Standard library imports
+import os
+import time
+import random
+import logging
+import subprocess
+import sqlite3
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from string import ascii_letters, digits
+from typing import Optional, Tuple, List
+from urllib import parse
+from urllib.parse import parse_qs
+from json import load, dump, loads, dumps
+from http.cookiejar import MozillaCookieJar
+
+# Third-party library imports
+import yagmail
+import cronitor
+import yt_dlp
+import dns.resolver
+import dns.reversename
+import scrapetube
+from requests import get as GET
+from requests import get
+from bs4 import BeautifulSoup
 from flask import (
     Flask,
     request,
@@ -9,38 +35,16 @@ from flask import (
     jsonify,
     send_from_directory
 )
-from http.cookiejar import MozillaCookieJar
-import yagmail
-import random
-from requests import get as GET
 from flask_cors import CORS
-import dns.resolver, dns.reversename
-from bs4 import BeautifulSoup
-import subprocess
-import os
-import yt_dlp
-from json import load, dump, loads, dumps
-import time
-from bs4 import BeautifulSoup
-from requests import get
-from flask import request
-from discord_webhook import DiscordWebhook, DiscordEmbed
-import sqlite3
-from typing import Optional, Tuple, List
+from flask_login import LoginManager, UserMixin, login_user, login_required, current_user, logout_user
 from flask_sitemap import Sitemap
-
-from urllib import parse
-from urllib.parse import parse_qs
-import scrapetube
+from discord_webhook import DiscordWebhook, DiscordEmbed
 from chat_downloader.sites import YouTubeChatDownloader
 from chat_downloader import ChatDownloader
-import logging
-from datetime import datetime, timedelta, timezone
-import cronitor
-from pathlib import Path
-from string import ascii_letters, digits
+
+# Local imports
 from helper.util import *
-from helper.Clip import Clip, time_since 
+from helper.Clip import Clip, time_since
 from helper.UserSettings import UserSettings
 
 # we are in /var/www/streamsnip
@@ -85,6 +89,10 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("WSGISecretKey", "supersecretkey") # if we are running on apache we have a WSGISecretKey, its not really secret.
 CORS(app)
 ext = Sitemap(app=app)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
 
 global download_lock
 download_lock = True
@@ -142,6 +150,7 @@ def get_creds():
             jcreds = load(f)
             creds = jcreds['creds']
             creds['password'] = jcreds['password']  
+            creds['admin'] = jcreds['password'] # for admin password relation. make it easy to work with
     except (FileNotFoundError, KeyError):
         creds = {}
     return creds
@@ -223,6 +232,35 @@ with conn:
         )""")
     conn.commit()
 
+
+class User(UserMixin):
+    def __init__(self, user_id, username, password, image=None):
+        self.id = user_id
+        if self.id == "admin":
+            username = "Admin"
+            image = "https://images.freeimages.com/fic/images/icons/2526/bloggers/256/admin.png?fmt=webp&h=350"
+        self.username = username
+        self.name = username
+        self.password = password
+        self.image = image
+        self.admin = True if username.lower() == 'admin' else False
+
+    def get_id(self):
+        return self.id
+
+    @staticmethod
+    def get(user_id):
+        # load the config file
+        creds = get_creds()
+        if not creds:
+            print("No creds found")
+            return None
+        if user_id not in creds:
+            print(f"User {user_id} not found in creds")
+            return None
+        username, image = get_channel_name_image(user_id)
+        return User(user_id, username, creds[user_id], image)
+    
 def get_channel_settings(user_id) -> UserSettings:
     with conn:
         cur = conn.cursor()
@@ -562,6 +600,10 @@ def before_request():
     else:
         pass
 
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(user_id)
+
 @app.route("/cache")
 def cache():
     return dumps(channel_info, indent=4)
@@ -644,91 +686,77 @@ def session_data():
         return dumps(session, indent=4)
     else:
         return "No session data"
-    
+
+@app.route("/user")
+@login_required
+def _user():
+    return dumps(current_user.__dict__, indent=4)
+
 @app.route("/login", methods=["POST", "GET"])
 def login():
     if request.method == "POST":
+        remember = request.form.get("remember") == "remember"
+        print(remember)
         # set cookies to this password
         creds = get_creds()
         for cred in creds:
             if creds[cred] == request.form["password"]:
-                session["password"] = request.form["password"]
                 if cred == "password":
-                    session["admin"] = True
-                    session["username"] = "admin"
-                    session["image"] = "https://images.freeimages.com/fic/images/icons/2526/bloggers/256/admin.png?fmt=webp&h=350"
                     session['id'] = "admin"
                 else:
-                    username, image = get_channel_name_image(cred)
-                    session["username"] = username
-                    session["image"] = image
                     session["id"] = cred
                 session['logged_in'] = True
-                return redirect(url_for("slash"))
+
+                login_user(User.get(session["id"]), remember=remember)
+                
+                next = request.args.get('next')
+                return redirect(next or url_for('slash'))
         return render_template("login.html", msg="INVALID PASSWORD")
-    return render_template("login.html", msg="Password is the webhook URL that you are using for your channel.")
+    next = request.args.get('next', "")
+    if next:
+        next = f"?next={next}"
+    return render_template("login.html", msg="Password is the webhook URL that you are using for your channel.", next=next)
 
 @app.route("/logout", methods=["POST", "GET"]) 
+@login_required
 def logout():
     session.clear()
+    logout_user()
     return redirect(url_for("slash"))
 
 @app.route("/webedit", methods=["POST"])
+@login_required
 def webedit():
     try:
         new_message = request.json["message"]
         clip_id = request.json["clip_id"]
     except KeyError:
         return "Invalid request", 400
-    if not session.get("logged_in"):
-        return "Not logged in", 401
     clip = get_clip(clip_id=clip_id)
-    
+
     if not clip:
         return "Clip not found", 404
-    # compare the password of the session against the creds to verify legitmacy of the request
-    creds = get_creds()
-
-    try:
-        if creds["password"] == session["password"]: # for admin
-            pass
-        elif creds[clip.channel] == session["password"]:
-            pass
-        else:
-            return "Invalid password" , 401
-    except KeyError:
-        return "Invalid Key" , 401
-        
-
+    if not current_user.admin:
+        if clip.channel != current_user.id:
+            return "You can't do this. You are not the owner of this channel"
     clip.edit(new_message, conn)
     
     return clip.desc, 200
 
 
 @app.route("/webdelete", methods=["POST"])
+@login_required
 def webdelete():
     try:
         clip_id = request.json["clip_id"]
     except KeyError:
         return "Invalid request", 400
-    if not session.get("logged_in"):
-        return "Not logged in", 401
     clip = get_clip(clip_id=clip_id)
     if not clip:
         return "Clip not found", 404
-    # compare the password of the session against the creds to verify legitmacy of the request
-    creds = get_creds()
-
-    try:
-        if creds["password"] == session["password"]: # for admin
-            pass
-        elif creds[clip.channel] == session["password"]:
-            pass
-        else:
-            return "Invalid password" , 401
-    except KeyError:
-        return "Invalid Key" , 401
-
+    if not current_user.admin:
+        if clip.channel != current_user.id:
+            return "You can't do this. You are not the owner of this channel"
     clip.delete(conn)
     return "Deleted", 200
 
@@ -750,24 +778,18 @@ def get_ip():
     return request.remote_addr
 
 @app.route("/settings/default", methods=["POST"])
+@login_required
 def default_settings():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-    if not session.get("id"):
-        return redirect(url_for("login"))
     settings = UserSettings()
-    settings.channel_id = session["id"]
+    settings.channel_id = current_user.id
     if not settings.write(conn):
         return "Failed to write settings", 500
     return "OK", 200
 
 @app.route("/settings" , methods=["POST", "GET"])
+@login_required
 def settings():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-    if not session.get("id"):
-        return redirect(url_for("login"))
-    settings = get_channel_settings(session["id"])
+    settings = get_channel_settings(current_user.id)
     if request.method == "POST":
         settings.show_link = request.json.get("show_link")
         settings.screenshot = request.json.get("screenshot")
@@ -2674,22 +2696,18 @@ def globals_():
         return dumps(globals(), indent=4, sort_keys=True, default=str)
 
 @app.route("/video/<clip_id>")
+@login_required
 def video(clip_id):
     if not clip_id:
         return redirect(url_for("slash"))
-    creds = get_creds()
     clip = get_clip(clip_id)
+    if not clip:
+        return "Clip not found"
+    # check if the person is the owner of the clip
+    if not current_user.admin:
+        if clip.channel != current_user.id:
+            return "You can't do this. You are not the owner of this channel"
     format = request.args.get("format", None)
-    try:
-        if creds["password"] == session["password"]: # for admin
-            pass
-        elif creds[clip.channel] == session["password"]:
-            pass
-        else:
-            return redirect("/login")
-    except KeyError:
-        return redirect("/login")
-
     clip = get_clip(clip_id)
     if not clip:
         return 404, "Clip not found"
@@ -2775,4 +2793,5 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
+    print(get_creds())
     app.run(debug=True, host="0.0.0.0", port=80)
