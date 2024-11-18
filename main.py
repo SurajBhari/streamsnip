@@ -780,10 +780,11 @@ def get_ip():
 @app.route("/settings/default", methods=["POST"])
 @login_required
 def default_settings():
-    settings = UserSettings()
-    settings.channel_id = current_user.id
-    if not settings.write(conn):
-        return "Failed to write settings", 500
+    with conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM SETTINGS WHERE channel_id=?", (current_user.id,))
+        conn.commit()
+    add_default_settings(current_user.id)
     return "OK", 200
 
 @app.route("/settings" , methods=["POST", "GET"])
