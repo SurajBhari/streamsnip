@@ -1,11 +1,11 @@
 {% extends 'layout.html' %}
 
 {% block head_content %}
-<title>{{ session['username'] }} | Settings </title>
-<link rel="icon" href="{{ session['image'] }}" type="image/x-icon">
-<meta property="og:title" content="{{ channel_name }}" />
-<meta property="og:description" content="Clips from {{ session['username'] }}'s stream" />
-<meta property="og:image" content="{{ session['image'] }}" />
+<title>{{ current_user.username }} | Settings </title>
+<link rel="icon" href="{{ current_user.image }}" type="image/x-icon">
+<meta property="og:title" content="{{ current_user.username }}" />
+<meta property="og:description" content="Clips from {{ current_user.username }}'s stream" />
+<meta property="og:image" content="{{ current_user.image }}" />
 {% endblock %}
 
 {% block content %}
@@ -13,9 +13,9 @@
 <div class="container">
     <div class="row">
         <div class="col-md-12">
-            <a href = "https://youtube.com/channel/{{ session['id'] }}">
-            <img src="{{ session['image'] }}" alt="{{ session['username'] }}" class="rounded-circle" style="width: 200px; height: 200px;">
-            <h1> {{session['username']}} </h1></a>
+            <a href = "https://youtube.com/channel/{{ current_user.id }}">
+            <img src="{{ current_user.image }}" alt="{{ current_user.username }}" class="rounded-circle" style="width: 200px; height: 200px;">
+            <h1> {{current_user.username}} </h1></a>
         </div>
     </div>
     <div class="row">
@@ -182,8 +182,8 @@
             </tr>
             <tr>
                 <td>
-                    <button onclick="save_settings()">Save</button>
-                    <button onclick="reset_settings()">Reset</button>
+                    <button type="button" class="btn btn-success" type="submit" value="Submit" name="add" id="save-button" title="Save" onclick="save_settings()"><i class="fa-regular fa-floppy-disk"></i></button>
+                    <button type="button" class="btn btn-secondary" type="reset" value="reset" name="reset" id="reset-button" title="Reset To Default" onclick="reset_settings()"><i class="fa-solid fa-arrow-rotate-left"></i></button>
                 </td>
             </tr>
 
@@ -194,8 +194,7 @@
 </div>
 <script>
     function reset_settings(){
-        console.log("Resetting settings to default");
-        fetch("/settings/default", {
+        response = fetch("/settings/default", {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json'
@@ -203,17 +202,15 @@
             body: JSON.stringify({
                 reset: true
             })
-        }).then(response => {
-            if(response.ok){
-                alert("Settings reset to default");
-            }else{
-                alert("Error resetting settings");
-            }
-        }).catch(error => {
-            console.log(error);
-            alert("Error resetting settings");
-        });
-        window.location.reload();
+    });
+        var reset_button = document.getElementById("reset-button")
+        reset_button.innerHTML = "<img src='https://media.tenor.com/wpSo-8CrXqUAAAAi/loading-loading-forever.gif' style='width: 20px; height: 20px;'>";
+        console.log(response);
+        // wait for 1 second
+        setTimeout(function(){
+            reset_button.innerHTML = "<i class='fa-solid fa-check'></i>";
+            window.location.reload();
+        }, 2000);
     }
     function save_settings(){
         console.log("Saving settings");
@@ -227,7 +224,7 @@
         var message_level = document.getElementById("message_level").value;
         var take_delays = document.getElementById("take_delays").value;
 
-        fetch("/settings", {
+        response = fetch("/settings", {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json'
@@ -243,18 +240,16 @@
                 message_level: message_level,
                 take_delays: take_delays
             })
-        }).then(response => {
-            if(response.ok){
-                alert("Settings saved");
-            }else{
-                console.log(response);
-                alert("Error saving settings");
-            }
-        }).catch(error => {
-            console.log(error);
-            alert("Error saving settings");
         });
-        window.location.reload();
+        // replace the save button with a loading gif 
+        var save_button = document.getElementById("save-button")
+        save_button.innerHTML = "<img src='https://media.tenor.com/wpSo-8CrXqUAAAAi/loading-loading-forever.gif' style='width: 20px; height: 20px;'>";
+        console.log(response);
+        // wait for 1 second
+        setTimeout(function(){
+            save_button.innerHTML = "<i class='fa-solid fa-check'></i>";
+            window.location.reload();
+        }, 1000);
     }
 </script>
 {% endblock %}
