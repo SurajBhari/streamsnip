@@ -2239,6 +2239,7 @@ def clip(message_id, clip_desc=None):
     channel_settings = get_channel_settings(channel_id)
     show_link = arguments.get("showlink", channel_settings.show_link)
     screenshot = arguments.get("screenshot", channel_settings.screenshot)
+    # if taken from argument then it will be a string. either 'true' or 'false'
     silent = arguments.get("silent", channel_settings.silent)  # silent level. if not then 2
     private = arguments.get("private", channel_settings.private)
     webhook = arguments.get("webhook", channel_settings.webhook)
@@ -2255,7 +2256,7 @@ def clip(message_id, clip_desc=None):
     try:
         message_level = int(message_level)
     except ValueError:
-        message_level = DEFAULT_SETTINGS.message_level
+        message_level = channel_settings.message_level
     logging.log(
         level=logging.INFO,
         msg=f"A request for clip with arguments {arguments} and headers {request.headers}",
@@ -2265,19 +2266,29 @@ def clip(message_id, clip_desc=None):
     try:
         silent = int(silent)
     except ValueError:
-        silent = DEFAULT_SETTINGS.silent
+        silent = channel_settings.silent
     
-    show_link = False if show_link == "false" else show_link
-    screenshot = True if screenshot == "true" else screenshot
-    private = True if private == "true" else private
-    take_delays = True if take_delays == "true" else take_delays
-    force_desc = True if force_desc == "true" else force_desc
-    
-    if type(show_link) != bool:
+    if type(show_link) == str: # we got this from the arguments. we must convert it to boolean
+        show_link = True if show_link.lower() == "true" else channel_settings.show_link # we revert back to the channel settings if we can't convert it to boolean
+    if type(screenshot) == str:
+        screenshot = True if screenshot.lower() == "true" else channel_settings.screenshot
+    if type(private) == str:
+        private = True if private.lower() == "true" else channel_settings.private
+    if type(take_delays) == str:
+        take_delays = True if take_delays.lower() == "true" else channel_settings.take_delays
+    if type(force_desc) == str:
+        force_desc = True if force_desc.lower() == "true" else channel_settings.force_desc
+    if type(delay) == str:
         try:
-            show_link = int(show_link)
+            delay = int(delay)
         except ValueError:
-            show_link = DEFAULT_SETTINGS.show_link
+            delay = channel_settings.delay
+    if type(message_level) == str:
+        try:
+            message_level = int(message_level)
+        except ValueError:
+            message_level = channel_settings.message_level
+
     show_link_message = ""
     try:
         delay = 0 if not delay else int(delay)
@@ -2793,5 +2804,4 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    print(get_creds())
     app.run(debug=True, host="0.0.0.0", port=80)
