@@ -2269,7 +2269,7 @@ def clip(message_id, clip_desc=None):
         silent = channel_settings.silent
     
     if type(show_link) == str: # we got this from the arguments. we must convert it to boolean
-        show_link = True if show_link.lower() == "true" else channel_settings.show_link # we revert back to the channel settings if we can't convert it to boolean
+        show_link = False if show_link.lower() == "false" else channel_settings.show_link # we revert back to the channel settings if we can't convert it to boolean
     if type(screenshot) == str:
         screenshot = True if screenshot.lower() == "true" else channel_settings.screenshot
     if type(private) == str:
@@ -2288,7 +2288,9 @@ def clip(message_id, clip_desc=None):
             message_level = int(message_level)
         except ValueError:
             message_level = channel_settings.message_level
-
+    logging.log(logging.INFO, f"""
+                Arguments {arguments} - show-link {show_link} - screenshot {screenshot} - private {private} - take_delays {take_delays} - force_desc {force_desc} - delay {delay} - message_level {message_level} - webhook {webhook_url} - silent {silent} - channel_id {channel_id} - user_id {user_id} - user_name {user_name} - message_id {message_id} - clip_desc {clip_desc}"""
+                ) 
     show_link_message = ""
     try:
         delay = 0 if not delay else int(delay)
