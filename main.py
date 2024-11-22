@@ -1,4 +1,5 @@
 # Standard library imports
+from copy import deepcopy, copy
 import os
 import time
 import random
@@ -1906,6 +1907,7 @@ def send_email(email=None, message="New webhook added"):
 
     
 @app.route("/ed", methods=["POST"])
+@login_required
 def edit_delete():
     actual_password = config['password']
     if not actual_password:
@@ -1978,6 +1980,14 @@ def edit_delete():
         global channel_info
         channel_info = {} # set channel_info to empty
         write_channel_cache(channel_info)
+        return redirect(url_for("admin"))
+    elif request.form.get("refreshdeleted") == "refresh deleted":
+        lc = deepcopy(channel_info)
+        for channel in lc:
+            if "deleted" in channel_info[channel]['name']:
+                print(f"deleting {channel}")
+                del channel_info[channel]
+        del lc
         return redirect(url_for("admin"))
     else:
         return f"what ? {request.form}" 
