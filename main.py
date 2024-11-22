@@ -1824,12 +1824,28 @@ def autoapprove():
         return f"Value isn't of discord webhook {value}"
     if not channel_id:
         return "Channel id not found"
-    
-    creds = get_creds()
-    if channel_id in creds:
-        return "Channel already has a webhook, can't auto-approve"
     password = config['password']
     request.args = {"pass": password, "key": key, "value": value, "email": email}
+    creds = get_creds()
+    channel_clips = get_channel_clips(channel_id)
+    if channel_id in creds or channel_clips:
+        if "management_webhook" in config:
+            webhook = DiscordWebhook(url=config["management_webhook"], username=project_name, avatar_url=project_logo_discord)
+            embed = DiscordEmbed(
+                title=f"Auto-approve request", 
+                description=f"Auto-approve request for {key} to [discord webhook]({value})",
+                )
+            approve_url = url_for("approve", _external=True, **request.args)
+            embed.add_embed_field(name="Email", value=email)
+            embed.add_embed_field(name="Approve", value=f"[Approve]({approve_url})")
+            embed.set_thumbnail(url=project_logo_discord)
+            embed.set_color(0xebf0f7)
+            webhook.add_embed(embed)
+            webhook.execute()
+        if channel_clips:
+            return "Channel has clips. can be a hijack attempt. can't auto approve"
+        else:
+            return "Channel already have a webhook. can't auto approve"    
     return approve()
 
 
@@ -1885,7 +1901,7 @@ def approve():
         webhook.execute()
     email = config.get("smtp", None)
     if email and applier_email:
-        send_email(applier_email, f"Welcome to {project_name}! I will send clips for {channel_name} on your discord channel. If you haven't already, add Nightbot commands from [github]({project_repo_link}?tab=readme-ov-file#nightbot-command) .\n\n\n\nBest Of Luck\n{project_name}")
+        send_email(applier_email, f"Welcome to {project_name}! \nI will send clips for {channel_name} on your discord channel. \n\nIf you haven't already, add Nightbot commands from {project_repo_link}?tab=readme-ov-file#nightbot-command .\n\n\n\nBest Of Luck\n{project_name}")
     return "Done"
 
 def send_email(email=None, message="New webhook added"):
