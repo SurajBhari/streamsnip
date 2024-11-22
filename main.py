@@ -1774,7 +1774,10 @@ def stats():
 
 
 @app.route("/admin")
+@login_required
 def admin():
+    if not current_user.admin:
+        return "You are not an admin"
     clips = get_channel_clips()
     t = time.time()
     clip_ids = [x.id for x in clips]
@@ -1909,12 +1912,8 @@ def send_email(email=None, message="New webhook added"):
 @app.route("/ed", methods=["POST"])
 @login_required
 def edit_delete():
-    actual_password = config['password']
-    if not actual_password:
-        return "Password not set"
-    password = request.form.get("password")
-    if password != actual_password:
-        return "Invalid password"
+    if not current_user.admin:
+        return "You are not an admin"
     # get the clip id
     clip_id = request.form.get("clip")
     # get the action
