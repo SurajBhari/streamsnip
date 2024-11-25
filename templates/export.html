@@ -138,7 +138,7 @@
     var iview = true;
     var logged_in_for = "{{ current_user.username}}"
     var can_edit = logged_in_for == channel_name; // can also be used as can_download 
-    if(logged_in_for == "admin"){
+    if(logged_in_for.toLowerCase() == "admin"){
         can_edit = true;
     }
     if(channel_name="all"){
