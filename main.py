@@ -2818,18 +2818,17 @@ def video(clip_id):
 
 @ext.register_generator
 def index():
-    # Not needed if you set SITEMAP_INCLUDE_RULES_WITHOUT_PARAMS=True\
     yield "slash", {}
-    with conn:
-        cur = conn.cursor()
-        cur.execute(f"SELECT channel_id FROM QUERIES ORDER BY time DESC")
-        data = cur.fetchall()
-    for channel in set([x[0] for x in data]):
-        yield "channel_stats", {"channel_id": channel}
-        yield "exports", {"channel_id": channel}
-
-    yield "clips", {}
+    channels = channel_info.values()
+    # sort by channels['sub_count']
+    channels = sorted(channels, key=lambda x: x['sub_count'], reverse=True)
+    for channel in channels[:26]: # only do top 26
+        if "lofi" in channel['name'].lower():
+            continue # we have no association with lofigirl so lets not show them
+        yield "channel_stats", {"channel_id": channel['username']}
+        yield "exports", {"channel_id": channel['username']}
     yield "stats", {}
+    yield "export", {}
 
 
 channel_info = {}
