@@ -2520,16 +2520,16 @@ def clip(message_id, clip_desc=None):
 @app.route("/delete/")
 @app.route("/delete/<clip_id>")
 def delete(clip_id=None):
-    if not clip_id:
-        clips = get_channel_clips(channel_id)
-        if not clips:
-            return "No clips made on this channel. So can't delete the clip"
-        clip_id = clips[0].id
     try:
         channel = parse_qs(request.headers["Nightbot-Channel"])
     except KeyError:
         return "Not able to auth"
     channel_id = channel.get("providerId")[0]
+    if not clip_id:
+        clips = get_channel_clips(channel_id)
+        if not clips:
+            return "No clips made on this channel. So can't delete the clip"
+        clip_id = clips[0].id
     arguments = {k.replace("?", ""): request.args[k] for k in request.args}
     silent = arguments.get("silent", 2)  # silent level. if not then 2
     try:
