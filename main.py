@@ -2565,7 +2565,8 @@ def delete(clip_id=None):
 @app.route("/edit/<clip_id>")
 def edit(clip_id=None):
     if not clip_id:
-        return "No Clip ID provided"
+        # in this case nothing is provided. not even clip ip not even new description
+        return "No Clip ID or Description provided"
     try:
         channel = parse_qs(request.headers["Nightbot-Channel"])
     except KeyError:
