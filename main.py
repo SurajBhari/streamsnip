@@ -294,24 +294,27 @@ def is_blacklisted(channel_id):
     return channel_id in data
 
 def get_clip(clip_id, channel=None) -> Optional[Clip]:
-    with conn:
-        cur = conn.cursor()
-        if channel:
-            cur.execute(
-                "SELECT * FROM QUERIES WHERE channel_id=? AND message_id LIKE ? AND time_in_seconds >= ? AND time_in_seconds < ?",
-                (
-                    channel,
-                    f"%{clip_id[:3]}",
-                    int(clip_id[3:]) - 1,
-                    int(clip_id[3:]) + 1,
-                ),
-            )
-        else:
-            cur.execute(
-                "SELECT * FROM QUERIES WHERE message_id LIKE ? AND time_in_seconds >= ? AND time_in_seconds < ?",
-                (f"%{clip_id[:3]}", int(clip_id[3:]) - 1, int(clip_id[3:]) + 1),
-            )
-        data = cur.fetchall()
+    try:
+        with conn:
+            cur = conn.cursor()
+            if channel:
+                cur.execute(
+                    "SELECT * FROM QUERIES WHERE channel_id=? AND message_id LIKE ? AND time_in_seconds >= ? AND time_in_seconds < ?",
+                    (
+                        channel,
+                        f"%{clip_id[:3]}",
+                        int(clip_id[3:]) - 1,
+                        int(clip_id[3:]) + 1,
+                    ),
+                )
+            else:
+                cur.execute(
+                    "SELECT * FROM QUERIES WHERE message_id LIKE ? AND time_in_seconds >= ? AND time_in_seconds < ?",
+                    (f"%{clip_id[:3]}", int(clip_id[3:]) - 1, int(clip_id[3:]) + 1),
+                )
+            data = cur.fetchall()
+    except Exception as e:
+        data = None
     if not data:
         return None
     x = Clip(data[0])
@@ -2518,7 +2521,10 @@ def clip(message_id, clip_desc=None):
 @app.route("/delete/<clip_id>")
 def delete(clip_id=None):
     if not clip_id:
-        return "No Clip ID provided"
+        clips = get_channel_clips(channel_id)
+        if not clips:
+            return "No clips made on this channel. So can't delete the clip"
+        clip_id = clips[0].id
     try:
         channel = parse_qs(request.headers["Nightbot-Channel"])
     except KeyError:
@@ -2556,29 +2562,31 @@ def delete(clip_id=None):
         return returning_str + errored_str
 
 
-@app.route("/edit/<xxx>")
-def edit(xxx=None):
-    if not xxx:
+@app.route("/edit/<clip_id>")
+def edit(clip_id=None):
+    if not clip_id:
         return "No Clip ID provided"
     try:
         channel = parse_qs(request.headers["Nightbot-Channel"])
     except KeyError:
         return "Not able to auth"
-    if len(xxx.split(" ")) < 2:
-        return "Please provide clip id and new description"
     arguments = {k.replace("?", ""): request.args[k] for k in request.args}
     silent = arguments.get("silent", 2)  # silent level. if not then 2
-    clip_id = xxx.split(" ")[0]
-    new_desc = " ".join(xxx.split(" ")[1:])
+    clip_id = clip_id.split(" ")[0]
+    new_desc = " ".join(clip_id.split(" ")[1:])
     try:
         silent = int(silent)
     except ValueError:
         return "Silent level should be an integer"
     channel_id = channel.get("providerId")[0]
     clip = get_clip(clip_id, channel_id)
-    old_desc = clip.desc
     if not clip:
-        return "Clip ID not found"
+        # we are talking about last clip that was made from this channel in this case
+        clips = get_channel_clips(channel_id)
+        if not clips:
+            return "No clips made on this channel. So can't edit the clip"
+        clip = clips[0]
+    old_desc = clip.desc
     edited = clip.edit(new_desc, conn)
     if not edited:
         return "Couldn't edit the clip"
