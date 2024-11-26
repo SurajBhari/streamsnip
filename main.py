@@ -2573,20 +2573,20 @@ def edit(clip_id=None):
         return "Not able to auth"
     arguments = {k.replace("?", ""): request.args[k] for k in request.args}
     silent = arguments.get("silent", 2)  # silent level. if not then 2
-    clip_id = clip_id.split(" ")[0]
     new_desc = " ".join(clip_id.split(" ")[1:])
     try:
         silent = int(silent)
     except ValueError:
         return "Silent level should be an integer"
     channel_id = channel.get("providerId")[0]
-    clip = get_clip(clip_id, channel_id)
+    clip = get_clip(clip_id.split(" ")[0], channel_id)
     if not clip:
         # we are talking about last clip that was made from this channel in this case
         clips = get_channel_clips(channel_id)
         if not clips:
             return "No clips made on this channel. So can't edit the clip"
         clip = clips[0]
+        new_desc = clip_id
     old_desc = clip.desc
     edited = clip.edit(new_desc, conn)
     if not edited:
