@@ -950,9 +950,14 @@ def exports(channel_id=None):
     )
 
 
-@app.route("/channelstats/<channel_id>")
-@app.route("/cs/<channel_id>")
 @app.route("/channelstats")
+@app.route("/channelstats/")
+@app.route("/channelstats/<channel_id>")
+@app.route("/channelstats/<channel_id>/")
+@app.route("/cs")
+@app.route("/cs/")
+@app.route("/cs/<channel_id>")
+@app.route("/cs/<channel_id>/")
 def channel_stats(channel_id=None):
     if not channel_id:
         return redirect(url_for("slash"))
@@ -1152,12 +1157,19 @@ def channel_stats(channel_id=None):
         search_for = "channel",
     )
 
-@app.route("/timestats/<start>/<end>")
-@app.route("/ts/<start>/<end>")
-@app.route("/timestats/<start>/")
-@app.route("/ts/<start>/")
-@app.route("/timestats/")
+
+@app.route("/ts")
 @app.route("/ts/")
+@app.route("/ts/<start>")
+@app.route("/ts/<start>/")
+@app.route("/ts/<start>/<end>")
+@app.route("/ts/<start>/<end>/")
+@app.route("/timestats")
+@app.route("/timestats/")
+@app.route("/timestats/<start>")
+@app.route("/timestats/<start>/")
+@app.route("/timestats/<start>/<end>")
+@app.route("/timestats/<start>/<end>/")
 def time_stats(start=None, end=None):
     if not start:
         # if there is no start then start is today. if there is no end then end is tomorrow
@@ -1371,9 +1383,14 @@ def time_stats(start=None, end=None):
         search_for = None,
     )
 
-@app.route("/userstats/<channel_id>")
-@app.route("/us/<channel_id>")
 @app.route("/userstats")
+@app.route("/userstats/")
+@app.route("/userstats/<channel_id>")
+@app.route("/userstats/<channel_id>/")
+@app.route("/us")
+@app.route("/us/")
+@app.route("/us/<channel_id>")
+@app.route("/us/<channel_id>/")
 def user_stats(channel_id=None):
     if not channel_id:
         return redirect(url_for("slash"))
@@ -2516,7 +2533,8 @@ def clip(message_id, clip_desc=None):
         return clip_id
     else:
         return " "
-
+    
+@app.route("/delete")
 @app.route("/delete/")
 @app.route("/delete/<clip_id>")
 def delete(clip_id=None):
@@ -2561,8 +2579,10 @@ def delete(clip_id=None):
     else:
         return returning_str + errored_str
 
-
+@app.route("/edit/")
+@app.route("/edit")
 @app.route("/edit/<clip_id>")
+@app.route("/edit/<clip_id>/")
 def edit(clip_id=None):
     if not clip_id:
         # in this case nothing is provided. not even clip ip not even new description
@@ -2633,7 +2653,8 @@ def search(clip_desc=None):
         case _:
             return clip.stream_link
 
-
+@app.route("/searchx")
+@app.route("/searchx/")
 @app.route("/searchx/<clip_desc>")
 def searchx(clip_desc=None):
     # returns the first clip['url'] that matches the description
@@ -2646,6 +2667,8 @@ def searchx(clip_desc=None):
         return clip.json()
     return "{}"
 
+@app.route("/searchchannel")
+@app.route("/searchchannel/")
 @app.route("/searchchannel/<query>")
 def searchchannel(query=None):
     if not query:
@@ -2666,6 +2689,8 @@ def searchchannel(query=None):
             answer.append([channel_info[channel]['name'], url_for("channel_stats", channel_id=channel)])
     return answer
 
+@app.route("/searchuser")
+@app.route("/searchuser/")
 @app.route("/searchuser/<query>")
 def searchuser(query=None):
     if not query:
@@ -2690,14 +2715,21 @@ def searchuser(query=None):
         answer.append([f"{user[1]} ({user[2]} clips)", url_for("user_stats", channel_id=user[0])])
     return answer
 
-
+@app.route("/extension/clips")
+@app.route("/extension/clips/")
 @app.route("/extension/clips/<video_id>")
-def extension_clips(video_id):
+def extension_clips(video_id=None):
+    if not video_id:
+        return {}
     clips = get_video_clips(video_id)
     return jsonify([clip.json() for clip in clips])
 
+@app.route("/extension/channel/clips")
+@app.route("/extension/channel/clips/")
 @app.route("/extension/channel/clips/<stream_id>")
-def extension_channel_clips(stream_id):
+def extension_channel_clips(stream_id=None):
+    if not stream_id:
+        return {}
     with conn:
         cur = conn.cursor()
         # stream_link must contain the stream_id
@@ -2710,13 +2742,21 @@ def extension_channel_clips(stream_id):
         data = cur.fetchall()
     return ([Clip(x).json() for x in data])
 
+@app.route("/extension/clip")
+@app.route("/extension/clip/")
 @app.route("/extension/clip/<clip_id>")
-def extension_clip(clip_id):
+def extension_clip(clip_id=None):
+    if not clip_id:
+        return {}
     clip = get_clip(clip_id)
     return clip.json()
 
+@app.route("/extension/channel")
+@app.route("/extension/channel/")
 @app.route("/extension/channel/<channel_id>")
-def extension_channel(channel_id):
+def extension_channel(channel_id=None):
+    if not channel_id:
+        return {}
     clips = get_channel_clips(channel_id)
     return jsonify([clip.json() for clip in clips])
 
@@ -2744,6 +2784,8 @@ def globals_():
     else:
         return dumps(globals(), indent=4, sort_keys=True, default=str)
 
+@app.route("/video")
+@app.route("/video/")
 @app.route("/video/<clip_id>")
 @login_required
 def video(clip_id):
