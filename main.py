@@ -2587,6 +2587,7 @@ def edit(clip_id=None):
             return "No clips made on this channel. So can't edit the clip"
         clip = clips[0]
         new_desc = clip_id
+        clip_id = clip.id
     old_desc = clip.desc
     edited = clip.edit(new_desc, conn)
     if not edited:
