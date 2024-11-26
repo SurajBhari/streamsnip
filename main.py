@@ -2517,7 +2517,7 @@ def clip(message_id, clip_desc=None):
     else:
         return " "
 
-
+@app.route("/delete/")
 @app.route("/delete/<clip_id>")
 def delete(clip_id=None):
     if not clip_id:
