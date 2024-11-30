@@ -1837,6 +1837,7 @@ def autoapprove():
         return "Key or Value not found"
     channel_id = get_channel_id(key)
     email = request.args.get("email")
+    proof = request.args.get("proof")
 
     if "youtube.com" not in key:
         return f"Key isn't of youtube {key}"
@@ -1859,6 +1860,9 @@ def autoapprove():
             embed.add_embed_field(name="Email", value=email)
             embed.add_embed_field(name="Approve", value=f"[Approve]({approve_url})")
             embed.set_thumbnail(url=project_logo_discord)
+            # even if we want to directly embed the image we can't. since its on google drive and not accessible to everyone.
+            if proof:
+                embed.add_embed_field(name="Proof", value=proof)
             embed.set_color(0xebf0f7)
             webhook.add_embed(embed)
             webhook.execute()
@@ -2045,28 +2049,26 @@ def get_latest_live(channel_id):
 
 
 @app.route("/add", methods=["POST", "GET"])
+@login_required
 def add():
     if request.method == "GET":
         return render_template(
-            "add.html", link="enter link", desc="!clip", password="password"
+            "add.html", link="enter stream link", desc="!clip"
         )
     else:
         data = request.form
         if data.get("new") == "Submit":
             link = data.get("link", None)
-            desc = data.get("command", None)
-            if not desc:
-                desc = "!clip"
-            password = data.get("password", None)
-            if not link or not password:
-                return "Link/command/password not found"
+            desc = data.get("command", "!clip")
+            if not link:
+                return "Youtube Link not found"
             vid_id = get_video_id(link)
             if not vid_id:
                 return "Invalid link"
             vid = YouTubeChatDownloader(cookies=cookies).get_video_data(video_id=vid_id)
             streamer_id = vid["author_id"]
-            if not password == get_webhook_url(streamer_id):
-                return "Invalid password"
+            if not current_user.password == get_webhook_url(streamer_id):
+                return "Provided stream is not of the current logged in user."
             right_chats = []
             channel_clips = get_channel_clips(streamer_id)
             # rasterize the chat from delay
@@ -2096,7 +2098,7 @@ def add():
                         if chat["message"].startswith(desc):
                             right_chats.append(chat)
             return render_template(
-                "add.html", link=link, desc=desc, password=password, chats=right_chats
+                "add.html", link=link, desc=desc, chats=right_chats
             )
         else:
             # second time
@@ -2106,10 +2108,9 @@ def add():
             if not delay:
                 delay = 0
             vid = YouTubeChatDownloader(cookies=cookies).get_video_data(video_id=vid_id)
-            password = data.get("password", None)
             streamer_id = vid["author_id"]
-            if not password == get_webhook_url(streamer_id):
-                return "Invalid password"
+            if not current_user.password == get_webhook_url(streamer_id):
+                return "Provided stream is not of the current logged in user."
             right_chats = []
             for chat in ChatDownloader().get_chat(vid_id):
                 if chat["message_id"] in data.keys():
@@ -2777,12 +2778,11 @@ def test():
         return ll['title']
 
 @app.route("/globals")
+@login_required
 def globals_():
-    given_pass = request.args.get("password")
-    if (not given_pass) or given_pass != config['password']:
-        return "Wrong password or no password"
-    else:
-        return dumps(globals(), indent=4, sort_keys=True, default=str)
+    if not current_user.admin:
+        return "You can't do this. You are not an admin"
+    return dumps(globals(), indent=4, sort_keys=True, default=str)
 
 @app.route("/video")
 @app.route("/video/")
