@@ -1153,6 +1153,7 @@ def channel_stats(channel_id=None):
         channel_image=streamer_image,
         most_clipped_streams=most_clipped_streams,
         best_days=best_days,
+        first_clip_d={},
         search_route="/searchchannel",
         search_for = "channel",
     )
@@ -1379,6 +1380,7 @@ def time_stats(start=None, end=None):
         channel_image="https://streamsnip.com/static/logo.png",
         most_clipped_streams=most_clipped_streams,
         best_days={},
+        first_clip_d={},
         search_route=None,
         search_for = None,
     )
@@ -1587,6 +1589,7 @@ def user_stats(channel_id=None):
         channel_image=streamer_image,
         most_clipped_streams=most_clipped_streams,
         best_days=best_days,
+        first_clip_d={},
         search_route = "/searchuser",
         search_for = "user",
     )
@@ -1769,6 +1772,31 @@ def stats():
     for x in mcs:
         most_clipped_streams[get_video_id(x[0])] = x[1]
     message = f"{user_count} users clipped\n{clip_count} clips on \n{channel_count} channels till now. \nand counting."
+
+    first_clip_d = {}
+    # now make a graph of first_clip to day
+    this_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=timezone.utc)
+    # if this is in first half of the month then we need to get the last month's data
+    if datetime.now().day < 15:
+        this_month = this_month.replace(month=this_month.month-1)
+    cur.execute(f"SELECT * FROM QUERIES WHERE PRIVATE IS NOT '1' AND time GROUP BY channel_id ORDER BY time DESC")
+    first_clip_sql = cur.fetchall()[::-1]
+    first_day = this_month.date()
+    last_day = Clip(first_clip_sql[-1]).time.date()
+    # map first_clip_d to 0 for every day in between
+    date_generated = [first_day + timedelta(days=x) for x in range(0, (last_day-first_day).days)]
+    for single_date in date_generated:
+        first_clip_d[single_date.strftime("%Y-%m-%d")] = 0
+    for clip in first_clip_sql: # reverse so that we get the first clip first 
+        clip = Clip(clip)
+        if clip.time < this_month:
+            continue 
+        time = clip.time
+        date = time.strftime("%Y-%m-%d")
+        try:
+            first_clip_d[date] += 1
+        except KeyError:
+            first_clip_d[date] = 1
     return render_template(
         "stats.html",
         message=message,
@@ -1784,6 +1812,7 @@ def stats():
         streamers_trend_days=streamers_trend_days,
         streamers_labels=list(streamer_trend_data.keys()),
         time_distribution=time_distribution,
+        first_clip_d=first_clip_d,
         channel_name="All channels",
         channel_image="https://streamsnip.com/static/logo.png",
         most_clipped_streams=most_clipped_streams,
