@@ -345,7 +345,7 @@
                                             <h5 class="card-title"><i class="fa-solid fa-user"></i>${getAuthorTitle(clip['author']['level'])} ${escape(clip['author']['name'])}</h5>
                                         </a>
                                         <a href="${clip['link']}" target="_blank" class='${a_class}'>
-                                            <p class="card-text">
+                                            <p lang="en" class="card-text">
                                                 <i class="fa-solid fa-clipboard-list"></i> ${add_yt_emojis(escape(clip['message']))}${edit_button}</br>
                                                 <i class="fa-solid fa-clock"></i> At ${clip['hms']} (+${clip['delay']*-1}s)</br>
                                                 <span title="${clip['time']}"> <i class="fa-solid fa-clock-rotate-left"></i> ${clip['timesince']} </span>
