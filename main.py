@@ -364,15 +364,14 @@ def create_simplified(clips: list) -> str:
     return string
 
 
-def get_channel_name_image(channel_id: str) -> Tuple[str, str]:
-    if channel_id in channel_info:
+def get_channel_name_image(channel_id: str, force_refresh=False) -> Tuple[str, str]:
+    if channel_id in channel_info and not force_refresh: # if its a force refresh we don't want to use the cache
         if "last_updated" not in channel_info[channel_id]:
             channel_info[channel_id]["last_updated"] = 0 # forcing to outdate the value so that it gets updated
         if "sub_count" not in channel_info[channel_id]:
             channel_info[channel_id]["last_updated"] = 0 # forcing to outdate the value so that it gets updated
         if is_it_expired(channel_info[channel_id]["last_updated"]):
-            del channel_info[channel_id]
-            return get_channel_name_image(channel_id)
+            return get_channel_name_image(channel_id, force_refresh=True)
         try:
             return channel_info[channel_id]["name"], channel_info[channel_id]["image"]
         except Exception as e:
