@@ -29,7 +29,7 @@ this is the most famous way of using it. Simply copy paste this in your chat.
 
 ## Nightbot panel way
 Go to [Nightbot Dashboard](https://nightbot.tv/commands/custom) and add command like this <br>
-![image](https://github.com/SurajBhari/streamsnip/assets/45149585/667db821-f8a6-4f9e-a525-15fe5887854a)
+![image](https://github.com/user-attachments/assets/0bcd6f18-4da2-492b-8286-478d0b46438c)
 
 
 If you want to send a discord message. then I would need to add a webhook URL alongside the youtube channel ID. for that fill [this form](https://forms.gle/NgF67HBR69CxAcvJ8) or contact me here.<br>
