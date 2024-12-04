@@ -867,13 +867,13 @@ def clips():
     )
 
 def get_channel_id_any(hint): # returns the UC id of the channel 
-    if hint.startswith("UC"):
+    if hint.lower().startswith("uc"):
         return hint # already a channel id
     if hint.startswith("@"):
-        available = [x for x in channel_info if channel_info[x].get("username") == hint]
+        available = [x for x in channel_info if hint.lower() in channel_info[x].get("username").lower()]
         if available:
             return available[0]
-    available = [x for x in channel_info if channel_info[x].get("name") == hint]
+    available = [x for x in channel_info if hint.lower() == channel_info[x].get("name").lower()] # we are first trying to find exact match.
     if available:
         return available[0]
     available = [x for x in channel_info if hint.lower() in channel_info[x].get("name").lower()]
