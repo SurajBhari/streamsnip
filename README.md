@@ -38,7 +38,9 @@ If you want to send a discord message. then I would need to add a webhook URL al
 | ![Discord Badge](https://dcbadge.limes.pink/api/shield/408994955147870208) | [![Server Badge](https://dcbadge.limes.pink/api/server/2XVBWK99Vy)](https://discord.gg/2XVBWK99Vy) |
 
 ## Optional Arguments:
+## This is one way to add arguments. if you want a simpler way head over at https://streamsnip.com/settings page.
 
+This override the default settings. so if you have multiple instance of command and you don't want a particular instance to follow the /settings. you use this.
 - `showlink` (default: true) - Display the link where all clips can be viewed.
 - `screenshot` (default: false) - Enable or disable screenshot capture. If enabled the nightbot may not get response in given time and will say "Timed out" message. but it will still clip.
 - `delay` (default: 0) - Introduce an artificial delay to the command. Useful for scheduling links in the future or past.
