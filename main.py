@@ -2083,7 +2083,7 @@ def get_latest_live(channel_id):
 def add():
     if request.method == "GET":
         return render_template(
-            "add.html", link="enter stream link", desc="!clip"
+            "add.html", link="enter stream link", desc="!clip", first_render=True
         )
     else:
         data = request.form
@@ -2097,7 +2097,7 @@ def add():
                 return "Invalid link"
             vid = YouTubeChatDownloader(cookies=cookies).get_video_data(video_id=vid_id)
             streamer_id = vid["author_id"]
-            if not current_user.password == get_webhook_url(streamer_id):
+            if not current_user.password == get_webhook_url(streamer_id) and not current_user.admin:
                 return "Provided stream is not of the current logged in user."
             right_chats = []
             channel_clips = get_channel_clips(streamer_id)
@@ -2133,13 +2133,15 @@ def add():
         else:
             # second time
             link = data.get("link", None)
+            if not link:
+                return "Youtube Link not found"
             vid_id = get_video_id(link)
             delay = data.get("delay")
             if not delay:
                 delay = 0
             vid = YouTubeChatDownloader(cookies=cookies).get_video_data(video_id=vid_id)
             streamer_id = vid["author_id"]
-            if not current_user.password == get_webhook_url(streamer_id):
+            if not current_user.password == get_webhook_url(streamer_id) and not current_user.admin:
                 return "Provided stream is not of the current logged in user."
             right_chats = []
             for chat in ChatDownloader().get_chat(vid_id):
