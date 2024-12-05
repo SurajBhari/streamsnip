@@ -122,6 +122,7 @@ project_name = "StreamSnip"
 project_logo = base_domain + "/static/logo.png"
 project_repo_link = "https://github.com/SurajBhari/streamsnip"
 project_logo_discord = "https://raw.githubusercontent.com/SurajBhari/streamsnip/main/static/256_discord_ss.png" # link to logo that is used in discord 
+sub_based_sort = True # sort the channels on home page based on sub count
 
 jar = None
 if "cookies.txt" in os.listdir("./helper"):
@@ -670,10 +671,11 @@ def generate_home_data():
 def channels():
     returning = generate_home_data()
     return render_template("channels.html", data=returning)
+
 @app.route("/")
 def slash():
     returning = generate_home_data()
-    return render_template("home.html", data=returning)
+    return render_template("home.html", data=returning, sub_based_sort=sub_based_sort)
 
 @app.route("/")
 @app.route("/data")

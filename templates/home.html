@@ -34,11 +34,19 @@
                         </li>
                         <li class="page-item" id="sort-container">
                             <select name="sortby" id="sortby" class="form-select" onchange="update_sort_by()" style="border-top-right-radius: 0px; border-bottom-right-radius: 0px">
+                                {% if sub_based_sort==1 %}
+                                <option value="sub_count">Sub Count</option>
+                                <option value="default">Latest Clip Time</option>
+                                <option value="alphabetical">Alphabetical</option>
+                                <option value="clip_count">Clip Count</option>
+                                <option value="first_clip">First Clip Time</option>
+                                {% else %}
                                 <option selected value="default">Default</option>
                                 <option value="alphabetical">Alphabetical</option>
                                 <option value="sub_count">Sub Count</option>
                                 <option value="clip_count">Clip Count</option>
                                 <option value="first_clip">First Clip Time</option>
+                                {% endif %}
                             </select>
                         </li>
                         <li class="page-item" id="invert-page">
@@ -57,7 +65,7 @@
 <script>
     var data = {{ data|tojson }};
     var all=false;
-    var sort_by = "default";
+    var sort_by = document.getElementById("sortby").value;
     function update_sort_by(){
         sort_by = document.getElementById("sortby").value;
         add_channel_to_container(all=all);
