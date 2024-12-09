@@ -1920,7 +1920,8 @@ def approve():
         return f"Key isn't of youtube {key}"
     if "discord.com/api/webhooks" not in value:
         return f"Value isn't of discord webhook {value}"
-
+    if not key.startswith("htt"):
+        key = "https://" + key # care about both http and https 
     channel_id = get_channel_id(key)
     if not channel_id:
         return "Channel id not found"
