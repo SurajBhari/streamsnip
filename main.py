@@ -675,7 +675,7 @@ def channels():
 @app.route("/")
 def slash():
     returning = generate_home_data()
-    return render_template("home.html", data=returning, sub_based_sort=sub_based_sort)
+    return render_template("home.html", data=returning, sub_based_sort=not current_user.is_authenticated)
 
 @app.route("/")
 @app.route("/data")
