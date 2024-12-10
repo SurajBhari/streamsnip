@@ -2090,6 +2090,12 @@ def add():
         data = request.form
         if data.get("new") == "Submit":
             link = data.get("link", None)
+            # sanitize the link / remove all the arguments except the v 
+            if not link:
+                return "Youtube Link not found"
+            # reconstruct the link
+            vid = link.split("v=")[1].split("&")[0]
+            link = f"https://www.youtube.com/watch?v={vid}"
             desc = data.get("command", "!clip")
             if not link:
                 return "Youtube Link not found"
@@ -2116,7 +2122,7 @@ def add():
                 }
                 xx.append(d)
             with conn:
-                for chat in ChatDownloader().get_chat(vid_id):
+                for chat in ChatDownloader(cookies=cookies).get_chat(vid_id):
                     flag = False
                     time = int(chat["time_in_seconds"])
                     for x in xx:
@@ -2134,8 +2140,12 @@ def add():
         else:
             # second time
             link = data.get("link", None)
+            # sanitize the link / remove all the arguments
             if not link:
                 return "Youtube Link not found"
+            # reconstruct the link
+            vid = link.split("v=")[1].split("&")[0]
+            link = f"https://www.youtube.com/watch?v={vid}"
             vid_id = get_video_id(link)
             delay = data.get("delay")
             if not delay:
