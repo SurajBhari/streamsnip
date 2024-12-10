@@ -106,7 +106,7 @@ mod_icon = "🔧"
 regular_icon = "🧑‍🌾"
 subscriber_icon = "⭐"
 allowed_ip = [
-    "127.0.0.1"
+    "127.0.0.1",
     "10.20.0.2"
 ]  # store the nightbot ips here. or your own ip for testing purpose
 # add local ip just to make sure we go through if we are testing locally
