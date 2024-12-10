@@ -106,9 +106,10 @@ mod_icon = "🔧"
 regular_icon = "🧑‍🌾"
 subscriber_icon = "⭐"
 allowed_ip = [
-    "127.0.0.1",
-    "52.15.46.178",
+    "127.0.0.1"
 ]  # store the nightbot ips here. or your own ip for testing purpose
+# add local ip just to make sure we go through if we are testing locally
+allowed_ip.append(get("https://api.ipify.org/").text)
 show_fake_error = False # for blacklisted channel show fake error message or not 
 requested_myself = (
     False  # on startup we request ourself so that apache build the cache.
@@ -2094,7 +2095,7 @@ def add():
             if not link:
                 return "Youtube Link not found"
             # reconstruct the link
-            vid = link.split("v=")[1].split("&")[0]
+            vid = get_video_id(link)
             link = f"https://www.youtube.com/watch?v={vid}"
             desc = data.get("command", "!clip")
             if not link:
