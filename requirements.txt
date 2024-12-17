@@ -12,3 +12,4 @@ flask-sitemap
 psutil
 flask-cors
 flask-login
+yagmail
