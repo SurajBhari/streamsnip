@@ -335,10 +335,10 @@
             var card_img = `<img class="card-img-top" src="${thumbnail}" alt="Card image cap" onerror="this.src='${alternative}';" onload="if(this.naturalHeight==90 && this.naturalWidth==120){this.src='${hq_live_thumbnail}';this.onload='';}">`
             var delay = parseInt(clip['delay'])*-1;
             if(delay > 0){
-                delay = `+${delay}`
+                delay = `+${delay}`;
             }
             else{
-                delay = `${delay}`
+                delay = `${delay}`;
             }
             var cardHtml = `<div class="col-md-4 col-lg-3">
                                 <div class="card ${getBorderStyle(clip['author']['level'])}" id="${clip['id']}" style="width: 100%;">
