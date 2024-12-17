@@ -127,7 +127,7 @@
         temporary_html = "";
         for(var i=0; i<limit;i++){
             if(search_query){
-                if(!data[i]['name'].toLowerCase().includes(search_query.toLowerCase())){
+                if(!(data[i]['name']+" "+data[i]['id']).toLowerCase().includes(search_query.toLowerCase())){
                     continue;
                 }
             }
