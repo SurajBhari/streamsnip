@@ -584,6 +584,10 @@ def mini_stats():
 
 @app.before_request
 def before_request():
+    # if its a http request. redirect the same to https
+    if not local:
+        if not request.is_secure:
+            return redirect(".", code=302)
     # if request is for /clip or /delete or /edit then check if its from real
     if "/clip" in request.path or "/delete" in request.path or "/edit" in request.path:
         if "/extension/" in request.path: # make an exception for all the /extension routes
