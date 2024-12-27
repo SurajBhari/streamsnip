@@ -1887,7 +1887,9 @@ def autoapprove():
     request.args = {"pass": password, "key": key, "value": value, "email": email}
     creds = get_creds()
     channel_clips = get_channel_clips(channel_id)
-    if channel_id in creds or channel_clips:
+    if channel_clips:
+        return "Channel has clips. can be a hijack attempt. can't auto approve"
+    if channel_id in creds:
         if "management_webhook" in config:
             webhook = DiscordWebhook(url=config["management_webhook"], username=project_name, avatar_url=project_logo_discord)
             embed = DiscordEmbed(
@@ -1904,10 +1906,7 @@ def autoapprove():
             embed.set_color(0xebf0f7)
             webhook.add_embed(embed)
             webhook.execute()
-        if channel_clips:
-            return "Channel has clips. can be a hijack attempt. can't auto approve"
-        else:
-            return "Channel already have a webhook. can't auto approve"    
+        return "Channel already have a webhook. can't auto approve"    
     return approve()
 
 
