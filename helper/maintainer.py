@@ -57,11 +57,13 @@ def comment_task():
                 continue
             cur.execute(
                 """
-                SELECT * FROM QUERIES WHERE stream_link LIKE ?;
+                SELECT * FROM QUERIES WHERE stream_link LIKE ? AND private is not 1;
                 """,
                 (f"%{clip.stream_id}%",),
             )
             clips_for_stream = [Clip(x) for x in cur.fetchall()]
+            if not clips_for_stream:
+                continue
             string = "Clips For This stream:\n"
             for clip in clips_for_stream:
                 if clip.userlevel == "everyone" or not clip.userlevel:
@@ -76,9 +78,10 @@ def comment_task():
                     icon = regular_icon
                 else:
                     icon = ""
-                string += f"{clip.hms} | {clip.id} | {clip.desc}  -- {icon} {clip.user_name}\n"
+                string += f"{clip.hms} | {clip.id} | {clip.desc} -- {icon} {clip.user_name}\n"
             try:
-                post_comment(clip.stream_id, string)
+                #post_comment(clip.stream_id, string)
+                pass
             except Exception as e:
                 print(e)
                 continue # go to next stream. we will try again later
@@ -185,7 +188,8 @@ def periodic_task():
     )
     management_webhook.execute()
 
-
+print(comment_task())
+exit()
 task_count = 0
 
 while True:
