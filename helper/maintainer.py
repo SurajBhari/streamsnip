@@ -188,12 +188,7 @@ def periodic_task():
 
 task_count = 0
 
-"""
 while True:
     task_count += 1
     periodic_task()
     time.sleep(30*60)
-"""
-
-if __name__ == "__main__":
-    comment_task()
