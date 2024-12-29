@@ -1,9 +1,12 @@
 from datetime import datetime, timezone
-from .util import *
+try:
+    from .util import *
+except ImportError:
+    from util import *
 from discord_webhook import DiscordWebhook
 
 import sqlite3
-
+import typing
 
 def time_since(time:datetime) -> str:
     current = datetime.now(timezone.utc)
@@ -57,7 +60,7 @@ class Clip:
     ss_link = None
     private = False
 
-    def __init__(self, data):
+    def __init__(self, data: typing.List[str]):
         # data is a [str]
         x = {}
         level = data[10]

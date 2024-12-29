@@ -5,6 +5,16 @@ import requests as request
 import os
 import psutil
 import threading
+import sqlite3
+
+import os
+from Clip import Clip
+from util import *
+
+owner_icon = "👑"
+mod_icon = "🔧"
+regular_icon = "🧑‍🌾"
+subscriber_icon = "⭐"
 
 management_webhook_url = None
 management_webhook_url = json.load(open("../config.json", "r")).get(
@@ -28,7 +38,55 @@ def download_clips(ids, thread_no):
 
 DiscordWebhook(url=management_webhook_url, content="Maintainer started").execute()
 
+conn = sqlite3.connect("../queries.db")
 
+
+def comment_task():
+    with conn:
+        COUNTER_STREAMS = 0
+        # we only talk about streams that happened after 1735410600 Sun Dec 29 2024 00:00:00 GMT+0530 (India Standard Time)
+        cur = conn.cursor()
+        cur.execute("CREATE TABLE IF NOT EXISTS COMMENTS (video_id TEXT, comment TEXT, time INTEGER)")
+        conn.commit()
+        cur.execute("SELECT * FROM queries WHERE time > 1735410600 GROUP BY message_id")  # grouping will make sure we get 1 clip from each streams
+        clips = [Clip(x) for x in cur.fetchall()]
+        previously_done = [x[0] for x in cur.execute("SELECT video_id FROM COMMENTS").fetchall()]
+
+        for clip in clips:
+            if clip.stream_id in previously_done:
+                continue
+            cur.execute(
+                """
+                SELECT * FROM QUERIES WHERE stream_link LIKE ?;
+                """,
+                (f"%{clip.stream_id}%",),
+            )
+            clips_for_stream = [Clip(x) for x in cur.fetchall()]
+            string = "Clips For This stream:\n"
+            for clip in clips_for_stream:
+                if clip.userlevel == "everyone" or not clip.userlevel:
+                    icon = ""
+                elif clip.userlevel == "owner":
+                    icon = owner_icon
+                elif clip.userlevel == "moderator":
+                    icon = mod_icon 
+                elif clip.userlevel == "subscriber":
+                    icon = subscriber_icon
+                elif clip.userlevel == "regular":
+                    icon = regular_icon
+                else:
+                    icon = ""
+                string += f"{clip.hms} | {clip.id} | {clip.desc}  -- {icon} {clip.user_name}\n"
+            try:
+                post_comment(clip.stream_id, string)
+            except Exception as e:
+                print(e)
+                continue # go to next stream. we will try again later
+            cur.execute("INSERT INTO COMMENTS VALUES (?, ?, ?)", (clip.stream_id, string, int(time.time())))
+            conn.commit()
+            COUNTER_STREAMS += 1
+    return COUNTER_STREAMS
+            
 def periodic_task():
     management_webhook = DiscordWebhook(url=management_webhook_url)
     management_webhook.add_file(file=open("../queries.db", "rb"), filename="queries.db")
@@ -60,6 +118,8 @@ def periodic_task():
     management_webhook.content += f"\nDeleted {(deleted_clips)} \nNot deleted {(not_deleted_clips)} clips"
     if task_count % 5 == 0:
         management_webhook.add_file(file=open("../config.json", "r"), filename="config.json")
+        comment_count = comment_task()
+        management_webhook.content += f"\nPosted {comment_count} comments"
     try:
         management_webhook.execute()
     except request.exceptions.MissingSchema:
@@ -127,7 +187,13 @@ def periodic_task():
 
 
 task_count = 0
+
+"""
 while True:
     task_count += 1
     periodic_task()
     time.sleep(30*60)
+"""
+
+if __name__ == "__main__":
+    comment_task()
