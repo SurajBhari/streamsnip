@@ -189,6 +189,6 @@ def periodic_task():
 task_count = 0
 
 while True:
-    task_count += 1
     periodic_task()
+    task_count += 1
     time.sleep(30*60)
