@@ -92,8 +92,6 @@ def list_comments(video_id):
         videoId=video_id
     )
     return request.execute()
-import json
-json.dump
 
 if __name__ == "__main__":
     # Replace with your video ID and comment text
