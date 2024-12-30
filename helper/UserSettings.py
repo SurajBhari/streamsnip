@@ -12,6 +12,7 @@ class UserSettings:
         self.webhook = None
         self.message_level = 0
         self.take_delays = False
+        self.comments = False
         if not data:
             return
         # data is a array of settings
@@ -36,6 +37,8 @@ class UserSettings:
             self.webhook =  "https://discord.com/api/webhooks/" + self.webhook
         self.message_level = data[8]
         self.take_delays = data[9]
+        self.comments = data[10]
+
 
 
     """CREATE TABLE IF NOT EXISTS SETTINGS (
@@ -49,6 +52,7 @@ class UserSettings:
         webhook VARCHAR(128) DEFAULT NULL,
         messagelevel INT DEFAULT 0,
         takedelays INT DEFAULT 'False'
+        comments VARCHAR(128) DEFAULT 'False'
         )"""
     
     def write(self, conn:sqlite3.Connection):
@@ -67,7 +71,8 @@ class UserSettings:
                 private = ?,
                 webhook = ?,
                 messagelevel = ?,
-                takedelays = ?
+                takedelays = ?,
+                comments = ? 
                 WHERE channel_id = ?
                 """,
                 (self.show_link, 
@@ -79,8 +84,10 @@ class UserSettings:
                 self.webhook, 
                 self.message_level, 
                 self.take_delays, 
+                self.comments,
                 self.channel_id)
             )
+            print(self.comments)
             conn.commit()
             return True
         return True

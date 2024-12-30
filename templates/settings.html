@@ -191,6 +191,22 @@
             </tr>
             <tr>
                 <td>
+                    Comments
+                </td>
+                <td>
+                    <select id="comments">
+                        {% if settings['comments'] == 1 %}
+                            <option value="True" selected>Yes - Will post a comment after live stream ends contaning all the clips details.</option>
+                            <option value="False">No</option>
+                        {% else %}
+                            <option value="True">Yes - Will post a comment after live stream ends contaning all the clips details.</option>
+                            <option value="False" selected>No</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
                     <button type="button" class="btn btn-success" type="submit" value="Submit" name="add" id="save-button" title="Save" onclick="save_settings()"><i class="fa-regular fa-floppy-disk"></i></button>
                     <button type="button" class="btn btn-secondary" type="reset" value="reset" name="reset" id="reset-button" title="Reset To Default" onclick="reset_settings()"><i class="fa-solid fa-arrow-rotate-left"></i></button>
                 </td>
@@ -232,6 +248,7 @@
         var webhook = document.getElementById("webhook").value;
         var message_level = document.getElementById("message_level").value;
         var take_delays = document.getElementById("take_delays").value;
+        var comments = document.getElementById("comments").value;
 
         response = fetch("/settings", {
             method: "POST",
@@ -247,7 +264,8 @@
                 private: private,
                 webhook: webhook,
                 message_level: message_level,
-                take_delays: take_delays
+                take_delays: take_delays,
+                comments: comments
             })
         });
         // replace the save button with a loading gif 

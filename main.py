@@ -235,6 +235,13 @@ with conn:
         takedelays INT DEFAULT 'False'
         )""")
     conn.commit()
+    cur.execute("PRAGMA table_info(SETTINGS)")
+    data = cur.fetchall()
+    colums = [xp[1] for xp in data]
+    if "comments" not in colums:
+        cur.execute("ALTER TABLE SETTINGS ADD COLUMN comments VARCHAR(40) DEFAULT 'False'")
+        conn.commit()
+        print("Added comments column to SETTINGS table")
 
 
 class User(UserMixin):
@@ -814,6 +821,7 @@ def settings():
         settings.webhook = request.json.get("webhook")
         settings.message_level = request.json.get("message_level")
         settings.take_delays = request.json.get("take_delays")
+        settings.comments = request.json.get("comments")
         
         if not settings.write(conn):
             return "Failed to write settings", 500
