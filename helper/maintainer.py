@@ -51,8 +51,10 @@ def comment_task():
         cur.execute("SELECT * FROM queries WHERE time > 1735410600 GROUP BY message_id")  # grouping will make sure we get 1 clip from each streams
         clips = [Clip(x) for x in cur.fetchall()]
         previously_done = [x[0] for x in cur.execute("SELECT video_id FROM COMMENTS").fetchall()]
-
+        comments_subscribers = [x[0] for x in cur.execute("SELECT channel_id from SETTINGS WHERE comments = 'True'").fetchall()]
         for clip in clips:
+            if clip.channel not in comments_subscribers:
+                continue
             if clip.stream_id in previously_done:
                 continue
             cur.execute(

@@ -84,6 +84,17 @@ def post_comment(video_id, comment_text):
     response = request.execute()
     print("Comment posted:", response)
 
+def list_comments(video_id):
+    youtube = authenticate_youtube()
+
+    request = youtube.commentThreads().list(
+        part="snippet",
+        videoId=video_id
+    )
+    return request.execute()
+import json
+json.dump
+
 if __name__ == "__main__":
     # Replace with your video ID and comment text
     VIDEO_ID = "mtfr0OkzTks"
