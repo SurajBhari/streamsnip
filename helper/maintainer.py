@@ -188,8 +188,6 @@ def periodic_task():
     )
     management_webhook.execute()
 
-print(comment_task())
-exit()
 task_count = 0
 
 while True:
