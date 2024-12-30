@@ -191,9 +191,10 @@ def periodic_task():
     )
     management_webhook.execute()
 
-task_count = 0
+if __name__ == "__main__":
+    task_count = 0
 
-while True:
-    periodic_task()
-    task_count += 1
-    time.sleep(30*60)
+    while True:
+        periodic_task()
+        task_count += 1
+        time.sleep(30*60)
