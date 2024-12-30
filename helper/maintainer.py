@@ -80,7 +80,7 @@ def comment_task():
                     icon = ""
                 string += f"{clip.hms} | {clip.id} | {clip.desc} -- {icon} {clip.user_name}\n"
             try:
-                #post_comment(clip.stream_id, string)
+                post_comment(clip.stream_id, string)
                 pass
             except Exception as e:
                 print(e)
