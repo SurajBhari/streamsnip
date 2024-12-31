@@ -1795,7 +1795,10 @@ def stats():
     this_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=timezone.utc)
     # if this is in first half of the month then we need to get the last month's data
     if datetime.now().day < 15:
-        this_month = this_month.replace(month=this_month.month-1)
+        if this_month.month == 1:
+            this_month = this_month.replace(month=12, year=this_month.year-1)
+        else:
+            this_month = this_month.replace(month=this_month.month-1)
     cur.execute(f"SELECT * FROM QUERIES WHERE PRIVATE IS NOT '1' AND time GROUP BY channel_id ORDER BY time DESC")
     first_clip_sql = cur.fetchall()[::-1]
     first_day = this_month.date()
