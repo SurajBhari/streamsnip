@@ -20,6 +20,36 @@
         <input type="submit" value="refresh cache" name="refresh">
         <input type="submit" value="refresh deleted" name="refreshdeleted"></br></br>
     </form>
+    <form action="/update_settings" method="post" style="display: inline;">
+        <div style="display: flex; justify-content: space-between; gap: 20px;">
+            <!-- First scrollable list -->
+            <div class="scrollable_list" style="flex: 1; overflow-y: auto; max-height: 300px; border: 1px solid #ccc; padding: 10px;">
+                <table>
+                    {% for user in users %}
+                        <tr>
+                            <td>
+                                <div class="card-footer checkbox-wrapper-2">
+                                    <input type="checkbox" class="sc-gJwTLC ikxBAC" id="{{user.id}}" name="{{user.id}}" value="">
+                                </div>
+                            </td>
+                            <td>
+                                {{user.name}}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+    
+            <!-- Second scrollable list -->
+            <div class="scrollable_list" style="flex: 1; overflow-y: auto; max-height: 300px; border: 1px solid #ccc; padding: 10px;">
+                <table id="settings_to_effect">
+                    <p onclick="add_new_settings()">+ Add</p>
+                </table>
+            </div>
+
+            <button class="btn btn-primary" type="submit" value="Submit" name="new">Submit</button>
+        </div>
+    </form>    
     <h1> Channels that I have webhooks for </h1>
     <div class="container">
         <div class="row">
@@ -40,5 +70,39 @@
 </center>
 <script>
     var channel_info = {{ channel_info|tojson }};
+    var settings = {{settings|tojson}}
+    function add_new_settings(){
+        var settings_to_effect = document.getElementById("settings_to_effect");
+        var new_sett = document.createElement("tr");
+        new_sett.id = "option-"+ (settings_to_effect.childNodes.length);
+        var options = Object.keys(settings);
+        var options_str = "";
+        for(let i=0;i<options.length;i++){
+            options_str += `<option value="${options[i]}">${options[i]}</option> `
+        }
+        new_sett.innerHTML = `<td><select onchange=give_options(${settings_to_effect.childNodes.length})>${options_str}</select></td><td></td><td><button type="button" class="btn btn-danger" onclick="this.parentElement.parentElement.remove()">X</button></td>`;
+        settings_to_effect.insertBefore(new_sett,settings_to_effect.firstChild);
+        give_options(settings_to_effect.childNodes.length-1);
+    }
+    function give_options(id){
+        var changed_element = document.getElementById("option-"+id);
+        var setting = changed_element.firstChild.firstChild.value;
+        var type_value = typeof(settings[setting]);
+        var possible_value = ""
+
+        if(type_value =="number"){
+            possible_value = `<input type='number' style='width: 100%' name='${setting}' placeholder='${setting}'>`
+        }
+        else if(type_value == "string"){
+            possible_value = `<input type='text' style='width: 100%' name='${setting}' placeholder='${setting}'>`
+        }
+        else if(type_value == "object"){
+            possible_value = `<input type='text' style='width: 100%' name='${setting}' placeholder='${setting}'>`
+        }
+        else if(type_value == "boolean"){
+            possible_value = `<select name='${setting}'><option value='true'>True</option><option value='false'>False</option></select>`
+        }
+        changed_element.childNodes[1].innerHTML = possible_value;
+    }
 </script>
 {% endblock %}

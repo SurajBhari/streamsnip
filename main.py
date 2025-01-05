@@ -1866,8 +1866,34 @@ def admin():
         channel_info_admin[key][
             "link"
         ] = f"{htt}{request.host}{url_for('exports', channel_id=key)}"
-    return render_template("admin.html", ids=clip_ids, channel_info=channel_info_admin)
+    users = generate_home_data()
+    settings = vars(UserSettings())
+    return render_template("admin.html", ids=clip_ids, channel_info=channel_info_admin, users=users, settings=settings)
 
+@app.route("/update_settings", methods=["POST"])
+def update_settings():
+    if not current_user.admin:
+        return "You are not an admin"
+    settings = UserSettings()
+    user_ids = []
+    settings = {}
+    for key, value in request.form.items():
+        if key == 'new':
+            continue
+        if key.startswith("UC"):
+            user_ids.append(key)
+        else:
+            if value.lower() == "true":
+                value = "True"
+            elif value.lower() == "false":
+                value = "False"
+            settings[key] = str(value)
+    for user_id in user_ids:
+        user_settings = get_channel_settings(user_id)
+        for key, value in settings.items():
+            setattr(user_settings, key, value)
+        user_settings.write(conn=conn)
+    return "ok"
 def get_channel_id(path):
     html_data = get(path).text
     soup = BeautifulSoup(html_data, "html.parser")
