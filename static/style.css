@@ -489,3 +489,12 @@ select.dark-theme{
   padding-top: 1rem;
   padding-bottom: 1rem;
 }
+
+.scrollable_list{
+  border: 1px solid #2196F3;
+  padding: 5px;
+  width: 300px;
+  height: 110px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
