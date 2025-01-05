@@ -2,14 +2,14 @@ import sqlite3
 class UserSettings:
     def __init__(self, data: list = None):
         # default values
-        self.channel_id = None
+        self.channel_id = ""
         self.show_link = True
         self.screenshot = False
         self.delay = 0
         self.force_desc = False
         self.silent = 2
         self.private = False
-        self.webhook = None
+        self.webhook = ""
         self.message_level = 0
         self.take_delays = False
         self.comments = False
@@ -75,19 +75,18 @@ class UserSettings:
                 comments = ? 
                 WHERE channel_id = ?
                 """,
-                (self.show_link, 
-                self.screenshot, 
-                self.delay, 
-                self.force_desc, 
-                self.silent, 
-                self.private, 
-                self.webhook, 
-                self.message_level, 
-                self.take_delays, 
-                self.comments,
-                self.channel_id)
+                (str(self.show_link), 
+                str(self.screenshot), 
+                str(self.delay), 
+                str(self.force_desc), 
+                str(self.silent), 
+                str(self.private), 
+                str(self.webhook), 
+                str(self.message_level), 
+                str(self.take_delays), 
+                str(self.comments),
+                str(self.channel_id))
             )
-            print(self.comments)
             conn.commit()
             return True
         return True
