@@ -1914,10 +1914,12 @@ def autoapprove():
     email = request.args.get("email")
     proof = request.args.get("proof")
 
+    if "studio.youtube.com" in key:
+        key = key.replace("studio.youtube.com", "youtube.com")
     if "youtube.com" not in key:
         return f"Key isn't of youtube {key}"
-    if "discord.com/api/webhooks" not in value:
-        return f"Value isn't of discord webhook {value}"
+    if "api/webhooks" not in value:
+        return f"Value isn't of discord webhook"
     if not channel_id:
         return "Channel id not found"
     password = config['password']
@@ -1963,18 +1965,14 @@ def approve():
     if password != config['password']:
         return "Wrong password"
     if "youtube.com" not in key:
-        return f"Key isn't of youtube {key}"
-    if "discord.com/api/webhooks" not in value:
-        return f"Value isn't of discord webhook {value}"
+        return f"Key isn't of youtube "
+    if "/api/webhooks" not in value:
+        return f"Value isn't of discord webhook "
     if not key.startswith("htt"):
         key = "https://" + key # care about both http and https 
     channel_id = get_channel_id(key)
     if not channel_id:
         return "Channel id not found"
-
-    creds = get_creds()
-    creds[channel_id] = value
-    write_creds(creds)
 
     channel_name, channel_image = get_channel_name_image(channel_id)
     webhook = DiscordWebhook(url=value, username=project_name, avatar_url=project_logo_discord)
@@ -1989,7 +1987,9 @@ def approve():
     response = webhook.execute()
     if response.status_code != 200:
         return response.text
-
+    creds = get_creds()
+    creds[channel_id] = value
+    write_creds(creds)
     if "update_webhook" in config:
         webhook = DiscordWebhook(url=config["update_webhook"], username=project_name, avatar_url=project_logo_discord)
         embed = DiscordEmbed(
