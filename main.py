@@ -720,7 +720,7 @@ def login():
         # set cookies to this password
         creds = get_creds()
         for cred in creds:
-            if creds[cred] == request.form["password"]:
+            if creds[cred][-88:] == request.form["password"][-88:]:
                 if cred == "password":
                     session['id'] = "admin"
                 else:
