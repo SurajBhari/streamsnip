@@ -851,6 +851,8 @@ def export():
 @app.route("/exports/")
 def clips():
     data = get_channel_clips()
+    if len(data) > 50000:
+        return "disabled"
     data = [x.json() for x in data if not x.private]
     for clip in data:
         """
