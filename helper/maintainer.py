@@ -41,9 +41,9 @@ DiscordWebhook(url=management_webhook_url, content="Maintainer started").execute
 conn = sqlite3.connect("../queries.db")
 
 
-def comment_task():
+def comment_task() -> str:
+    COMMENTS = ""
     with conn:
-        COUNTER_STREAMS = 0
         # we only talk about streams that happened after 1735410600 Sun Dec 29 2024 00:00:00 GMT+0530 (India Standard Time)
         cur = conn.cursor()
         cur.execute("CREATE TABLE IF NOT EXISTS COMMENTS (video_id TEXT, comment TEXT, time INTEGER)")
@@ -83,15 +83,16 @@ def comment_task():
                     icon = ""
                 string += f"{clip.hms} | {clip.id} | {clip.desc} -- {icon} {clip.user_name}\n"
             try:
-                post_comment(clip.stream_id, string)
+                string = post_comment(clip.stream_id, string)
+                COMMENTS += "\n" + "Commented on " + clip.stream_id
                 pass
             except Exception as e:
+                COMMENTS += f"\nFailed to post comment for {clip.stream_id} {e}"
                 print(e)
                 continue # go to next stream. we will try again later
             cur.execute("INSERT INTO COMMENTS VALUES (?, ?, ?)", (clip.stream_id, string, int(time.time())))
             conn.commit()
-            COUNTER_STREAMS += 1
-    return COUNTER_STREAMS
+    return COMMENTS
             
 def periodic_task():
     management_webhook = DiscordWebhook(url=management_webhook_url)
@@ -124,8 +125,11 @@ def periodic_task():
     management_webhook.content += f"\nDeleted {(deleted_clips)} \nNot deleted {(not_deleted_clips)} clips"
     if task_count % 5 == 0:
         management_webhook.add_file(file=open("../config.json", "r"), filename="config.json")
-        comment_count = comment_task()
-        management_webhook.content += f"\nPosted {comment_count} comments"
+        comments = comment_task()
+        # write the comments to a file and send it to the webhook
+        with open("comments.txt", "w") as f:
+            f.write(comments)
+        management_webhook.add_file(file=open("comments.txt", "rb"), filename="comments.txt")
     try:
         management_webhook.execute()
     except request.exceptions.MissingSchema:
