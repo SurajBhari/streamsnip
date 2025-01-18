@@ -2533,11 +2533,11 @@ def clip(message_id, clip_desc=None):
     else:
         t_clip_desc = clip_desc
     if t_clip_desc != "None":
-        message_to_return = f"Clip {clip_id} by {user_name} -> '{t_clip_desc}' "
+        message_to_return = f"{project_name} successfully clipped '{t_clip_desc}' ({clip_id}) by {user_name}"
     else:
-        message_to_return = f"Clip {clip_id} by {user_name} "
+        message_to_return = f"{project_name} successfully clipped ({clip_id}) by {user_name}"
     if delay:
-        message_to_return += f" Delayed by {delay} seconds."
+        message_to_return += f" with a delay of {delay} seconds."
     if webhook_url:  # if webhook is not found then don't send the message
         message_to_return += " | sent to discord."
         webhook = DiscordWebhook(
@@ -2549,7 +2549,7 @@ def clip(message_id, clip_desc=None):
         )
         response = webhook.execute()
         if not response.status_code == 200:
-            return "Error in sending message to discord. Perhaps the webhook is invalid. Please contant AG at https://discord.gg/2XVBWK99Vy"
+            return "Error in sending message to discord. Perhaps the webhook is invalid. Please contact AG1436 at https://discord.gg/2XVBWK99Vy"
         webhook_id = webhook.id  
         if show_link == 1: # we don't need to get webhook details if its not needed (optimization)
             webhook_details = GET(webhook_url).json() 
