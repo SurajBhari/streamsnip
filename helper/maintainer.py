@@ -96,8 +96,6 @@ def comment_task() -> str:
             
 def periodic_task():
     management_webhook = DiscordWebhook(url=management_webhook_url)
-    management_webhook.add_file(file=open("../queries.db", "rb"), filename="queries.db")
-    management_webhook.add_file(file=open("../record.log", "rb"), filename="record.log")
     management_webhook.content = f"<t:{int(time.time())}:F>"
     download_clips = os.listdir("../clips")
     deleted_clips = []
@@ -110,13 +108,7 @@ def periodic_task():
         deleted_clips.append(clip)
     os.system("ps auxf > file.txt")
     time.sleep(1)
-    management_webhook.add_file(file=open("file.txt", "rb"), filename="processes.txt")
-    management_webhook.add_file(
-        file=open("/var/log/apache2/error.log", "rb"), filename="error.log"
-    )
-    management_webhook.add_file(
-        file=open("/var/log/apache2/access.log", "rb"), filename="access.log"
-    )
+    file_list = ['file.txt', '/var/log/apache2/error.log', '/var/log/apache2/access.log']
     # management_webhook.add_file(file=open("../config.json", "rb"), filename="config.json")
     # consturct a string that contains most important vitals of system
     # and send it to the webhook
@@ -124,12 +116,19 @@ def periodic_task():
     management_webhook.content += system_vitals
     management_webhook.content += f"\nDeleted {(deleted_clips)} \nNot deleted {(not_deleted_clips)} clips"
     if task_count % 5 == 0:
-        management_webhook.add_file(file=open("../config.json", "r"), filename="config.json")
+        file_list.append("../config.json")
         comments = comment_task()
         # write the comments to a file and send it to the webhook
         with open("comments.txt", "w") as f:
             f.write(comments)
-        management_webhook.add_file(file=open("comments.txt", "rb"), filename="comments.txt")
+        file_list.append('comments.txt')
+    for file in file_list:
+        fwebhook = DiscordWebhook(url=management_webhook_url)
+        fwebhook.add_file(file, file.split("/")[-1])
+        try:
+            fwebhook.execute()
+        except Exception as e:
+            management_webhook.content += e
     try:
         management_webhook.execute()
     except request.exceptions.MissingSchema:
