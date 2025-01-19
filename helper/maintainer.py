@@ -124,7 +124,9 @@ def periodic_task():
         file_list.append('comments.txt')
     for file in file_list:
         fwebhook = DiscordWebhook(url=management_webhook_url)
-        fwebhook.add_file(file, file.split("/")[-1])
+        management_webhook.add_file(
+            file=open(file, "rb"), filename=file.split('/')[-1]
+        )
         try:
             fwebhook.execute()
         except Exception as e:
