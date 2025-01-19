@@ -124,7 +124,7 @@ def periodic_task():
         file_list.append('comments.txt')
     for file in file_list:
         fwebhook = DiscordWebhook(url=management_webhook_url)
-        management_webhook.add_file(
+        fwebhook.add_file(
             file=open(file, "rb"), filename=file.split('/')[-1]
         )
         try:
