@@ -695,7 +695,8 @@ def slash():
 @app.route("/")
 @app.route("/data")
 def data():
-    return "Disabled"
+    if not current_user.admin:
+        return "Disabled"
     clips = get_channel_clips()
     clips = [x.json() for x in clips]
     return clips
@@ -852,7 +853,8 @@ def export():
 def clips():
     data = get_channel_clips()
     if len(data) > 50000:
-        return "disabled"
+        if not current_user.admin:
+            return "Disabled"
     data = [x.json() for x in data if not x.private]
     for clip in data:
         """
