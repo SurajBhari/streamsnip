@@ -125,6 +125,7 @@ project_logo = base_domain + "/static/logo.png"
 project_repo_link = "https://github.com/SurajBhari/streamsnip"
 project_logo_discord = "https://raw.githubusercontent.com/SurajBhari/streamsnip/main/static/256_discord_ss.png" # link to logo that is used in discord 
 sub_based_sort = True # sort the channels on home page based on sub count
+discord_emoji_id = "1331745457507930192" # if there is emoji for project name then use it here.
 
 jar = None
 if "cookies.txt" in os.listdir("./helper"):
@@ -2500,7 +2501,10 @@ def clip(message_id, clip_desc=None):
     # if clip_time is in seconds. then hh:mm:ss format would be like
     hour_minute_second = time_to_hms(clip_time)
     is_privated_str = "(P) " if private else ""
-    message_cc_webhook = f"{is_privated_str}{clip_id} | **{clip_desc}** \n\n{hour_minute_second} \n<{url}>"
+    message_cc_webhook = ""
+    if discord_emoji_id:
+        message_cc_webhook += f"<{project_name.lower()}:{discord_emoji_id}> "
+    message_cc_webhook += f"{is_privated_str} {clip_id} | **{clip_desc}** \n\n{hour_minute_second} \n<{url}>"
     if delay:
         message_cc_webhook += f"\nDelayed by {delay} seconds."
     if message_level == 0:
@@ -2703,7 +2707,7 @@ def edit(clip_id=None):
         new_desc = clip_id
         clip_id = clip.id
     old_desc = clip.desc
-    edited = clip.edit(new_desc, conn)
+    edited = clip.edit(new_desc, conn, project_name=project_name, discord_emoji_id=discord_emoji_id)
     if not edited:
         return "Couldn't edit the clip"
     if silent == 0:
