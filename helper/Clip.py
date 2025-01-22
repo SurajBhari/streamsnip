@@ -122,7 +122,7 @@ class Clip:
         return x
 
     
-    def edit(self, new_desc: str, conn: sqlite3.Connection, project_name:str=None, discord_emoji_id:str=None):
+    def edit(self, new_desc: str, conn: sqlite3.Connection):
         with conn:
             cur = conn.cursor()
             cur.execute(
@@ -140,10 +140,7 @@ class Clip:
         if webhook_url and self.webhook:
             hms = self.hms
             is_privated_str = "(P) " if self.private else ""
-            new_message = ""
-            if discord_emoji_id and project_name:
-                new_message += f"<:{project_name.lower()}:{discord_emoji_id}> "
-            new_message += f"{is_privated_str}{self.id} | **{new_desc}** \n\n{hms}\n<{self.stream_link}>"
+            new_message = f"{is_privated_str}{self.id} | **{new_desc}** \n\n{hms}\n<{self.stream_link}>"
             if self.delay:
                 new_message += f"\nDelayed by {self.delay} seconds."
             if self.message_level == 1:
