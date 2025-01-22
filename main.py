@@ -2503,7 +2503,7 @@ def clip(message_id, clip_desc=None):
     is_privated_str = "(P) " if private else ""
     message_cc_webhook = ""
     if discord_emoji_id:
-        message_cc_webhook += f"<{project_name.lower()}:{discord_emoji_id}> "
+        message_cc_webhook += f"<:{project_name.lower()}:{discord_emoji_id}> "
     message_cc_webhook += f"{is_privated_str} {clip_id} | **{clip_desc}** \n\n{hour_minute_second} \n<{url}>"
     if delay:
         message_cc_webhook += f"\nDelayed by {delay} seconds."

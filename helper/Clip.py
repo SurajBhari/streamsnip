@@ -142,7 +142,7 @@ class Clip:
             is_privated_str = "(P) " if self.private else ""
             new_message = ""
             if discord_emoji_id and project_name:
-                new_message += f"<{project_name.lower()}:{discord_emoji_id}> "
+                new_message += f"<:{project_name.lower()}:{discord_emoji_id}> "
             new_message += f"{is_privated_str}{self.id} | **{new_desc}** \n\n{hms}\n<{self.stream_link}>"
             if self.delay:
                 new_message += f"\nDelayed by {self.delay} seconds."
