@@ -37,7 +37,7 @@ from flask import (
     send_from_directory
 )
 from flask_cors import CORS
-from flask_login import LoginManager, UserMixin, login_user, login_required, current_user, logout_user
+from flask_login import LoginManager, UserMixin, login_user, login_required, current_user, logout_user, AnonymousUserMixin
 from flask_sitemap import Sitemap
 from discord_webhook import DiscordWebhook, DiscordEmbed
 from chat_downloader.sites import YouTubeChatDownloader
@@ -243,7 +243,11 @@ with conn:
         conn.commit()
         print("Added comments column to SETTINGS table")
 
-
+class AnonymousUser(AnonymousUserMixin):
+    def __init__(self):
+        super().__init__()
+        self.admin = False
+    
 class User(UserMixin):
     def __init__(self, user_id, username, password, image=None):
         self.id = user_id
@@ -627,6 +631,8 @@ def before_request():
 @login_manager.user_loader
 def load_user(user_id):
     return User.get(user_id)
+
+login_manager.anonymous_user = AnonymousUser
 
 @app.route("/cache")
 def cache():
