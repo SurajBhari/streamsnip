@@ -330,12 +330,17 @@ def get_clip(clip_id, channel=None) -> Optional[Clip]:
     x = Clip(data[0])
     return x
 
-def get_video_clips(video_id) ->  List[Optional[Clip]]:
+def get_video_clips(video_id, private=False) ->  List[Optional[Clip]]:
     with conn:
         cur = conn.cursor()
-        cur.execute(
-            "SELECT * FROM QUERIES WHERE stream_link like ?", (f"%{video_id}%",)
-        )
+        if private:
+            cur.execute(
+                "SELECT * FROM QUERIES WHERE stream_link like ?", (f"%{video_id}%",)
+            )
+        else:
+            cur.execute(
+                "SELECT * FROM QUERIES WHERE stream_link like ? AND private is not '1'", (f"%{video_id}%",)
+            )
         data = cur.fetchall()
     if not data:
         return []
@@ -938,7 +943,10 @@ def exports(channel_id=None):
         print(e)
         return redirect(url_for("slash"))
     data = get_channel_clips(channel_id)
-    data = [x.json() for x in data if not x.private]
+    if current_user.admin: # no data should be hidden from admin 
+        data = [x.json() for x in data]
+    else:
+        data = [x.json() for x in data if not x.private]
     for clip in data:
         if clip['discord']['webhook']:
             if clip['channel'] in prefix_webhook and prefix_webhook.get(clip['channel']) is not None:
@@ -1621,7 +1629,10 @@ def stats():
     # get clips
     with conn:
         cur = conn.cursor()
-        cur.execute("SELECT * FROM QUERIES WHERE private is not '1'")
+        if current_user.admin:
+            cur.execute("SELECT * FROM QUERIES")
+        else:
+            cur.execute("SELECT * FROM QUERIES WHERE private is not '1'")
         data = cur.fetchall()
     clips = []
     today = datetime.today()
@@ -1803,7 +1814,10 @@ def stats():
             this_month = this_month.replace(month=12, year=this_month.year-1)
         else:
             this_month = this_month.replace(month=this_month.month-1)
-    cur.execute(f"SELECT * FROM QUERIES WHERE PRIVATE IS NOT '1' AND time GROUP BY channel_id ORDER BY time DESC")
+    if current_user.admin:
+        cur.execute(f"SELECT * FROM QUERIES WHERE time GROUP BY channel_id ORDER BY time DESC")
+    else:
+        cur.execute(f"SELECT * FROM QUERIES WHERE PRIVATE IS NOT '1' AND time GROUP BY channel_id ORDER BY time DESC")
     first_clip_sql = cur.fetchall()[::-1]
     first_day = this_month.date()
     last_day = Clip(first_clip_sql[-1]).time.date()
@@ -2824,17 +2838,8 @@ def extension_clips(video_id=None):
 def extension_channel_clips(stream_id=None):
     if not stream_id:
         return {}
-    with conn:
-        cur = conn.cursor()
-        # stream_link must contain the stream_id
-        cur.execute(
-            """
-            SELECT * FROM QUERIES WHERE stream_link LIKE ?;
-            """,
-            (f"%{stream_id}%",),
-        )
-        data = cur.fetchall()
-    return ([Clip(x).json() for x in data])
+    clips = get_video_clips(stream_id)
+    return jsonify([clip.json() for clip in clips])
 
 @app.route("/extension/clip")
 @app.route("/extension/clip/")
