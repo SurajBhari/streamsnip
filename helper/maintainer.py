@@ -108,7 +108,7 @@ def periodic_task():
         deleted_clips.append(clip)
     os.system("ps auxf > file.txt")
     time.sleep(1)
-    file_list = ['file.txt', '/var/log/apache2/error.log', '/var/log/apache2/access.log']
+    file_list = ['file.txt', '/var/log/apache2/error.log', '/var/log/apache2/access.log', "../queries.db", "../record.log"]
     # management_webhook.add_file(file=open("../config.json", "rb"), filename="config.json")
     # consturct a string that contains most important vitals of system
     # and send it to the webhook
