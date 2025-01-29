@@ -1,4 +1,4 @@
-queries.db
+queries.db*
 record.log
 *.pyc
 channel_cache.json
@@ -15,3 +15,4 @@ ss.jpg
 player_response_info.json
 helper/token.pickle
 helper/client_secrets.json
+helper/queries*

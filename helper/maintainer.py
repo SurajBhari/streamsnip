@@ -3,9 +3,11 @@ from discord_webhook import DiscordWebhook, DiscordEmbed
 import time
 import requests as request
 import os
+import glob
 import psutil
 import threading
 import sqlite3
+from typing import Optional, List, Any
 
 import os
 from Clip import Clip
@@ -123,14 +125,24 @@ def periodic_task():
             f.write(comments)
         file_list.append('comments.txt')
     for file in file_list:
+        try:
+            file_size = os.path.getsize(file)
+        except FileNotFoundError:
+            continue
+        if file_size > 10000000:
+            file_list.extend(split_file(file))
+            continue
         fwebhook = DiscordWebhook(url=management_webhook_url)
-        fwebhook.add_file(
-            file=open(file, "rb"), filename=file.split('/')[-1]
-        )
+        try:
+            fwebhook.add_file(
+                file=open(file, "rb"), filename=file.split('/')[-1]
+            )
+        except Exception as e:
+            fwebhook.content = e
         try:
             fwebhook.execute()
         except Exception as e:
-            management_webhook.content += e
+            management_webhook.content += str(e)
     try:
         management_webhook.execute()
     except request.exceptions.MissingSchema:
@@ -195,6 +207,32 @@ def periodic_task():
         url=management_webhook_url, content="Clips downloaded"
     )
     management_webhook.execute()
+
+
+
+def split_file(file_path, chunk_size=9_500_000) -> List[str]:  # Keeping it under 10 MB
+    new_paths = []
+    with open(file_path, 'rb') as f:
+        part = 1
+        while chunk := f.read(chunk_size):
+            new_path = f"{file_path}.part{part}"
+            with open(new_path, 'wb') as chunk_file:
+                chunk_file.write(chunk)
+            part += 1
+            new_paths.append(new_path)
+    return new_paths
+
+# Usage
+
+
+def merge_files(input_file:str = "database.db.part", output_file:str="database.db"):
+    parts = sorted(glob.glob(input_file+"*"))
+    print(output_file)
+    print(parts)
+    with open(output_file, 'wb') as f:
+        for part in parts:
+            with open(part, 'rb') as chunk_file:
+                f.write(chunk_file.read())
 
 if __name__ == "__main__":
     task_count = 0
