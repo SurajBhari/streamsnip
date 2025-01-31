@@ -85,7 +85,7 @@ def comment_task() -> str:
                     icon = ""
                 string += f"{clip.hms} | {clip.id} | {clip.desc} -- {icon} {clip.user_name}\n"
             try:
-                string = post_comment(clip.stream_id, string)
+                post_comment(clip.stream_id, string)
                 COMMENTS += "\n" + "Commented on " + clip.stream_id
                 pass
             except Exception as e:
