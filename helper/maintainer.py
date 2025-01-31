@@ -88,6 +88,7 @@ def comment_task() -> str:
             comment_count += 1
             if comment_count > 15:
                 COMMENTS += "\n" + "Comment Count surpassed 15"
+                break
             try:
                 post_comment(clip.stream_id, string)
                 COMMENTS += "\n" + "Commented on " + clip.stream_id
