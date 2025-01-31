@@ -55,7 +55,8 @@ def comment_task() -> str:
         clips = [Clip(x) for x in cur.fetchall()]
         previously_done = [x[0] for x in cur.execute("SELECT video_id FROM COMMENTS").fetchall()]
         comments_subscribers = [x[0] for x in cur.execute("SELECT channel_id from SETTINGS WHERE comments = 'True'").fetchall()]
-        for clip in clips[:15]: # only do 15 at time. 
+        comment_count = 0   
+        for clip in clips:
             if clip.channel not in comments_subscribers:
                 continue
             if clip.stream_id in previously_done:
@@ -84,6 +85,9 @@ def comment_task() -> str:
                 else:
                     icon = ""
                 string += f"{clip.hms} | {clip.id} | {clip.desc} -- {icon} {clip.user_name}\n"
+            comment_count += 1
+            if comment_count > 15:
+                COMMENTS += "\n" + "Comment Count surpassed 15"
             try:
                 post_comment(clip.stream_id, string)
                 COMMENTS += "\n" + "Commented on " + clip.stream_id
@@ -94,6 +98,7 @@ def comment_task() -> str:
                 continue # go to next stream. we will try again later
             cur.execute("INSERT INTO COMMENTS VALUES (?, ?, ?)", (clip.stream_id, string, int(time.time())))
             conn.commit()
+    COMMENTS += "\n" + "Done commenting"
     return COMMENTS
             
 def periodic_task():
