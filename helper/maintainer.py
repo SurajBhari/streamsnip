@@ -55,7 +55,7 @@ def comment_task() -> str:
         clips = [Clip(x) for x in cur.fetchall()]
         previously_done = [x[0] for x in cur.execute("SELECT video_id FROM COMMENTS").fetchall()]
         comments_subscribers = [x[0] for x in cur.execute("SELECT channel_id from SETTINGS WHERE comments = 'True'").fetchall()]
-        for clip in clips:
+        for clip in clips[:15]: # only do 15 at time. 
             if clip.channel not in comments_subscribers:
                 continue
             if clip.stream_id in previously_done:
