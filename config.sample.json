@@ -17,5 +17,8 @@
             "user": "",
             "pass": ""
         }
-    }
+    },
+    "pinned_channels":[
+        "channel_id"
+    ]
 }

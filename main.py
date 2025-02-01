@@ -701,7 +701,8 @@ def channels():
 @app.route("/")
 def slash():
     returning = generate_home_data()
-    return render_template("home.html", data=returning, sub_based_sort=not current_user.is_authenticated)
+    pinned = config.get("pinned_channels", [])
+    return render_template("home.html", data=returning, sub_based_sort=not current_user.is_authenticated, pinned=pinned)
 
 @app.route("/")
 @app.route("/data")

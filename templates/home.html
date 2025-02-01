@@ -65,6 +65,7 @@
 </center>
 <script>
     var data = {{ data|tojson }};
+    var pinned = {{ pinned|tojson }};
     var all=false;
     var sort_by = document.getElementById("sortby").value;
     function update_sort_by(){
@@ -88,6 +89,17 @@
         moree_img.src = "https://media.tenor.com/wpSo-8CrXqUAAAAi/loading-loading-forever.gif";
         add_channel_to_container(all=all);
         return true;
+    }
+    function put_pinned_forward(data, pinned){
+        for(var i=0; i<data.length; i++){
+            if(pinned.includes(data[i]['id'])){
+                var temp = data[i];
+                data.splice(i, 1);
+                data.unshift(temp);
+            }
+        }
+        return data;
+
     }
     function add_channel_to_container(all=false, data_=null){
         if(data_){
@@ -125,30 +137,44 @@
         }
         search_query = document.getElementById("search").value;
         temporary_html = "";
-        for(var i=0; i<limit;i++){
-            if(search_query){
-                if(!(data[i]['name']+" "+data[i]['id']).toLowerCase().includes(search_query.toLowerCase())){
+        data = put_pinned_forward(data, pinned);
+        console.log(data);
+        for (var i = 0; i < limit; i++) {
+            if (search_query) {
+                if (!(data[i]['name'] + " " + data[i]['id']).toLowerCase().includes(search_query.toLowerCase())) {
                     continue;
                 }
             }
-            var html = ""
-            var html = html + '<div class="col-3">';
-            html = html + `<span title="Last Clip - ${data[i]['last_clip']['timesince']}\n${data[i]['sub_count']} Subscribers\nFirst Clip - ${data[i]['first_clip_timesince']}\n${data[i]['clip_count']} Clips">`
-            html = html + '<a href="'+data[i]['link']+'">';
-            html = html + '<div class="card noborder">';
-            html = html + '<img class="card-img-top rounded" src="'+data[i]['image']+`" alt="Card image cap" load="lazy" onerror="this.src='https://i.pinimg.com/564x/3b/27/a8/3b27a87fcf7d90ae564be23d7a37f778.jpg';this.onerror=''">`;
-            html = html + '<div class="card-body card-no-left-right-padding">';
-            if(data[i]['deleted']){
-                html = html + '<h6 class="card-title" id="'+data[i]['id']+'"> DELETED CHANNEL ( '+data[i]['id']+' )</h6>';
-            }else{
-                html = html + '<h6 class="card-title" id="'+data[i]['id']+'">'+data[i]['name']+'</h6>';
+            var html = "";
+            html += '<div class="col-3">';
+            html += `<span title="Last Clip - ${data[i]['last_clip']['timesince']}\n${data[i]['sub_count']} Subscribers\nFirst Clip - ${data[i]['first_clip_timesince']}\n${data[i]['clip_count']} Clips">`;
+            html += '<a href="' + data[i]['link'] + '">';
+            html += '<div class="card noborder position-relative">';
+
+            // Image with pinned icon
+            html += '<div class="position-relative">';
+            html += '<img class="card-img-top rounded" src="' + data[i]['image'] + `" alt="Card image cap" load="lazy" onerror="this.src='https://i.pinimg.com/564x/3b/27/a8/3b27a87fcf7d90ae564be23d7a37f778.jpg';this.onerror=''">`;
+            
+            // Pinned icon in top-right corner
+            if (pinned.includes(data[i]['id'])) {
+                html += '<i class="fa-solid fa-thumbtack position-absolute" style="top: 18px; right: 18px; color: white; transform: rotate(45deg) scale(1.5);"></i>';
             }
-            html = html + '</div>';
-            html = html + '</div>';
-            html = html + '</a>';
-            html = html + '</span>';
-            html = html + '</div>';
-            temporary_html = temporary_html + html;
+
+            html += '</div>'; // Close image wrapper
+
+            html += '<div class="card-body card-no-left-right-padding">';
+            if (data[i]['deleted']) {
+                html += '<h6 class="card-title" id="' + data[i]['id'] + '"> DELETED CHANNEL ( ' + data[i]['id'] + ' )</h6>';
+            } else {
+                html += '<h6 class="card-title" id="' + data[i]['id'] + '">' + data[i]['name'] + '</h6>';
+            }
+            html += '</div>';
+            html += '</div>';
+            html += '</a>';
+            html += '</span>';
+            html += '</div>';
+            
+            temporary_html += html;
         }
         container.innerHTML = temporary_html;
         if(all){
