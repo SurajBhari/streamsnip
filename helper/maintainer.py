@@ -70,7 +70,7 @@ def comment_task() -> str:
             clips_for_stream = [Clip(x) for x in cur.fetchall()]
             if not clips_for_stream:
                 continue
-            string = "Clips For This stream:\n"
+            string = "Clips For This stream: (this is a BETA option. please take this with a grain of salt)\n"
             for clip in clips_for_stream:
                 if clip.userlevel == "everyone" or not clip.userlevel:
                     icon = ""
@@ -85,6 +85,7 @@ def comment_task() -> str:
                 else:
                     icon = ""
                 string += f"{clip.hms} | {clip.id} | {clip.desc} -- {icon} {clip.user_name}\n"
+            string += "\nThat's all. \n\nThis is a BETA feature. Please take this with a grain of salt. If you have any feedback, please let me know."
             comment_count += 1
             if comment_count > 15:
                 COMMENTS += "\n" + "Comment Count surpassed 15"
