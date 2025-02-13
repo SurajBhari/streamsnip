@@ -42,7 +42,7 @@ DiscordWebhook(url=management_webhook_url, content="Maintainer started").execute
 
 conn = sqlite3.connect("../queries.db")
 
-
+failed_ids = []
 def comment_task() -> str:
     COMMENTS = ""
     with conn:
@@ -91,11 +91,16 @@ def comment_task() -> str:
                 COMMENTS += "\n" + "Comment Count surpassed 15"
                 break
             try:
+                if failed_ids.count(clip.stream_id) > 2:
+                    COMMENTS += "\n" + f"Failed to comment 3 times. Skipping this stream {clip.stream_id}"
+                    comment_count -= 1 # we are not commenting on this stream so we need to reduce the count
+                    continue
                 post_comment(clip.stream_id, string)
                 COMMENTS += "\n" + "Commented on " + clip.stream_id
                 pass
             except Exception as e:
                 COMMENTS += f"\nFailed to post comment for {clip.stream_id} {e}"
+                failed_ids.append(clip.stream_id)
                 print(e)
                 continue # go to next stream. we will try again later
             cur.execute("INSERT INTO COMMENTS VALUES (?, ?, ?)", (clip.stream_id, string, int(time.time())))
