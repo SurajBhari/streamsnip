@@ -12,7 +12,7 @@ mod_icon = "🔧"
 regular_icon = "🧑‍🌾"
 subscriber_icon = "⭐"
 
-from .Clip import Clip
+
 def time_to_hms(seconds: int):
     hour = int(seconds / 3600)
     minute = int(seconds / 60) % 60
@@ -99,7 +99,7 @@ def list_comments(video_id):
     )
     return request.execute()
 
-def prepare_comment_text(clips: List[Clip]) -> str:
+def prepare_comment_text(clips: List) -> str:
     string = "Clips For This stream: (this is a BETA option. please take this with a grain of salt)\n"
     for clip in clips:
         if clip.userlevel == "everyone" or not clip.userlevel:
