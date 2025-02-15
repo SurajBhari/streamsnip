@@ -2830,6 +2830,35 @@ def searchuser(query=None):
         answer.append([f"{user[1]} ({user[2]} clips)", url_for("user_stats", channel_id=user[0])])
     return answer
 
+@app.route("/extension/request_comment/<video_id>")
+def request_comment(video_id:str=None):
+    if not video_id:
+        return "No video id provided"
+    # if we already have comment we don't need to give it back
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT comment FROM QUERIES WHERE video_id = ?
+            """, (video_id,)
+        )
+        data = cur.fetchall()
+        if data:
+            return "Comment already existed. if you don't see it. then it was deleted or held in review.", 200
+    clips = get_video_clips(video_id)
+    if not clips:
+        return "No clips found for this video", 404
+    string = prepare_comment_text(clips)
+    try:
+        post_comment(video_id, string)
+    except:
+        return "Failed to post comment", 500
+    with conn:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO COMMENTS VALUES (?, ?, ?)", (video_id, string, int(time.time())))
+        conn.commit()
+    return "Comment posted, Please refresh if you don't see it.", 200
+
 @app.route("/extension/clips")
 @app.route("/extension/clips/")
 @app.route("/extension/clips/<video_id>")

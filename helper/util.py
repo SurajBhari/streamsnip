@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from json import load, dump
 
 from googleapiclient.discovery import build
@@ -7,6 +7,12 @@ from google.auth.transport.requests import Request
 import pickle
 import os
 
+owner_icon = "👑"
+mod_icon = "🔧"
+regular_icon = "🧑‍🌾"
+subscriber_icon = "⭐"
+
+from Clip import Clip
 def time_to_hms(seconds: int):
     hour = int(seconds / 3600)
     minute = int(seconds / 60) % 60
@@ -93,6 +99,25 @@ def list_comments(video_id):
     )
     return request.execute()
 
+def prepare_comment_text(clips: List[Clip]) -> str:
+    string = "Clips For This stream: (this is a BETA option. please take this with a grain of salt)\n"
+    for clip in clips:
+        if clip.userlevel == "everyone" or not clip.userlevel:
+            icon = ""
+        elif clip.userlevel == "owner":
+            icon = owner_icon
+        elif clip.userlevel == "moderator":
+            icon = mod_icon 
+        elif clip.userlevel == "subscriber":
+            icon = subscriber_icon
+        elif clip.userlevel == "regular":
+            icon = regular_icon
+        else:
+            icon = ""
+        string += f"{clip.hms} | {clip.id} | {clip.desc} -- {icon} {clip.user_name}\n"
+    string += "\nThat's all. \n\nThis is a BETA feature. Please take this with a grain of salt. If you have any feedback, please let me know."
+    return string
+    
 if __name__ == "__main__":
     # Replace with your video ID and comment text
     VIDEO_ID = "mtfr0OkzTks"
