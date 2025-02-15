@@ -12,7 +12,7 @@ mod_icon = "🔧"
 regular_icon = "🧑‍🌾"
 subscriber_icon = "⭐"
 
-from Clip import Clip
+from .Clip import Clip
 def time_to_hms(seconds: int):
     hour = int(seconds / 3600)
     minute = int(seconds / 60) % 60
