@@ -76,6 +76,9 @@ def comment_task() -> str:
                     COMMENTS += "\n" + f"Failed to comment 3 times. Skipping this stream {clip.stream_id}"
                     comment_count -= 1 # we are not commenting on this stream so we need to reduce the count
                     continue
+                if is_video_live(clip.stream_id):
+                    COMMENTS += "\n" + f"Stream is live. Skipping {clip.stream_id}"
+                    continue
                 post_comment(clip.stream_id, string)
                 COMMENTS += "\n" + "Commented on " + clip.stream_id
                 pass

@@ -70,10 +70,21 @@ def authenticate_youtube():
     
     return build("youtube", "v3", credentials=creds)
 
+def is_video_live(video_id):
+    youtube = authenticate_youtube()
+    request = youtube.videos().list(
+        part="snippet,statistics",
+        id=video_id
+    )
+    response = request.execute()
+    try:
+        return response['items'][0]['snippet']['liveBroadcastContent'] == "live"
+    except KeyError:
+        return False
+
 def post_comment(video_id, comment_text):
     """Post a comment on a YouTube video."""
     youtube = authenticate_youtube()
-    
     request = youtube.commentThreads().insert(
         part="snippet",
         body={
