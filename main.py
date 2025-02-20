@@ -771,7 +771,7 @@ def login_google():
     request_uri = oauthclient.prepare_request_uri(
         authorization_endpoint,
         redirect_uri=request.base_url + "/callback",
-        scope=["openid", "email", "profile"],
+        scope=["openid", "email", "profile", "youtube.readonly", "youtubepartner"],
     )
     return redirect(request_uri)
 @app.route("/login", methods=["POST", "GET"])
