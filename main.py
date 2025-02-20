@@ -14,6 +14,7 @@ from urllib import parse
 from urllib.parse import parse_qs
 from json import load, dump, loads, dumps
 from http.cookiejar import MozillaCookieJar
+from oauthlib.oauth2 import WebApplicationClient
 
 # Third-party library imports
 import yagmail
@@ -24,6 +25,7 @@ import dns.reversename
 import scrapetube
 from requests import get as GET
 from requests import get
+from requests import post as POST
 from bs4 import BeautifulSoup
 from flask import (
     Flask,
@@ -75,6 +77,14 @@ except FileNotFoundError:
     exit(1)
 
 try:
+    GOOGLE_CLIENT_ID = config["google"]['client_id']
+    GOOGLE_CLIENT_SECRET = config["google"]['client_secret']
+    GOOGLE_DISCOVERY_URL = config["google"]['discovery_url']
+except KeyError:
+    GOOGLE_CLIENT_ID = GOOGLE_CLIENT_SECRET = GOOGLE_DISCOVERY_URL = None # we don't have google creds
+
+oauthclient = WebApplicationClient(GOOGLE_CLIENT_ID)
+try:
     cronitor.api_key = config["cronitor_api_key"]
 except FileNotFoundError:
     cronitor.api_key = None
@@ -125,6 +135,7 @@ project_logo = base_domain + "/static/logo.png"
 project_repo_link = "https://github.com/SurajBhari/streamsnip"
 project_logo_discord = "https://raw.githubusercontent.com/SurajBhari/streamsnip/main/static/256_discord_ss.png" # link to logo that is used in discord 
 sub_based_sort = True # sort the channels on home page based on sub count
+
 
 jar = None
 if "cookies.txt" in os.listdir("./helper"):
@@ -725,6 +736,44 @@ def session_data():
 def _user():
     return dumps(current_user.__dict__, indent=4)
 
+def get_google_provider_cfg():
+    return get(GOOGLE_DISCOVERY_URL).json()
+
+@app.route("/login/google/callback")
+def login_google_callback():
+    code = request.args.get("code")
+    google_provider_cfg = get_google_provider_cfg()
+    token_endpoint = google_provider_cfg["token_endpoint"]
+    token_url, headers, body = oauthclient.prepare_token_request(
+        token_endpoint,
+        authorization_response=request.url,
+        redirect_url=request.base_url,
+        code=code
+    )
+    token_response = POST(
+        token_url,
+        headers=headers,
+        data=body,
+        auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
+    )
+
+    # Parse the tokens!
+    oauthclient.parse_request_body_response(dumps(token_response.json()))
+    userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
+    uri, headers, body = oauthclient.add_token(userinfo_endpoint)
+    userinfo_response = get(uri, headers=headers, data=body)
+    return userinfo_response.json()
+
+@app.route("/login/google")
+def login_google():
+    google_provider_cfg = get_google_provider_cfg()
+    authorization_endpoint = google_provider_cfg["authorization_endpoint"]
+    request_uri = oauthclient.prepare_request_uri(
+        authorization_endpoint,
+        redirect_uri=request.base_url + "/callback",
+        scope=["openid", "email", "profile"],
+    )
+    return redirect(request_uri)
 @app.route("/login", methods=["POST", "GET"])
 def login():
     if request.method == "POST":

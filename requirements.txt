@@ -15,3 +15,5 @@ flask-login
 yagmail
 google-api-python-client
 google-auth-oauthlib
+oauthlib
+pyOpenSSL

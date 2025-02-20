@@ -20,5 +20,10 @@
     },
     "pinned_channels":[
         "channel_id"
-    ]
+    ],
+    "google":{
+        "client_id": "google client id",
+        "client_secret": "google client secret",
+        "discovery_url": "https://accounts.google.com/.well-known/openid-configuration"
+    }
 }
