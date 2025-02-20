@@ -715,6 +715,11 @@ def slash():
     pinned = config.get("pinned_channels", [])
     return render_template("home.html", data=returning, sub_based_sort=not current_user.is_authenticated, pinned=pinned)
 
+@app.route("/privacy-policy")
+def privacy():
+    return render_template("privacy-policy.html")
+
+
 @app.route("/")
 @app.route("/data")
 def data():
