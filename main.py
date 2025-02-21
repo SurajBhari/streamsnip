@@ -4,6 +4,7 @@ import os
 import time
 import random
 import logging
+import math
 import subprocess
 import sqlite3
 from datetime import datetime, timedelta, timezone
@@ -49,6 +50,7 @@ from chat_downloader import ChatDownloader
 from helper.util import *
 from helper.Clip import Clip, time_since
 from helper.UserSettings import UserSettings
+from helper.Membership import Membership
 
 # we are in /var/www/streamsnip
 import os
@@ -267,7 +269,7 @@ class AnonymousUser(AnonymousUserMixin):
         self.admin = False
     
 class User(UserMixin):
-    def __init__(self, user_id, username, password, image=None):
+    def __init__(self, user_id, username, password, image=None, sub_count=0):
         self.id = user_id
         if self.id == "admin":
             username = "Admin"
@@ -276,7 +278,8 @@ class User(UserMixin):
         self.name = username
         self.password = password
         self.image = image
-        self.admin = True if username.lower() == 'admin' else False
+        self.admin = True if self.id.lower() == 'admin' else False
+        self.sub_count = sub_count
 
     def get_id(self):
         return self.id
@@ -292,7 +295,7 @@ class User(UserMixin):
             print(f"User {user_id} not found in creds")
             return None
         username, image = get_channel_name_image(user_id)
-        return User(user_id, username, creds[user_id], image)
+        return User(user_id, username, creds[user_id], image, sub_count=channel_info[user_id]['sub_count'])
     
 def get_channel_settings(user_id) -> UserSettings:
     with conn:
@@ -887,10 +890,58 @@ def default_settings():
     add_default_settings(current_user.id)
     return "OK", 200
 
+def get_membership_details(channel_id):
+    with conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM MEMBERSHIP WHERE channel_id=?", (channel_id,))
+        data = cur.fetchone()
+    if not data:
+        return None
+    return Membership(data)
+
+def calculate_membership(sub_count:int) -> int:
+    if sub_count < 5000:
+        return 3.7 # around 100 rs per month
+    if sub_count < 10000:
+        return 5.55 # around 150 rs per month
+    if sub_count < 25000:
+        return 7.4 # around 200 rs per month
+    if sub_count < 50000:
+        return 9.25 # around 250 rs per month
+    if sub_count < 100000:
+        return 11.1 # around 300 rs per month
+    if sub_count < 250000:
+        return 14.8 # around 400 rs per month
+    return 18.5 # around 500 rs per month
+
+@app.route("/membership", methods=["POST", "GET"])
+@login_required
+def extend_membership():
+    details = get_membership_details(current_user.id)
+    print(request.form)
+    days = request.form.get("days")
+    if not days:
+        return redirect('settings')
+    days = int(days)
+    if days < 1:
+        return redirect('settings')
+    
+    multiplier = calculate_membership(current_user.sub_count)
+    amount = days * multiplier
+    # floor the amount to 2 decimal places
+    amount = math.floor(amount * 100) / 100
+    return "Done " + str(amount)
+
 @app.route("/settings" , methods=["POST", "GET"])
 @login_required
 def settings():
     settings = get_channel_settings(current_user.id)
+    membership_details = get_membership_details(current_user.id)
+    try: # fuck around
+        getattr(current_user, "sub_count")
+    except AttributeError: # find out
+        current_user.sub_count = channel_info[current_user.id]["sub_count"]
+    multiplier = calculate_membership(current_user.sub_count)
     if request.method == "POST":
         settings.show_link = request.json.get("show_link")
         settings.screenshot = request.json.get("screenshot")
@@ -906,7 +957,14 @@ def settings():
         if not settings.write(conn):
             return "Failed to write settings", 500
         return "OK", 200
-    return render_template("settings.html", session=session, settings=settings)
+    return render_template(
+        "settings.html", 
+        session=session, 
+        settings=settings, 
+        membership_details=membership_details.json(), 
+        multiplier=multiplier
+    )
+
     
 
 # this is for nightbot to give back export link
