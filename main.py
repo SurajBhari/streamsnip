@@ -254,6 +254,13 @@ with conn:
         conn.commit()
         print("Added comments column to SETTINGS table")
 
+with conn:
+    cur = conn.cursor()
+    cur.execute("CREATE TABLE IF NOT EXISTS MEMBERSHIP(channel_id VARCHAR(40), till INT)")
+    conn.commit()
+    cur.execute("CREATE TABLE IF NOT EXISTS TRANSACTIONS(channel_id VARCHAR(40), amount INT, time INT, transaction_id VARCHAR(40))")
+    conn.commit()
+    
 class AnonymousUser(AnonymousUserMixin):
     def __init__(self):
         super().__init__()
