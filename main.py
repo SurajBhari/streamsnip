@@ -295,7 +295,11 @@ class User(UserMixin):
             print(f"User {user_id} not found in creds")
             return None
         username, image = get_channel_name_image(user_id)
-        return User(user_id, username, creds[user_id], image, sub_count=channel_info[user_id]['sub_count'])
+        try:
+            sub_count = channel_info[user_id]['sub_count']
+        except KeyError:
+            sub_count = 0
+        return User(user_id, username, creds[user_id], image, sub_count=sub_count)
     
 def get_channel_settings(user_id) -> UserSettings:
     with conn:
