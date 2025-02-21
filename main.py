@@ -895,8 +895,8 @@ def get_membership_details(channel_id):
         cur = conn.cursor()
         cur.execute("SELECT * FROM MEMBERSHIP WHERE channel_id=?", (channel_id,))
         data = cur.fetchone()
-    if not data:
-        return None
+    if not data: # we assume data 
+        data = [channel_id, 0]
     return Membership(data)
 
 def calculate_membership(sub_count:int) -> int:
