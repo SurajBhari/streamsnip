@@ -32,6 +32,7 @@
             const darkThemeMq = window.matchMedia("(prefers-color-scheme: dark)");
             var form_control = document.getElementsByClassName("form-control");
             var a = document.getElementsByTagName("a");
+            var ul = document.getElementsByTagName("ul");
             // append "select" objects to "a" list 
             var select = document.getElementsByTagName("select");
             if (!localStorage.getItem("darkTheme")) {
@@ -57,6 +58,9 @@
                 for(var i=0; i<select.length; i++){
                     select[i].classList.add("dark-theme");
                 }
+                for(var i=0; i<ul.length; i++){
+                    ul[i].classList.add("dark-theme");
+                }
             }
             else{
                 body.classList.remove("dark-theme");
@@ -69,6 +73,9 @@
 
                 for(var i=0; i<select.length; i++){
                     select[i].classList.remove("dark-theme");
+                }
+                for(var i=0; i<ul.length; i++){
+                    ul[i].classList.remove("dark-theme");
                 }
             }
             if(isDarkTheme){
@@ -175,14 +182,15 @@
                         <a class="nav-link" href="#" onclick="toggleDarkTheme()" id="theme_button"></a>
                     </li>
                     {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="/settings"><i class="fa-solid fa-gear"></i></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/logout">
-                                <i class="fa-solid fa-sign-out"></i> Logout, {{current_user.name}}
-                            </a>
-                        </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="{{current_user.image}}" alt="Profile" class="rounded-circle" width="32" height="32">
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="/settings"><i class="fa-solid fa-gear"></i> Settings</a></li>
+                            <li><a class="dropdown-item" href="/logout"><i class="fa-solid fa-sign-out"></i> Logout</a></li>
+                        </ul>
+                    </li>                    
                     {% else %}
                         <li class="nav-item">
                             <a class="nav-link" href="/login"><i class="fa-solid fa-sign-in"></i></a>
