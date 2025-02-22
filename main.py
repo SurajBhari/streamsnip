@@ -971,7 +971,7 @@ def pay():
     print("days, multiplier")
     print(days, multiplier)
     amount = days * multiplier
-    amount = int(amount) # razorpay only accept integer values
+    amount = amount * 100 # 100 paise per rupee i have no idea why we have to pass it in paise and not rs. 
 
     data = { "amount": amount, "currency": "INR", "receipt": "order_rcptid_11" }
     payment = razorclient.order.create(data=data)
