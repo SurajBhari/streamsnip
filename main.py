@@ -967,8 +967,9 @@ def pay():
     days = int(days)
     if days < 1:
         return redirect('settings')
-    
     multiplier = calculate_membership(current_user.sub_count)
+    print("days, multiplier")
+    print(days, multiplier)
     amount = days * multiplier
     amount = int(amount) # razorpay only accept integer values
 
