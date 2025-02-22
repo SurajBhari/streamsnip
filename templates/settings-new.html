@@ -21,7 +21,7 @@
         </div>
         <div class="col-md-6 d-flex flex-column align-items-end">
             <span>{{ membership_details.days_left }} days left in membership.</span>
-            <form action="/membership" method="POST" class="mt-2">
+            <form action="/pay" method="POST" class="mt-2">
                 <div class="d-flex align-items-center mb-2">
                     <input type="number" name="days" value="27" oninput="calculatetotal()" class="form-control" style="width: 100px;" placeholder="Days" id="daysInput">
                     <span class="mx-2">X</span>

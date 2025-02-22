@@ -23,6 +23,7 @@ import cronitor
 import yt_dlp
 import dns.resolver
 import dns.reversename
+import razorpay
 import scrapetube
 from requests import get as GET
 from requests import get
@@ -82,8 +83,13 @@ try:
     GOOGLE_CLIENT_ID = config["google"]['client_id']
     GOOGLE_CLIENT_SECRET = config["google"]['client_secret']
     GOOGLE_DISCOVERY_URL = config["google"]['discovery_url']
+    RAZORPAY_ID = config["razorpay"]['id']
+    RAZORPAY_SECRET = config["razorpay"]['secret']
+    razorclient = razorpay.Client(auth=(RAZORPAY_ID, RAZORPAY_SECRET))
 except KeyError:
     GOOGLE_CLIENT_ID = GOOGLE_CLIENT_SECRET = GOOGLE_DISCOVERY_URL = None # we don't have google creds
+    RAZORPAY_ID = RAZORPAY_SECRET = None
+    razorclient = None
 
 oauthclient = WebApplicationClient(GOOGLE_CLIENT_ID)
 try:
@@ -918,23 +924,6 @@ def calculate_membership(sub_count:int) -> int:
         return 14.8 # around 400 rs per month
     return 18.5 # around 500 rs per month
 
-@app.route("/membership", methods=["POST", "GET"])
-@login_required
-def extend_membership():
-    details = get_membership_details(current_user.id)
-    print(request.form)
-    days = request.form.get("days")
-    if not days:
-        return redirect('settings')
-    days = int(days)
-    if days < 1:
-        return redirect('settings')
-    
-    multiplier = calculate_membership(current_user.sub_count)
-    amount = days * multiplier
-    # floor the amount to 2 decimal places
-    amount = math.floor(amount * 100) / 100
-    return "Done " + str(amount)
 
 @app.route("/settings" , methods=["POST", "GET"])
 @login_required
@@ -962,14 +951,51 @@ def settings():
             return "Failed to write settings", 500
         return "OK", 200
     return render_template(
-        "settings.html", 
+        "settings-new.html", 
         session=session, 
         settings=settings, 
         membership_details=membership_details.json(), 
         multiplier=multiplier
     )
 
+@app.route('/pay', methods=["GET", "POST"])
+def pay():
+    details = get_membership_details(current_user.id)
+    days = request.form.get("days")
+    if not days:
+        return redirect('settings')
+    days = int(days)
+    if days < 1:
+        return redirect('settings')
     
+    multiplier = calculate_membership(current_user.sub_count)
+    amount = days * multiplier
+    # floor the amount to 2 decimal places
+    amount = math.floor(amount * 100) / 100
+
+    data = { "amount": amount, "currency": "INR", "receipt": "order_rcptid_11" }
+    payment = razorclient.order.create(data=data)
+    pdata=[amount, payment["id"]]
+    callback = "/pay/callback?amount=" + str(amount) + "&days=" + str(days)
+    name = channel_info[current_user.id]["name"]
+    return render_template("pay.html", rzp_id=RAZORPAY_ID, oid=payment["id"], callback=callback, amount=amount, name=name)
+
+@app.route("/pay/callback", methods=["POST"])
+def callback():
+    pid=request.form.get("razorpay_payment_id")
+    ordid=request.form.get("razorpay_order_id")
+    sign=request.form.get("razorpay_signature")
+    print(f"The payment id : {pid}, order id : {ordid} and signature : {sign}")
+    params={
+        'razorpay_order_id': ordid,
+        'razorpay_payment_id': pid,
+        'razorpay_signature': sign
+    }
+    final=razorclient.utility.verify_payment_signature(params)
+    if final is True:
+        return redirect("/", code=301)
+    return "Something Went Wrong Please Try Again"
+
 
 # this is for nightbot to give back export link
 @app.route("/export")

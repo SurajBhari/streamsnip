@@ -1,0 +1,23 @@
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+var options = {
+    "key": "{{rzp_id}}", // Enter the Key ID generated from the Dashboard
+    "amount": "{{amount}}", // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+    "currency": "INR",
+    "name": "StreamSnip",
+    "description": "Extend Membership",
+    "image": "https://streamsnip.com/static/logo.svg",
+    "order_id": "{{oid}}",
+    "callback_url": "{{callback}}",
+    "prefill": {
+        "name": "{{name}}",
+    },
+    "notes": {
+    },
+    "theme": {
+        "color": "#5cffab"
+    }
+};
+var rzp1 = new Razorpay(options);
+rzp1.open();
+</script>
