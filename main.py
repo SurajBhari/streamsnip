@@ -970,12 +970,10 @@ def pay():
     
     multiplier = calculate_membership(current_user.sub_count)
     amount = days * multiplier
-    # floor the amount to 2 decimal places
-    amount = math.floor(amount * 100) / 100
+    amount = int(amount) # razorpay only accept integer values
 
     data = { "amount": amount, "currency": "INR", "receipt": "order_rcptid_11" }
     payment = razorclient.order.create(data=data)
-    pdata=[amount, payment["id"]]
     callback = "/pay/callback?amount=" + str(amount) + "&days=" + str(days)
     name = channel_info[current_user.id]["name"]
     return render_template("pay.html", rzp_id=RAZORPAY_ID, oid=payment["id"], callback=callback, amount=amount, name=name)
