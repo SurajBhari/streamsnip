@@ -924,6 +924,38 @@ def calculate_membership(sub_count:int) -> int:
         return 14.8 # around 400 rs per month
     return 18.5 # around 500 rs per month
 
+@app.route("/settings-new" , methods=["POST", "GET"])
+@login_required
+def settings():
+    settings = get_channel_settings(current_user.id)
+    membership_details = get_membership_details(current_user.id)
+    try: # fuck around
+        getattr(current_user, "sub_count")
+    except AttributeError: # find out
+        current_user.sub_count = channel_info[current_user.id]["sub_count"]
+    multiplier = calculate_membership(current_user.sub_count)
+    if request.method == "POST":
+        settings.show_link = request.json.get("show_link")
+        settings.screenshot = request.json.get("screenshot")
+        settings.delay = request.json.get("delay")
+        settings.force_desc = request.json.get("force_desc")
+        settings.silent = request.json.get("silent")
+        settings.private = request.json.get("private")
+        settings.webhook = request.json.get("webhook")
+        settings.message_level = request.json.get("message_level")
+        settings.take_delays = request.json.get("take_delays")
+        settings.comments = request.json.get("comments")
+        
+        if not settings.write(conn):
+            return "Failed to write settings", 500
+        return "OK", 200
+    return render_template(
+        "settings-new.html", 
+        session=session, 
+        settings=settings, 
+        membership_details=membership_details.json(), 
+        multiplier=multiplier
+    )
 
 @app.route("/settings" , methods=["POST", "GET"])
 @login_required
@@ -951,7 +983,7 @@ def settings():
             return "Failed to write settings", 500
         return "OK", 200
     return render_template(
-        "settings-new.html", 
+        "settings.html", 
         session=session, 
         settings=settings, 
         membership_details=membership_details.json(), 
@@ -992,7 +1024,7 @@ def callback():
     }
     final=razorclient.utility.verify_payment_signature(params)
     if final is True:
-        return redirect("/", code=301)
+        return redirect("/settings", code=301)
     return "Something Went Wrong Please Try Again"
 
 
