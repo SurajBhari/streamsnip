@@ -926,7 +926,7 @@ def calculate_membership(sub_count:int) -> int:
 
 @app.route("/settings-new" , methods=["POST", "GET"])
 @login_required
-def settings():
+def settings_new():
     settings = get_channel_settings(current_user.id)
     membership_details = get_membership_details(current_user.id)
     try: # fuck around
