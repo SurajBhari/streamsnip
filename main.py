@@ -143,7 +143,7 @@ project_logo = base_domain + "/static/logo.png"
 project_repo_link = "https://github.com/SurajBhari/streamsnip"
 project_logo_discord = "https://raw.githubusercontent.com/SurajBhari/streamsnip/main/static/256_discord_ss.png" # link to logo that is used in discord 
 sub_based_sort = True # sort the channels on home page based on sub count
-
+pay_dictionary = {}
 
 jar = None
 if "cookies.txt" in os.listdir("./helper"):
@@ -268,6 +268,14 @@ with conn:
     conn.commit()
     cur.execute("CREATE TABLE IF NOT EXISTS TRANSACTIONS(channel_id VARCHAR(40), amount INT, time INT, transaction_id VARCHAR(40))")
     conn.commit()
+    cur.execute("PRAGMA table_info(MEMBERSHIP)")
+    data = cur.fetchall()
+    colums = [xp[1] for xp in data]
+    if "type" not in colums:
+        cur.execute("ALTER TABLE MEMBERSHIP ADD COLUMN type INT DEFAULT 0")
+        conn.commit()
+        print("Added type column to MEMBERSHIP table")
+
     
 class AnonymousUser(AnonymousUserMixin):
     def __init__(self):
@@ -994,6 +1002,7 @@ def settings():
 def pay():
     details = get_membership_details(current_user.id)
     days = request.form.get("days")
+    typ = request.form.get("type")
     if not days:
         return redirect('settings')
     days = int(days)
@@ -1007,8 +1016,9 @@ def pay():
 
     data = { "amount": amount, "currency": "INR", "receipt": "order_rcptid_11" }
     payment = razorclient.order.create(data=data)
-    callback = "/pay/callback?amount=" + str(amount) + "&days=" + str(days)
+    callback = "/pay/callback"
     name = channel_info[current_user.id]["name"]
+    pay_dictionary[payment['id']] = {"amount": amount, "days": days, "type": typ}
     return render_template("pay.html", rzp_id=RAZORPAY_ID, oid=payment["id"], callback=callback, amount=amount, name=name)
 
 @app.route("/pay/callback", methods=["POST"])
@@ -1024,6 +1034,21 @@ def callback():
     }
     final=razorclient.utility.verify_payment_signature(params)
     if final is True:
+        order_details = pay_dictionary[ordid]
+        days = order_details["days"]
+        typ = order_details["type"]
+        amount = order_details["amount"]
+        old_membership = get_membership_details(current_user.id)
+        if old_membership.till < int(time.time()):
+            new_time = int(time.time()) + (days * 86400)
+        else:
+            new_time = old_membership.till + (days * 86400)
+        with conn:
+            cur = conn.cursor()
+            cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?)", (current_user.id, amount, int(time.time()), ordid))
+            conn.commit()
+            cur.execute("INSERT OR REPLACE INTO MEMBERSHIP (channel_id, till, type) VALUES (?, ?, ?);", (current_user.id, new_time, typ))
+            conn.commit()
         return redirect("/settings", code=301)
     return "Something Went Wrong Please Try Again"
 
