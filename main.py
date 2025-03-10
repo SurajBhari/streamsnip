@@ -2602,8 +2602,6 @@ def discord_clip(guild_id, channel_id, message=None):
         return "Guild id not found"
     if not channel_id:
         return "Channel id not found"
-    if not message:
-        return "Message id not found"
     return f"Guild id: {guild_id} Channel id: {channel_id} Message: {message}\n\nProbably not what you are looking for. use !clip on youtube only please\n\n\nAdmin ({base_domain})"
 
 # /clip/<message_id>/<clip_desc>?showlink=true&screenshot=true&dealy=-10&silent=2
