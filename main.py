@@ -2595,8 +2595,9 @@ def nstats():
     today_count_string = f" ({this_stream_count} today)" if this_stream_count != 0 else f""
     return f"{total_clips} clips have been made {today_count_string} by total {total_users} users, out of which {user_clip_count} clips ({percentage}%) have been made by you."
 
+@app.route("/clip/<guild_id>/<channel_id>/")
 @app.route("/clip/<guild_id>/<channel_id>/<message>")
-def discord_clip(guild_id, channel_id, message):
+def discord_clip(guild_id, channel_id, message=None):
     if not guild_id:
         return "Guild id not found"
     if not channel_id:
