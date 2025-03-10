@@ -772,10 +772,13 @@ def _user():
 def get_google_provider_cfg():
     return get(GOOGLE_DISCOVERY_URL).json()
 
+
 @app.route("/login/google/callback")
 def login_google_callback():
     code = request.args.get("code")
     google_provider_cfg = get_google_provider_cfg()
+    
+    # Step 1: Exchange Authorization Code for Token
     token_endpoint = google_provider_cfg["token_endpoint"]
     token_url, headers, body = oauthclient.prepare_token_request(
         token_endpoint,
@@ -790,12 +793,40 @@ def login_google_callback():
         auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
     )
 
-    # Parse the tokens!
+    # Parse and store access token
     oauthclient.parse_request_body_response(dumps(token_response.json()))
+    access_token = token_response.json().get("access_token")
+
+    # Step 2: Get User Info
     userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
     uri, headers, body = oauthclient.add_token(userinfo_endpoint)
     userinfo_response = get(uri, headers=headers, data=body)
-    return userinfo_response.json()
+    userinfo = userinfo_response.json()
+
+    # Step 3: Fetch YouTube Data (Example)
+    youtube_data = get_youtube_data(access_token)
+
+    return jsonify({
+        "userinfo": userinfo,
+        "youtube_data": youtube_data
+    })
+
+def get_youtube_data(access_token):
+    youtube_url = "https://www.googleapis.com/youtube/v3/channels"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    
+    params = {
+        "part": "snippet,statistics",
+        "mine": "true"
+    }
+
+    response = get(youtube_url, headers=headers, params=params)
+    
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return {"error": "Failed to fetch YouTube data", "details": response.json()}
+
 
 @app.route("/login/google")
 def login_google():
@@ -2602,7 +2633,7 @@ def discord_clip(guild_id, channel_id, message=None):
         return "Guild id not found"
     if not channel_id:
         return "Channel id not found"
-    return f"Guild id: {guild_id} Channel id: {channel_id} Message: {message}\n\nProbably not what you are looking for. use !clip on youtube only please\n\n\nAdmin ({base_domain})"
+    return f"Guild id: {guild_id} Channel id: {channel_id} Message: {message} Probably not what you are looking for. use !clip on youtube only. --Admin ({base_domain})"
 
 # /clip/<message_id>/<clip_desc>?showlink=true&screenshot=true&dealy=-10&silent=2
 @app.route("/clip/<message_id>/")
