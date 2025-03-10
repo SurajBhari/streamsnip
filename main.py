@@ -807,12 +807,12 @@ def login_google_callback():
     youtube_data = get_youtube_data(access_token)
 
     if youtube_data.get("error"):
-        return redirect(url_for("login/google")) # we do need to get the scope to validate the user
+        return redirect(url_for("login_google")) # we do need to get the scope to validate the user
     
     try:
         youtube_id = youtube_data['items'][0]['id']
     except KeyError:
-        return redirect(url_for("login/google")) # we do need to get the scope to validate the user
+        return redirect(url_for("login_google")) # we do need to get the scope to validate the user
     
     login_user(User.get(youtube_id), remember=True)
     session['logged_in'] = True
