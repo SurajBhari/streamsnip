@@ -1,0 +1,72 @@
+{% extends 'layout.html' %}
+
+{% block head_content %}
+<title>Membership</title>
+<meta property="og:title" content="Membership" />
+<meta property="og:description" content="Membership Details" />
+<meta property="og:url" content="/membership" />
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-wordcloud"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-autocolors"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-deferred/dist/chartjs-plugin-deferred.min.js"></script>
+<style>
+    .card-group {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        text-align: center;
+    }
+    .card {
+        flex: 1;
+        max-width: 300px;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    .pro-card {
+        background: #f8d7da;
+        border: 2px solid #dc3545;
+        transform: scale(1.05);
+    }
+    
+    .card-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="card-group">
+    <div class="card">
+        <h5 class="card-title">Basic</h5>
+        <p class="card-text">Enjoy essential features:</p>
+        <ul>
+            <li>Use <code>!clip</code> with default settings</li>
+            <li>Access <code>!edit</code> and <code>!delete</code></li>
+        </ul>
+    </div>
+    <div class="card pro-card">
+        <h5 class="card-title">Pro ⭐</h5>
+        <p class="card-text">Unlock advanced features:</p>
+        <ul>
+            <li>Everything in Basic</li>
+            <li>Automatic timestamps in comments (BETA)</li>
+            <li>Priority customer support</li>
+            <li><a href="https://github.com/SurajBhari/streamsnip?tab=readme-ov-file#optional-arguments">Customize all arguments</a></li>
+        </ul>
+    </div>
+    <div class="card">
+        <h5 class="card-title">Love 💗</h5>
+        <p class="card-text">For those who want to support us:</p>
+        <ul>
+            <li>Includes everything in Basic & Pro</li>
+            <li>No extra features—just love & appreciation ❤️</li>
+        </ul>
+    </div>
+</div>
+
+{% endblock %}
