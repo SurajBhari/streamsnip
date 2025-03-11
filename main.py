@@ -803,8 +803,8 @@ def login_google_callback():
 
     return jsonify(
         "Access Token: " + access_token,
-        "User Info: " + dumps(userinfo, indent=4),
-        "YouTube Data: " + dumps(youtube_data, indent=4)
+        "User Info: " + userinfo,
+        "YouTube Data: " + youtube_data
     )
 
     if youtube_data.get("error"):

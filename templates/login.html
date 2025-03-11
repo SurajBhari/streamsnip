@@ -9,16 +9,28 @@
 <div class="login form-control">
     <h1>Login</h1>
     <form action="{{ url_for('login') }}{{next}}" method="post">
-        <label for="username">
-            <i class="fas fa-user"></i>
-        </label>
-        <input type="password" name="password" placeholder="Password" id="password" required>
-        <input type="checkbox" id="remember" name="remember" value="remember" style="margin:3px 3px 3px 4px"> Remember Me
-        <div class="msg">{{ msg }}</div>
-        <input type="submit" value="Login">
+        <div style="display: flex;">
+            <label for="username">
+                <i class="fas fa-user"></i>
+            </label>
+            <input type="password" name="password" placeholder="Password" id="password" required>
+        </div>
+        <div style="display: flex; margin-left: 5%;">
+            <input type="checkbox" id="remember" name="remember" value="remember" style="margin:3px 3px 3px 4px"> Remember Me
+        </div>
+        <div class="msg" style="display: flex; text-align: center; font-size: small; margin-top: 20px;">{{ msg }}</div>
+        <div style="display: flex; justify-content: center;">
+            <input type="submit" class="btn btn-secondary" style="width: 50%;" value="Login">
+        </div>
     </form>
-    
-    
+    <a href="/">
+        <!--center the sign in button-->
+        <div style="display: flex; justify-content: center; margin-top: 5%;">
+            <img src="/static/sign_dark.png" id="google_sign_in" alt="Sign in with Google" style="width: 50%;">
+        </div> 
+        DISABLED (AWAITING APPROVAL FROM GOOGLE)
+        
+    </a>
 </div>
 
 {% endblock %}
