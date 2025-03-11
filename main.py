@@ -16,6 +16,7 @@ from urllib.parse import parse_qs
 from json import load, dump, loads, dumps
 from http.cookiejar import MozillaCookieJar
 from oauthlib.oauth2 import WebApplicationClient
+from oauthlib.oauth2.rfc6749.errors import *
 
 # Third-party library imports
 import yagmail
@@ -775,12 +776,15 @@ def login_google_callback():
     
     # Step 1: Exchange Authorization Code for Token
     token_endpoint = google_provider_cfg["token_endpoint"]
-    token_url, headers, body = oauthclient.prepare_token_request(
-        token_endpoint,
-        authorization_response=request.url,
-        redirect_url=request.base_url,
-        code=code
-    )
+    try:
+        token_url, headers, body = oauthclient.prepare_token_request(
+            token_endpoint,
+            authorization_response=request.url,
+            redirect_url=request.base_url,
+            code=code
+        )
+    except (AccessDeniedError, InvalidGrantError, MissingCodeError):
+        return redirect(url_for("login_google"))
     token_response = POST(
         token_url,
         headers=headers,
