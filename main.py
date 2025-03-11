@@ -801,11 +801,10 @@ def login_google_callback():
     # Step 3: Fetch YouTube Data (Example)
     youtube_data = get_youtube_data(access_token)
 
-    return jsonify(
-        "Access Token: " + access_token,
-        "User Info: " + userinfo,
-        "YouTube Data: " + youtube_data
-    )
+    return jsonify({
+         "userinfo": userinfo,
+         "youtube_data": youtube_data
+     })
 
     if youtube_data.get("error"):
         return redirect(url_for("login_google")) # we do need to get the scope to validate the user
