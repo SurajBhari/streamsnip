@@ -302,18 +302,13 @@ class User(UserMixin):
     def get(user_id):
         # load the config file
         creds = get_creds()
-        if not creds:
-            print("No creds found")
-            return None
-        if user_id not in creds:
-            print(f"User {user_id} not found in creds")
-            return None
+        password = creds.get(user_id, None)
         username, image = get_channel_name_image(user_id)
         try:
             sub_count = channel_info[user_id]['sub_count']
         except KeyError:
             sub_count = 0
-        return User(user_id, username, creds[user_id], image, sub_count=sub_count)
+        return User(user_id, username, password, image, sub_count=sub_count)
     
 def get_channel_settings(user_id) -> UserSettings:
     with conn:
