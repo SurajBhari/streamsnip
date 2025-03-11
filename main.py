@@ -806,6 +806,8 @@ def login_google_callback():
     youtube_data = get_youtube_data(access_token)
 
     return jsonify({
+        "token_response": token_response.json(),
+        "access_token": access_token,
          "userinfo": userinfo,
          "youtube_data": youtube_data
      })
