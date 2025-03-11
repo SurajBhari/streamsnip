@@ -34,6 +34,7 @@
             var a = document.getElementsByTagName("a");
             var ul = document.getElementsByTagName("ul");
             var cards = document.getElementsByClassName("card");
+            var sign_in = document.getElementById("google_sign_in");
             // append "select" objects to "a" list 
             var select = document.getElementsByTagName("select");
             if (!localStorage.getItem("darkTheme")) {
@@ -49,6 +50,9 @@
             var navbar = document.getElementById("navbar_id");
             var site_icon = document.getElementById("site_icon");
             if (isDarkTheme) {
+                if(sign_in){ 
+                    sign_in.src = "/static/sign_dark.png";
+                }
                 body.classList.add("dark-theme");
                 for (var i = 0; i < form_control.length; i++) {
                     form_control[i].classList.add("dark-theme");
@@ -67,6 +71,9 @@
                 }
             }
             else{
+                if(sign_in){ 
+                    sign_in.src = "/static/sign_light.png";
+                }
                 body.classList.remove("dark-theme");
                 for (var i = 0; i < form_control.length; i++) {
                     form_control[i].classList.remove("dark-theme");

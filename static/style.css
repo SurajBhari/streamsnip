@@ -479,7 +479,6 @@ select.dark-theme{
   font-weight: bold;
 }
 .login form {
-  display: flex;
   flex-wrap: wrap;
   justify-content: center;
   padding-top: 20px;
@@ -491,6 +490,7 @@ select.dark-theme{
   width: 50px;
   height: 50px;
 }
+
 
 .login form input[type="password"], .login form input[type="text"], .login form input[type="email"], .register form input[type="password"], .register form input[type="text"], .register form input[type="email"] {
   width: 310px;
