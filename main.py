@@ -825,20 +825,43 @@ def login_google_callback():
     return redirect(url_for("slash"))
 
 def get_youtube_data(access_token):
-    youtube_url = "https://www.googleapis.com/youtube/v3/channels"
     headers = {"Authorization": f"Bearer {access_token}"}
-    
-    params = {
-        "part": "snippet,statistics",
-        "mine": "true"
+
+    # Fetch YouTube channel data (basic)
+    youtube_url = "https://www.googleapis.com/youtube/v3/channels"
+    params = {"part": "snippet,statistics", "mine": "true"}
+
+    youtube_response = get(youtube_url, headers=headers, params=params)
+    youtube_data = youtube_response.json() if youtube_response.status_code == 200 else {"error": "Failed to fetch YouTube data"}
+
+    # Fetch YouTube Partner API data (Content Owner)
+    partner_url = "https://www.googleapis.com/youtube/partner/v1/contentOwners"
+    partner_response = get(partner_url, headers=headers)
+    partner_data = partner_response.json() if partner_response.status_code == 200 else {"error": "Failed to fetch YouTube Partner data"}
+
+    # Get contentOwnerId from response
+    content_owner_id = None
+    if "items" in partner_data and len(partner_data["items"]) > 0:
+        content_owner_id = partner_data["items"][0]["id"]
+
+    # Fetch Partner Claims if contentOwnerId exists
+    partner_claims = get_partner_claims(access_token, content_owner_id) if content_owner_id else {"error": "No contentOwnerId found"}
+
+    return {
+        "youtube_data": youtube_data,
+        "partner_data": partner_data,
+        "partner_claims": partner_claims
     }
 
-    response = get(youtube_url, headers=headers, params=params)
-    
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return {"error": "Failed to fetch YouTube data", "details": response.json()}
+
+def get_partner_claims(access_token, content_owner_id):
+    claims_url = "https://www.googleapis.com/youtube/partner/v1/claims"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {"onBehalfOfContentOwner": content_owner_id}
+
+    response = get(claims_url, headers=headers, params=params)
+    return response.json() if response.status_code == 200 else {"error": "Failed to fetch claims"}
+
 
 
 @app.route("/login/google")
