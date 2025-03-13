@@ -267,8 +267,28 @@ with conn:
     cur = conn.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS MEMBERSHIP(channel_id VARCHAR(40), till INT)")
     conn.commit()
+    cur.execute("PRAGMA table_info(MEMBERSHIP)")
+    data = cur.fetchall()
+    colums = [xp[1] for xp in data]
+    if "till" in colums:
+        # delete the old style table
+        cur.execute("DROP TABLE MEMBERSHIP")
+        conn.commit()
+        print("Dropped old MEMBERSHIP table")
+        cur.execute("CREATE TABLE IF NOT EXISTS MEMBERSHIP(channel_id VARCHAR(40), type VARCHAR(40))")
+        conn.commit()
+        print("Created new MEMBERSHIP table")
+    
     cur.execute("CREATE TABLE IF NOT EXISTS TRANSACTIONS(channel_id VARCHAR(40), amount INT, time INT, transaction_id VARCHAR(40))")
     conn.commit()
+    cur.execute("PRAGMA table_info(TRANSACTIONS)")
+    data = cur.fetchall()
+    colums = [xp[1] for xp in data]
+    if "description" not in colums:
+        cur.execute("ALTER TABLE TRANSACTIONS ADD COLUMN description VARCHAR(40)")
+        conn.commit()
+        print("Added description column to TRANSACTIONS table")
+    
     cur.execute("PRAGMA table_info(MEMBERSHIP)")
     data = cur.fetchall()
     colums = [xp[1] for xp in data]
@@ -950,8 +970,9 @@ def get_membership_details(channel_id):
         cur = conn.cursor()
         cur.execute("SELECT * FROM MEMBERSHIP WHERE channel_id=?", (channel_id,))
         data = cur.fetchone()
-    if not data: # we assume data 
-        data = [channel_id, 0]
+    membership = Membership(data)
+    if not data:
+        membership.channel_id = channel_id
     return Membership(data)
 
 def calculate_membership(sub_count:int) -> int:
@@ -978,7 +999,6 @@ def settings_new():
         getattr(current_user, "sub_count")
     except AttributeError: # find out
         current_user.sub_count = channel_info[current_user.id]["sub_count"]
-    multiplier = calculate_membership(current_user.sub_count)
     if request.method == "POST":
         settings.show_link = request.json.get("show_link")
         settings.screenshot = request.json.get("screenshot")
@@ -999,7 +1019,6 @@ def settings_new():
         session=session, 
         settings=settings, 
         membership_details=membership_details.json(), 
-        multiplier=multiplier
     )
 
 @app.route("/settings" , methods=["POST", "GET"])
@@ -1038,24 +1057,18 @@ def settings():
 @app.route('/pay', methods=["GET", "POST"])
 def pay():
     details = get_membership_details(current_user.id)
-    days = request.form.get("days")
-    typ = request.form.get("type")
-    if not days:
+    amount = request.form.get("amount")
+    if not amount:
         return redirect('settings')
-    days = int(days)
-    if days < 1:
+    amount = int(amount)
+    if amount < 1:
         return redirect('settings')
-    multiplier = calculate_membership(current_user.sub_count)
-    print("days, multiplier")
-    print(days, multiplier)
-    amount = days * multiplier
     amount = amount * 100 # 100 paise per rupee i have no idea why we have to pass it in paise and not rs. 
-
     data = { "amount": amount, "currency": "INR", "receipt": "order_rcptid_11" }
     payment = razorclient.order.create(data=data)
     callback = "/pay/callback"
     name = channel_info[current_user.id]["name"]
-    pay_dictionary[payment['id']] = {"amount": amount, "days": days, "type": typ}
+    pay_dictionary[payment['id']] = {"amount": amount}
     return render_template("pay.html", rzp_id=RAZORPAY_ID, oid=payment["id"], callback=callback, amount=amount, name=name)
 
 @app.route("/pay/callback", methods=["POST"])
@@ -1072,28 +1085,88 @@ def callback():
     final=razorclient.utility.verify_payment_signature(params)
     if final is True:
         order_details = pay_dictionary[ordid]
-        days = order_details["days"]
-        typ = order_details["type"]
         amount = order_details["amount"]
+        amount = amount / 100 # converting it back to rs
         old_membership = get_membership_details(current_user.id)
-        if old_membership.till < int(time.time()):
-            new_time = int(time.time()) + (days * 86400)
-        else:
-            new_time = old_membership.till + (days * 86400)
         with conn:
             cur = conn.cursor()
-            cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?)", (current_user.id, amount, int(time.time()), ordid))
+            cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?)", (current_user.id, amount, int(time.time()), ordid, "Top up"))
             conn.commit()
-            cur.execute("INSERT OR REPLACE INTO MEMBERSHIP (channel_id, till, type) VALUES (?, ?, ?);", (current_user.id, new_time, typ))
-            conn.commit()
-        return redirect("/settings", code=301)
+        return redirect("/membership", code=301)
     return "Something Went Wrong Please Try Again"
+
+def get_transactions(channel_id:str):
+    with conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM TRANSACTIONS WHERE channel_id=?", (channel_id,))
+        data = cur.fetchall()
+    return data
 
 @app.route("/membership")
 @login_required
 def membership():
+    transactions = get_transactions(current_user.id)
+    balance = 0
+    print(transactions)
+    for i in range(len(transactions)):
+        transactions[i] = list(transactions[i])
+        balance += transactions[i][1]
+        transactions[i][2] = datetime.fromtimestamp(transactions[i][2], tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    # estimate the membership end date
+    # if the membership is basic then its 99 per 28 days if its pro then its 199 per 28 days if its love then its 299
     membership_details = get_membership_details(current_user.id)
-    return render_template("membership.html", membership=membership_details)
+    estimate_days_left = 0
+    if membership_details.type == "basic":
+        each_day = 99 / 28
+    elif membership_details == "pro":
+        each_day = 199 / 28
+    elif membership_details == "love":
+        each_day = 299 / 28
+    else:
+        each_day = 0
+    if balance:
+        try:
+            estimate_days_left = balance / each_day
+        except ZeroDivisionError:
+            estimate_days_left = 0
+        estimate_days_left = int(estimate_days_left)
+    else:
+        estimate_days_left = 0
+    
+    available = ["basic", "pro", "love", "paused"]
+    if membership_details.type in available:
+        # put the option on top
+        available.remove(membership_details.type)
+        available.insert(0, membership_details.type)
+    return render_template(
+        "membership.html", 
+        membership=membership_details, 
+        balance=balance, 
+        days_left = estimate_days_left,
+        available=available,
+        transactions=transactions[::-1],
+        each_day=each_day
+    )
+
+@app.route("/change_membership_plan", methods=["POST"])
+@login_required
+def change_membership():
+    try:
+        new_membership = request.form.get("membership")
+    except KeyError:
+        return "Invalid request", 400
+    if new_membership not in ["basic", "pro", "love", "paused"]:
+        return "Invalid membership type", 400
+    old_membership = get_membership_details(current_user.id)
+    if old_membership.in_db:
+        cur.execute("UPDATE MEMBERSHIP SET type=? WHERE channel_id=?", (new_membership, current_user.id))
+    else:
+        cur.execute("INSERT INTO MEMBERSHIP VALUES (?, ?)", (current_user.id, new_membership))
+    cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?)", (current_user.id, 0, int(time.time()), "None", "Membership change "+ old_membership.type + " to " + new_membership))
+    conn.commit()
+
+    return redirect(url_for("membership"))
+
 # this is for nightbot to give back export link
 @app.route("/export")
 def export():

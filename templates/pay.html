@@ -16,8 +16,14 @@ var options = {
     },
     "theme": {
         "color": "#5cffab"
+    },
+    "modal": {
+        "ondismiss": function(){
+            window.location.replace("/membership");
+        }
     }
 };
+
 var rzp1 = new Razorpay(options);
 rzp1.open();
 </script>

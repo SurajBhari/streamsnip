@@ -21,16 +21,7 @@
         </div>
         <div class="col-md-6 d-flex flex-column align-items-end">
             <span>{{ membership_details.days_left }} days left in membership.</span>
-            <form action="/pay" method="POST" class="mt-2">
-                <div class="d-flex align-items-center mb-2">
-                    <input type="number" name="days" value="27" oninput="calculatetotal()" class="form-control" style="width: 100px;" placeholder="Days" id="daysInput">
-                    <span class="mx-2">X</span>
-                    <span id="multiplier">{{multiplier}}</span> <!-- Example multiplier -->
-                    <span class="mx-2">=</span>
-                    <span id="total" name="total">0</span>
-                </div> 
-                <button class="btn btn-primary w-100" type="submit">Extend Membership</button>
-            </form>
+            <a href="/membership"><button class="btn btn-primary w-100" type="submit">Extend Membership</button></a>
         </div>        
         
     </div>    

@@ -10,6 +10,13 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-wordcloud"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-autocolors"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-deferred/dist/chartjs-plugin-deferred.min.js"></script>
+<script>
+    function sub(amount) {
+        document.getElementById('moneyInput').value = amount;
+        var form = document.getElementById('moneyForm');
+        form.submit();
+    }
+</script>
 <style>
     .card-group {
         display: flex;
@@ -26,7 +33,7 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
     .pro-card {
-        background: #f8d7da;
+        background: #626262;
         border: 2px solid #dc3545;
         transform: scale(1.05);
     }
@@ -35,6 +42,18 @@
         font-size: 1.5rem;
         font-weight: bold;
     }
+
+    #membership-details {
+        margin-top: 20px;
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center;
+    }
+    table, th, td {
+    border: 1px solid black;
+    }
+
 </style>
 {% endblock %}
 
@@ -43,14 +62,19 @@
 <div class="card-group">
     <div class="card">
         <h5 class="card-title">Basic</h5>
+        <h6 class="card-subtitle mb-2 "><del>200₹/Month</del></h6>
+        <h5 class="card-subtitle mb-2 ">99₹/Month</h5>
         <p class="card-text">Enjoy essential features:</p>
         <ul>
             <li>Use <code>!clip</code> with default settings</li>
             <li>Access <code>!edit</code> and <code>!delete</code></li>
         </ul>
+        <button class="btn btn-primary" onclick="sub(99)">Subscribe for 1 month</button>
     </div>
     <div class="card pro-card">
         <h5 class="card-title">Pro ⭐</h5>
+        <h6 class="card-subtitle mb-2 "><del>300₹/Month</del></h6>
+        <h5 class="card-subtitle mb-2 ">199₹/Month</h5>
         <p class="card-text">Unlock advanced features:</p>
         <ul>
             <li>Everything in Basic</li>
@@ -58,15 +82,62 @@
             <li>Priority customer support</li>
             <li><a href="https://github.com/SurajBhari/streamsnip?tab=readme-ov-file#optional-arguments">Customize all arguments</a></li>
         </ul>
+        <button class="btn btn-primary" onclick="sub(199)">Subscribe for 1 month</button>
     </div>
     <div class="card">
         <h5 class="card-title">Love 💗</h5>
+        <h6 class="card-subtitle mb-2 "><del>400₹/Month</del></h6>
+        <h5 class="card-subtitle mb-2 ">299₹/Month</h5>
         <p class="card-text">For those who want to support us:</p>
         <ul>
             <li>Includes everything in Basic & Pro</li>
-            <li>No extra features—just love & appreciation ❤️</li>
+            <li>Pin your channel on top of home page ❤️</li>
         </ul>
+        <button class="btn btn-primary" onclick="sub(299)">Subscribe for 1 month</button>
     </div>
+</div><br>
+<div id="membership-details">
+    <h2>Your Membership Details</h2> 
+    Your current balance: {{ balance }}</br>
+    Your current membership:{{ membership.type }}</br>
+    Esitimated Days left: {{ days_left }}</br>
+    Each day usage: {{ each_day }}</br>
+    <form action="/pay" method="POST" class="mt-2" id="moneyForm">
+        <div class="d-flex align-items-center mb-2">
+            <input type="number" name="amount" value="199" class="form-control" style="width: 100px;" placeholder="Money" id="moneyInput">
+        </div> 
+        <button class="btn btn-primary" type="submit">Add Money</button>
+    </form>
+    <form action="/change_membership_plan" method="POST" class="mt-3">
+        <div class="d-flex align-items-center mb-3">
+            <select name="membership" class="form-select" id="membershipSelect">
+                {% for a in available %}
+                <option value="{{ a }}">{{ a }}</option>
+                {% endfor %}
+            </select><button class="btn btn-primary" type="submit">Change</button>
+        </div>
+    </form>
+    {%if transactions %}
+    <table id="transactions" border="1px solid black">
+        <thead>
+            <tr>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Transaction ID</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in transactions %}
+            <tr>
+                <td>{{ transaction[1] }}</td>
+                <td>{{ transaction[2] }}</td>
+                <td>{{ transaction[3] }}</td>
+                <td>{{ transaction[4] }}</td>
+            </tr>
+            {% endfor %}
+    </table>
+    {% endif %}
 </div>
 
 {% endblock %}
