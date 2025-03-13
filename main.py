@@ -2714,6 +2714,31 @@ def discord_clip(guild_id, channel_id, message=None):
         return "Channel id not found"
     return f"Guild id: {guild_id} Channel id: {channel_id} Message: {message} Probably not what you are looking for. use !clip on youtube only. --Admin ({base_domain})"
 
+def get_transactions(channel_id):
+    cur.execute("SELECT * FROM TRANSACTIONS WHERE channel_id=?", (channel_id,))
+    return cur.fetchall()
+
+def get_balance(channel_id):
+    transactions = get_transactions(channel_id)
+    balance = 0
+    for transaction in transactions:
+        balance += transaction[1]
+    return balance
+
+def is_subscribed(channel_id):
+    membership_detail = get_membership_details(channel_id)
+    if not membership_detail.in_db:
+        # if the channel is not in db that means its new. give 28 days of free trial that means 199 rs
+        with conn:
+            cur.execute("INSERT INTO MEMBERSHIP VALUES (?, ?)", (channel_id, 'pro'))
+            cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?)", (channel_id, 199, int(time.time()), "FREE TRIAL", "Free Trial for 28 days"))
+            conn.commit()
+        return is_subscribed(channel_id)
+    if membership_detail.active and get_balance(channel_id) > 0:
+        return membership_detail.type 
+    return "" # no membership
+
+
 # /clip/<message_id>/<clip_desc>?showlink=true&screenshot=true&dealy=-10&silent=2
 @app.route("/clip/<message_id>/")
 @app.route("/clip/<message_id>/<clip_desc>")
@@ -2729,88 +2754,110 @@ def clip(message_id, clip_desc=None):
     user_name = user.get("displayName")[0]
 
     arguments = {k.replace("?", ""): request.args[k] for k in request.args}
-
-
-    channel_settings = get_channel_settings(channel_id)
-    show_link = arguments.get("showlink", channel_settings.show_link)
-    screenshot = arguments.get("screenshot", channel_settings.screenshot)
-    # if taken from argument then it will be a string. either 'true' or 'false'
-    silent = arguments.get("silent", channel_settings.silent)  # silent level. if not then 2
-    private = arguments.get("private", channel_settings.private)
-    webhook = arguments.get("webhook", channel_settings.webhook)
-    if webhook and not webhook.startswith("https://discord.com/api/webhooks/"):
-        webhook = f"https://discord.com/api/webhooks/{webhook}"
-    webhook_url = get_webhook_url(channel_id) if not webhook else webhook
-
-    take_delays = arguments.get("take_delays", channel_settings.take_delays)
-    force_desc = arguments.get("force_desc", channel_settings.force_desc)
-    delay = arguments.get("delay", channel_settings.delay)
-    message_level = arguments.get(
-        "message_level", channel_settings.message_level
-    )  # 0 is normal. 1 is to persist the defautl webhook name. 2 is for no record on discord message. 3 is for service badging
-    try:
-        message_level = int(message_level)
-    except ValueError:
-        message_level = channel_settings.message_level
-    logging.log(
-        level=logging.INFO,
-        msg=f"A request for clip with arguments {arguments} and headers {request.headers}",
-    )
-    if webhook and not webhook.startswith("https://discord.com/api/webhooks/"):
-        webhook = f"https://discord.com/api/webhooks/{webhook}"
-    try:
-        silent = int(silent)
-    except ValueError:
-        silent = channel_settings.silent
     
-    if type(show_link) == str: # we got this from the arguments. we must convert it to boolean
-        show_link = False if show_link.lower() == "false" else channel_settings.show_link # we revert back to the channel settings if we can't convert it to boolean
-    if type(screenshot) == str:
-        screenshot = True if screenshot.lower() == "true" else channel_settings.screenshot
-    if type(private) == str:
-        private = True if private.lower() == "true" else channel_settings.private
-    if type(take_delays) == str:
-        take_delays = True if take_delays.lower() == "true" else channel_settings.take_delays
-    if type(force_desc) == str:
-        force_desc = True if force_desc.lower() == "true" else channel_settings.force_desc
-    if type(delay) == str:
-        try:
-            delay = int(delay)
-        except ValueError:
-            delay = channel_settings.delay
-    if type(message_level) == str:
+    sub_detail = is_subscribed(channel_id)
+    print(sub_detail)
+    if not sub_detail:
+        return "You do not have any membership. Get the subscription at https://streamsnip.com/membership"
+    channel_settings = get_channel_settings(channel_id)
+    if sub_detail != "basic":
+        # in this case take the default arguments
+        show_link = arguments.get("showlink", channel_settings.show_link)
+        screenshot = arguments.get("screenshot", channel_settings.screenshot)
+        # if taken from argument then it will be a string. either 'true' or 'false'
+        silent = arguments.get("silent", channel_settings.silent)  # silent level. if not then 2
+        private = arguments.get("private", channel_settings.private)
+        webhook = arguments.get("webhook", channel_settings.webhook)
+        if webhook and not webhook.startswith("https://discord.com/api/webhooks/"):
+            webhook = f"https://discord.com/api/webhooks/{webhook}"
+        webhook_url = get_webhook_url(channel_id) if not webhook else webhook
+
+        take_delays = arguments.get("take_delays", channel_settings.take_delays)
+        force_desc = arguments.get("force_desc", channel_settings.force_desc)
+        delay = arguments.get("delay", channel_settings.delay)
+        message_level = arguments.get(
+            "message_level", channel_settings.message_level
+        )  # 0 is normal. 1 is to persist the defautl webhook name. 2 is for no record on discord message. 3 is for service badging
         try:
             message_level = int(message_level)
         except ValueError:
             message_level = channel_settings.message_level
-    logging.log(logging.INFO, f"""
-                Arguments {arguments} - show-link {show_link} - screenshot {screenshot} - private {private} - take_delays {take_delays} - force_desc {force_desc} - delay {delay} - message_level {message_level} - webhook {webhook_url} - silent {silent} - channel_id {channel_id} - user_id {user_id} - user_name {user_name} - message_id {message_id} - clip_desc {clip_desc}"""
-                ) 
-    show_link_message = ""
-    try:
-        delay = 0 if not delay else int(delay)
-    except ValueError:
-        return "Delay should be an integer (plus or minus)"
-    if not clip_desc:
-        if force_desc:
-            return "Clip denied. You must give a title to the clip."
-        clip_desc = "None"
-    if take_delays:
-        splitted = clip_desc.split()
-        candidates = [splitted[0], splitted[-1]]
-        for c in candidates:
+        logging.log(
+            level=logging.INFO,
+            msg=f"A request for clip with arguments {arguments} and headers {request.headers}",
+        )
+        if webhook and not webhook.startswith("https://discord.com/api/webhooks/"):
+            webhook = f"https://discord.com/api/webhooks/{webhook}"
+        try:
+            silent = int(silent)
+        except ValueError:
+            silent = channel_settings.silent
+    
+        if type(show_link) == str: # we got this from the arguments. we must convert it to boolean
+            show_link = False if show_link.lower() == "false" else channel_settings.show_link # we revert back to the channel settings if we can't convert it to boolean
+        if type(screenshot) == str:
+            screenshot = True if screenshot.lower() == "true" else channel_settings.screenshot
+        if type(private) == str:
+            private = True if private.lower() == "true" else channel_settings.private
+        if type(take_delays) == str:
+            take_delays = True if take_delays.lower() == "true" else channel_settings.take_delays
+        if type(force_desc) == str:
+            force_desc = True if force_desc.lower() == "true" else channel_settings.force_desc
+        if type(delay) == str:
             try:
-                extra_delay = int(c)
-                # if extra delay is in positive. make sure its appended with a + sign
-                # cases like `!clip 200 iq play` should not actually add 200 seconds. but `!clip +200 iq play` should
-                if extra_delay > 0:
-                    if not c.startswith("+"):
-                        continue
-                clip_desc = clip_desc.replace(c, "")
-                delay += extra_delay
-                break
+                delay = int(delay)
             except ValueError:
-                pass
+                delay = channel_settings.delay
+        if type(message_level) == str:
+            try:
+                message_level = int(message_level)
+            except ValueError:
+                message_level = channel_settings.message_level
+        logging.log(logging.INFO, f"""
+                    Arguments {arguments} - show-link {show_link} - screenshot {screenshot} - private {private} - take_delays {take_delays} - force_desc {force_desc} - delay {delay} - message_level {message_level} - webhook {webhook_url} - silent {silent} - channel_id {channel_id} - user_id {user_id} - user_name {user_name} - message_id {message_id} - clip_desc {clip_desc}"""
+                    ) 
+        show_link_message = ""
+        try:
+            delay = 0 if not delay else int(delay)
+        except ValueError:
+            return "Delay should be an integer (plus or minus)"
+        if not clip_desc:
+            if force_desc:
+                return "Clip denied. You must give a title to the clip."
+            clip_desc = "None"
+        if take_delays:
+            splitted = clip_desc.split()
+            candidates = [splitted[0], splitted[-1]]
+            for c in candidates:
+                try:
+                    extra_delay = int(c)
+                    # if extra delay is in positive. make sure its appended with a + sign
+                    # cases like `!clip 200 iq play` should not actually add 200 seconds. but `!clip +200 iq play` should
+                    if extra_delay > 0:
+                        if not c.startswith("+"):
+                            continue
+                    clip_desc = clip_desc.replace(c, "")
+                    delay += extra_delay
+                    break
+                except ValueError:
+                    pass
+    else:
+        show_link = DEFAULT_SETTINGS.show_link
+        screenshot = DEFAULT_SETTINGS.screenshot
+        private = DEFAULT_SETTINGS.private
+        webhook_url = DEFAULT_SETTINGS.webhook
+        take_delays = DEFAULT_SETTINGS.take_delays
+        force_desc = DEFAULT_SETTINGS.force_desc
+        #delay = DEFAULT_SETTINGS.delay # we don't need to set the delay. since we are not going to use it
+        delay = arguments.get("delay", channel_settings.delay)
+        if type(delay) == str:
+            try:
+                delay = int(delay)
+            except ValueError:
+                delay = channel_settings.delay
+        message_level = DEFAULT_SETTINGS.message_level
+        silent = DEFAULT_SETTINGS.silent
+
 
     request_time = time.time()
     h_request_time = request.headers.get("timestamp")
@@ -3351,4 +3398,5 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
+    print(is_subscribed("UCbZZmB8L3IEHutGbvpWo9Ow"))
     app.run(debug=True, host="0.0.0.0", port=80)
