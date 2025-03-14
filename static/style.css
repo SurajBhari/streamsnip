@@ -324,6 +324,18 @@ input[type="password"] {
 	transition: border-color 0.3s ease-in-out;
 }
 
+input[type="text"]:disabled,
+input[type="number"]:disabled,
+input[type="password"]:disabled {
+  background-color: #e9ecef;
+}
+
+input[type="text"].dark-theme:disabled,
+input[type="number"].dark-theme:disabled,
+input[type="password"].dark-theme:disabled {
+  background-color: lightgrey;
+}
+
 #search {
   width: 100%;
 }
@@ -456,6 +468,18 @@ select {
 select.dark-theme{
   background-color: rgba(33, 37, 41, 1);
   color: white;
+}
+
+select:disabled{
+  color: black;
+  background-color: #e9ecef;
+  opacity: 1;
+}
+
+select.dark-theme:disabled{
+  color: black;
+  background-color: lightgrey;
+  opacity: 1;
 }
 
 .login h1 {
