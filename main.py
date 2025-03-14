@@ -1103,15 +1103,16 @@ def membership():
         transactions[i] = list(transactions[i])
         balance += transactions[i][1]
         transactions[i][2] = datetime.fromtimestamp(transactions[i][2], tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        transactions[i][1] = f"{transactions[i][1]:.2f}"
     # estimate the membership end date
     # if the membership is basic then its 99 per 28 days if its pro then its 199 per 28 days if its love then its 299
     membership_details = get_membership_details(current_user.id)
     estimate_days_left = 0
     if membership_details.type == "basic":
         each_day = 99 / 28
-    elif membership_details == "pro":
+    elif membership_details.type == "pro":
         each_day = 199 / 28
-    elif membership_details == "love":
+    elif membership_details.type == "love":
         each_day = 299 / 28
     else:
         each_day = 0
@@ -1121,7 +1122,7 @@ def membership():
         except ZeroDivisionError:
             estimate_days_left = 0
         estimate_days_left = int(estimate_days_left)
-    else:
+    else:   
         estimate_days_left = 0
     
     available = ["basic", "pro", "love", "paused"]
@@ -1132,11 +1133,11 @@ def membership():
     return render_template(
         "membership.html", 
         membership=membership_details, 
-        balance=balance, 
+        balance=f"{balance:.2f}", 
         days_left = estimate_days_left,
         available=available,
         transactions=transactions[::-1],
-        each_day=each_day
+        each_day=f"{each_day:.2f}"
     )
 
 @app.route("/change_membership_plan", methods=["POST"])
