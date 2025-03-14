@@ -8,6 +8,7 @@ import psutil
 import threading
 import sqlite3
 from typing import Optional, List, Any
+from datetime import datetime
 
 import os
 from Clip import Clip
@@ -44,6 +45,8 @@ def comment_task() -> str:
     with conn:
         # we only talk about streams that happened after 1735410600 Sun Dec 29 2024 00:00:00 GMT+0530 (India Standard Time)
         cur = conn.cursor()
+        cur.execute("SELECT channel_id FROM MEMBERSHIP WHERE type='love' OR type='pro' ")
+        members = [x[0] for x in cur.fetchall()]
         cur.execute("CREATE TABLE IF NOT EXISTS COMMENTS (video_id TEXT, comment TEXT, time INTEGER)")
         conn.commit()
         two_days_ago = int(time.time()) - 2 * 24 * 60 * 60
@@ -54,8 +57,13 @@ def comment_task() -> str:
         comment_count = 0   
         for clip in clips:
             if clip.channel not in comments_subscribers:
+                print(f"Skipping {clip.channel} as comments are disabled")
+                continue
+            if clip.channel not in members:
+                print(f"Skipping {clip.channel} as they are not a member")
                 continue
             if clip.stream_id in previously_done:
+                print(f"Skipping {clip.stream_id} as it is already commented")
                 continue
             cur.execute(
                 """
@@ -150,6 +158,52 @@ def periodic_task():
         management_webhook.execute()
         # restart the system
         os.system("reboot")
+    # omg i hate this part with a passion
+    cut_money = True
+    with conn:
+        cur = conn.cursor()
+        # get last transaction which is today and have "fee for day" in it 
+        today_0 = datetime.today().replace(hour=0,minute=0,second=0,microsecond=0).timestamp()
+        cur.execute("SELECT * FROM TRANSACTIONS WHERE time > ? AND description LIKE '%Fee for day%' ORDER BY time DESC LIMIT 1", (today_0,))
+        last_transaction = cur.fetchone()
+        if not last_transaction:
+            cut_money = True
+        else:
+            cut_money = False # we have already cut the money today
+    if cut_money:
+        with conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM QUERIES WHERE time > ?", (today_0,))
+            todays_channels = [x[0] for x in cur.fetchall()]
+
+            cur.execute("SELECT * FROM MEMBERSHIP WHERE type is not 'paused'")
+            # what a mess
+            # today_clips 
+            membership_members = [x[0] for x in cur.fetchall()]
+            members = list(set(list(set(todays_channels) & set(membership_members))))
+            
+            for member in members:
+                cur.execute("SELECT * FROM MEMBERSHIP WHERE channel_id = ?", (member,))
+                member_type = cur.fetchone()[1]
+                if member_type == "basic":
+                    cost = 99/28
+                elif member_type == "pro":
+                    cost = 199/28
+                elif member_type == "love":
+                    cost = 299/28
+                cost = cost*-1
+                date = datetime.today().strftime("%Y-%m-%d")
+                balance = 0
+                cur.execute("SELECT * FROM TRANSACTIONS WHERE channel_id = ?", (member,))
+                for row in cur.fetchall():
+                    balance += row[1]
+                if balance < cost*-1:
+                    cost = balance*-1
+                if cost == 0:
+                    continue
+                cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?)", (member, cost, int(time.time()), f"{member}_{date.replace('-','_')}", "Fee for day - "+member_type + " "+date))
+                conn.commit()
+        
     return  # lock it for now
     clips = get_channel_clips()[:250]
     clip_ids = [x.id for x in clips]
