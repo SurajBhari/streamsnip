@@ -990,68 +990,46 @@ def calculate_membership(sub_count:int) -> int:
         return 14.8 # around 400 rs per month
     return 18.5 # around 500 rs per month
 
-@app.route("/settings-new" , methods=["POST", "GET"])
-@login_required
-def settings_new():
-    settings = get_channel_settings(current_user.id)
-    membership_details = get_membership_details(current_user.id)
-    try: # fuck around
-        getattr(current_user, "sub_count")
-    except AttributeError: # find out
-        current_user.sub_count = channel_info[current_user.id]["sub_count"]
-    if request.method == "POST":
-        settings.show_link = request.json.get("show_link")
-        settings.screenshot = request.json.get("screenshot")
-        settings.delay = request.json.get("delay")
-        settings.force_desc = request.json.get("force_desc")
-        settings.silent = request.json.get("silent")
-        settings.private = request.json.get("private")
-        settings.webhook = request.json.get("webhook")
-        settings.message_level = request.json.get("message_level")
-        settings.take_delays = request.json.get("take_delays")
-        settings.comments = request.json.get("comments")
-        
-        if not settings.write(conn):
-            return "Failed to write settings", 500
-        return "OK", 200
-    return render_template(
-        "settings-new.html", 
-        session=session, 
-        settings=settings, 
-        membership_details=membership_details.json(), 
-    )
-
 @app.route("/settings" , methods=["POST", "GET"])
 @login_required
 def settings():
     settings = get_channel_settings(current_user.id)
     membership_details = get_membership_details(current_user.id)
+    membership_details2 = is_subscribed(current_user.id)
+    can_edit = membership_details2 in ["pro", "love"] 
+    if not can_edit:
+        delay = settings.delay
+        settings = DEFAULT_SETTINGS
+        settings.delay = delay # we don't want to change the delay
     try: # fuck around
         getattr(current_user, "sub_count")
     except AttributeError: # find out
         current_user.sub_count = channel_info[current_user.id]["sub_count"]
-    multiplier = calculate_membership(current_user.sub_count)
     if request.method == "POST":
-        settings.show_link = request.json.get("show_link")
-        settings.screenshot = request.json.get("screenshot")
-        settings.delay = request.json.get("delay")
-        settings.force_desc = request.json.get("force_desc")
-        settings.silent = request.json.get("silent")
-        settings.private = request.json.get("private")
-        settings.webhook = request.json.get("webhook")
-        settings.message_level = request.json.get("message_level")
-        settings.take_delays = request.json.get("take_delays")
-        settings.comments = request.json.get("comments")
+        if can_edit:
+            settings.show_link = request.json.get("show_link")
+            settings.screenshot = request.json.get("screenshot")
+            settings.force_desc = request.json.get("force_desc")
+            settings.silent = request.json.get("silent")
+            settings.private = request.json.get("private")
+            settings.webhook = request.json.get("webhook")
+            settings.message_level = request.json.get("message_level")
+            settings.take_delays = request.json.get("take_delays")
+            settings.comments = request.json.get("comments")
         
+        settings.delay = request.json.get("delay") # make an exception for delay as it can be still be edited
+        settings.channel_id = current_user.id
         if not settings.write(conn):
             return "Failed to write settings", 500
         return "OK", 200
+    
     return render_template(
         "settings.html", 
         session=session, 
         settings=settings, 
         membership_details=membership_details.json(), 
-        multiplier=multiplier
+        can_edit=can_edit,
+        balance=get_balance(current_user.id),
     )
 
 @app.route('/pay', methods=["GET", "POST"])
@@ -2756,7 +2734,8 @@ def clip(message_id, clip_desc=None):
     arguments = {k.replace("?", ""): request.args[k] for k in request.args}
     
     sub_detail = is_subscribed(channel_id)
-    print(sub_detail)
+    if sub_detail =="paused":
+        return "Your subscription is paused. Unpause the subscription at https://streamsnip.com/membership"
     if not sub_detail:
         return "You do not have any membership. Get the subscription at https://streamsnip.com/membership"
     channel_settings = get_channel_settings(channel_id)
@@ -2842,10 +2821,11 @@ def clip(message_id, clip_desc=None):
                 except ValueError:
                     pass
     else:
+        webhook = DEFAULT_SETTINGS.webhook
         show_link = DEFAULT_SETTINGS.show_link
         screenshot = DEFAULT_SETTINGS.screenshot
         private = DEFAULT_SETTINGS.private
-        webhook_url = DEFAULT_SETTINGS.webhook
+        webhook_url = get_webhook_url(channel_id) if not webhook else webhook
         take_delays = DEFAULT_SETTINGS.take_delays
         force_desc = DEFAULT_SETTINGS.force_desc
         #delay = DEFAULT_SETTINGS.delay # we don't need to set the delay. since we are not going to use it
