@@ -914,6 +914,13 @@ def webedit():
 
     if not clip:
         return "Clip not found", 404
+    channel_id = clip.channel
+    sub_detail = is_subscribed(channel_id)
+    if sub_detail =="paused":
+        return "Your subscription is paused. Unpause the subscription at https://streamsnip.com/membership"
+    if not sub_detail:
+        return "You do not have any membership. Get the subscription at https://streamsnip.com/membership"
+
     if not current_user.admin:
         if clip.channel != current_user.id:
             return "You can't do this. You are not the owner of this channel"
@@ -932,6 +939,12 @@ def webdelete():
     clip = get_clip(clip_id=clip_id)
     if not clip:
         return "Clip not found", 404
+    channel_id = clip.channel
+    sub_detail = is_subscribed(channel_id)
+    if sub_detail =="paused":
+        return "Your subscription is paused. Unpause the subscription at https://streamsnip.com/membership"
+    if not sub_detail:
+        return "You do not have any membership. Get the subscription at https://streamsnip.com/membership"
     if not current_user.admin:
         if clip.channel != current_user.id:
             return "You can't do this. You are not the owner of this channel"
@@ -1253,6 +1266,12 @@ def exports(channel_id=None):
         print(e)
         return redirect(url_for("slash"))
     data = get_channel_clips(channel_id)
+    sub_detail = is_subscribed(channel_id)
+    can_edit = current_user.id == channel_id or current_user.admin
+    if sub_detail =="paused":
+        can_edit = False
+    if not sub_detail:
+        can_edit = False
     if current_user.admin: # no data should be hidden from admin 
         data = [x.json() for x in data]
     else:
@@ -1285,7 +1304,8 @@ def exports(channel_id=None):
         regular_icon=regular_icon,
         subscriber_icon=subscriber_icon,
         channel_id=get_channel_at(channel_id),
-        emoji_lookup_table=emoji_lookup_table
+        emoji_lookup_table=emoji_lookup_table,
+        can_edit = can_edit   
     )
 
 
@@ -3019,6 +3039,11 @@ def delete(clip_id=None):
     except KeyError:
         return "Not able to auth"
     channel_id = channel.get("providerId")[0]
+    sub_detail = is_subscribed(channel_id)
+    if sub_detail =="paused":
+        return "Your subscription is paused. Unpause the subscription at https://streamsnip.com/membership"
+    if not sub_detail:
+        return "You do not have any membership. Get the subscription at https://streamsnip.com/membership"
     if not clip_id:
         clips = get_channel_clips(channel_id)
         if not clips:
@@ -3075,6 +3100,11 @@ def edit(clip_id=None):
     except ValueError:
         return "Silent level should be an integer"
     channel_id = channel.get("providerId")[0]
+    sub_detail = is_subscribed(channel_id)
+    if sub_detail =="paused":
+        return "Your subscription is paused. Unpause the subscription at https://streamsnip.com/membership"
+    if not sub_detail:
+        return "You do not have any membership. Get the subscription at https://streamsnip.com/membership"
     clip = get_clip(clip_id.split(" ")[0], channel_id)
     if not clip:
         # we are talking about last clip that was made from this channel in this case
