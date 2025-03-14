@@ -49,6 +49,7 @@
             var theme_button = document.getElementById("theme_button");
             var navbar = document.getElementById("navbar_id");
             var site_icon = document.getElementById("site_icon");
+            var dropdown_items = document.getElementsByClassName("dropdown-item");
             if (isDarkTheme) {
                 if(sign_in){ 
                     sign_in.src = "/static/sign_dark.png";
@@ -68,6 +69,9 @@
                 }
                 for(var i=0; i<cards.length; i++){
                     cards[i].classList.add("dark-theme");
+                }
+                for(var i=0; i<dropdown_items.length; i++){
+                    dropdown_items[i].classList.add("dark-theme");
                 }
             }
             else{
@@ -90,6 +94,9 @@
                 }
                 for(var i=0; i<cards.length; i++){
                     cards[i].classList.remove("dark-theme");
+                }
+                for(var i=0; i<dropdown_items.length; i++){
+                    dropdown_items[i].classList.remove("dark-theme");
                 }
             }
             if(isDarkTheme){
@@ -201,6 +208,8 @@
                             <img src="{{current_user.image}}" alt="Profile" class="rounded-circle" width="32" height="32">
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="/e/{{current_user.id}}"><i class="fa-solid fa-scissors"></i> My Clips</a></li>
+                            <li><a class="dropdown-item" href="/membership"><i class="fa-solid fa-money-bill-wave"></i> Membership</a></li>
                             <li><a class="dropdown-item" href="/settings"><i class="fa-solid fa-gear"></i> Settings</a></li>
                             <li><a class="dropdown-item" href="/logout"><i class="fa-solid fa-sign-out"></i> Logout</a></li>
                         </ul>
