@@ -1097,8 +1097,8 @@ def is_free_trial(transactions):
     # if the total incoming amount is 199 or lower then its a free trial
     total = 0
     for transaction in transactions:
-        if transaction[1] > 0:
-            total += transaction[1]
+        if float(transaction[1]) > 0:
+            total += float(transaction[1])
     return total <= 199
 
 @app.route("/membership")
