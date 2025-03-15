@@ -180,8 +180,9 @@ def periodic_task():
             # what a mess
             # today_clips 
             membership_members = [x[0] for x in cur.fetchall()]
-            members = list(set(list(set(todays_channels) & set(membership_members))))
-            
+            todays_channels.extend(membership_members)
+            members = list(set(todays_channels))
+            print(members)
             for member in members:
                 cur.execute("SELECT * FROM MEMBERSHIP WHERE channel_id = ?", (member,))
                 member_type = cur.fetchone()[1]
