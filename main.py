@@ -1093,6 +1093,14 @@ def get_transactions(channel_id:str):
         data = cur.fetchall()
     return data
 
+def is_free_trial(transactions):
+    # if the total incoming amount is 199 or lower then its a free trial
+    total = 0
+    for transaction in transactions:
+        if transaction[1] > 0:
+            total += transaction[1]
+    return total <= 199
+
 @app.route("/membership")
 @login_required
 def membership():
@@ -1104,6 +1112,7 @@ def membership():
         balance += transactions[i][1]
         transactions[i][2] = datetime.fromtimestamp(transactions[i][2], tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         transactions[i][1] = f"{transactions[i][1]:.2f}"
+    free_trial = is_free_trial(transactions)
     # estimate the membership end date
     # if the membership is basic then its 99 per 28 days if its pro then its 199 per 28 days if its love then its 299
     membership_details = get_membership_details(current_user.id)
@@ -1137,7 +1146,8 @@ def membership():
         days_left = estimate_days_left,
         available=available,
         transactions=transactions[::-1],
-        each_day=f"{each_day:.2f}"
+        each_day=f"{each_day:.2f}",
+        free_trial=free_trial
     )
 
 @app.route("/change_membership_plan", methods=["POST"])
@@ -1150,6 +1160,10 @@ def change_membership():
     if new_membership not in ["basic", "pro", "love", "paused"]:
         return "Invalid membership type", 400
     old_membership = get_membership_details(current_user.id)
+    transactions = get_transactions(current_user.id)
+    free_trial = is_free_trial(transactions)
+    if free_trial:
+        return "You can't change membership during free trial", 400
     if old_membership.in_db:
         cur.execute("UPDATE MEMBERSHIP SET type=? WHERE channel_id=?", (new_membership, current_user.id))
     else:
