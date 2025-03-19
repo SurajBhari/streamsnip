@@ -1072,7 +1072,7 @@ def settings():
         settings=settings, 
         membership_details=membership_details.json(), 
         can_edit=can_edit,
-        balance=get_balance(current_user.id),
+        balance=f"{get_balance(current_user.id):.2f}",
     )
 
 @app.route('/pay', methods=["GET", "POST"])
@@ -1182,7 +1182,7 @@ def membership():
         available=available,
         transactions=transactions[::-1],
         each_day=f"{each_day:.2f}",
-        free_trial=False
+        free_trial=free_trial
     )
 
 @app.route("/change_membership_plan", methods=["POST"])
@@ -1197,7 +1197,6 @@ def change_membership():
     old_membership = Membership.get(conn, current_user.id)
     transactions = get_transactions(current_user.id)
     free_trial = is_free_trial(transactions)
-    free_trial = False
     if free_trial:
         return "You can't change membership during free trial", 400
     if old_membership.in_db:
