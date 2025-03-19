@@ -147,6 +147,15 @@ body.dark-theme {
 	text-decoration: none;
 }
 
+.alert.dark-theme{
+  color: rgb(0, 0, 0);
+}
+
+/* a links in alert.dark-theme */
+.alert.dark-theme a {
+  color: rgb(0, 0, 0);
+}
+
 :root{
   --bs-border-radius: 2rem;
   --bs-light-rgb: 255, 255, 255;

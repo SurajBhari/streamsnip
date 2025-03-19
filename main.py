@@ -302,6 +302,7 @@ class AnonymousUser(AnonymousUserMixin):
     def __init__(self):
         super().__init__()
         self.admin = False
+        self.logged_in = False
     
 class User(UserMixin):
     def __init__(self, user_id, username, password, image=None, sub_count=0):
@@ -315,6 +316,19 @@ class User(UserMixin):
         self.image = image
         self.admin = True if self.id.lower() == 'admin' else False
         self.sub_count = sub_count
+        self.logged_in = True
+
+    @property
+    def membership(self):
+        return Membership.get(conn, self.id)
+
+    @property
+    def transactions(self):
+        return get_transactions(self.id)
+    
+    @property
+    def balance(self):
+        return get_balance(self.id)
 
     def get_id(self):
         return self.id
@@ -757,6 +771,27 @@ def channels():
 def slash():
     returning = generate_home_data()
     pinned = config.get("pinned_channels", [])
+    if current_user.logged_in:
+        # in this case we get the membership detail and show it as banner
+        days_left = calculate_days_left(current_user.membership.type, current_user.balance)
+        days_left = 1
+        alert = False
+        color = None
+        if days_left < 15:
+            alert = True
+            color = "warning"
+        if days_left < 5:
+            alert = True
+            color = "danger"
+        return render_template(
+            "home.html", 
+            data=returning, 
+            sub_based_sort=not current_user.is_authenticated, 
+            pinned=pinned, 
+            days_left = days_left,
+            alert = alert,
+            color = color
+            )
     return render_template("home.html", data=returning, sub_based_sort=not current_user.is_authenticated, pinned=pinned)
 
 @app.route("/privacy-policy")
@@ -978,15 +1013,6 @@ def default_settings():
     add_default_settings(current_user.id)
     return "OK", 200
 
-def get_membership_details(channel_id):
-    with conn:
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM MEMBERSHIP WHERE channel_id=?", (channel_id,))
-        data = cur.fetchone()
-    membership = Membership(data)
-    if not data:
-        membership.channel_id = channel_id
-    return Membership(data)
 
 def calculate_membership(sub_count:int) -> int:
     if sub_count < 5000:
@@ -1007,7 +1033,7 @@ def calculate_membership(sub_count:int) -> int:
 @login_required
 def settings():
     settings = get_channel_settings(current_user.id)
-    membership_details = get_membership_details(current_user.id)
+    membership_details = Membership.get(conn, current_user.id)
     membership_details2 = is_subscribed(current_user.id)
     can_edit = membership_details2 in ["pro", "love"] 
     if not can_edit:
@@ -1047,7 +1073,7 @@ def settings():
 
 @app.route('/pay', methods=["GET", "POST"])
 def pay():
-    details = get_membership_details(current_user.id)
+    details = Membership.get(conn, current_user.id)
     amount = request.form.get("amount")
     if not amount:
         return redirect('settings')
@@ -1078,7 +1104,6 @@ def callback():
         order_details = pay_dictionary[ordid]
         amount = order_details["amount"]
         amount = amount / 100 # converting it back to rs
-        old_membership = get_membership_details(current_user.id)
         with conn:
             cur = conn.cursor()
             cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?)", (current_user.id, amount, int(time.time()), ordid, "Top up"))
@@ -1101,6 +1126,27 @@ def is_free_trial(transactions):
             total += float(transaction[1])
     return total <= 199
 
+def each_day_cost(type):
+    if type == "basic":
+        return 99 / 28
+    if type == "pro":
+        return 199 / 28
+    if type == "love":
+        return 299 / 28
+    return 0
+
+def calculate_days_left(type, balance):
+    each_day = each_day_cost(type)
+    if balance:
+        try:
+            estimate_days_left = balance / each_day
+        except ZeroDivisionError:
+            estimate_days_left = 0
+        estimate_days_left = int(estimate_days_left)
+    else:
+        estimate_days_left = 0
+    return estimate_days_left
+
 @app.route("/membership")
 @login_required
 def membership():
@@ -1115,24 +1161,9 @@ def membership():
     free_trial = is_free_trial(transactions)
     # estimate the membership end date
     # if the membership is basic then its 99 per 28 days if its pro then its 199 per 28 days if its love then its 299
-    membership_details = get_membership_details(current_user.id)
-    estimate_days_left = 0
-    if membership_details.type == "basic":
-        each_day = 99 / 28
-    elif membership_details.type == "pro":
-        each_day = 199 / 28
-    elif membership_details.type == "love":
-        each_day = 299 / 28
-    else:
-        each_day = 0
-    if balance:
-        try:
-            estimate_days_left = balance / each_day
-        except ZeroDivisionError:
-            estimate_days_left = 0
-        estimate_days_left = int(estimate_days_left)
-    else:   
-        estimate_days_left = 0
+    membership_details = Membership.get(conn, current_user.id)
+    estimate_days_left = calculate_days_left(membership_details.type, balance)
+    each_day = each_day_cost(membership_details.type)
     
     available = ["basic", "pro", "love", "paused"]
     if membership_details.type in available:
@@ -1159,7 +1190,7 @@ def change_membership():
         return "Invalid request", 400
     if new_membership not in ["basic", "pro", "love", "paused"]:
         return "Invalid membership type", 400
-    old_membership = get_membership_details(current_user.id)
+    old_membership = Membership.get(conn, current_user.id)
     transactions = get_transactions(current_user.id)
     free_trial = is_free_trial(transactions)
     if free_trial:
@@ -2739,7 +2770,7 @@ def get_balance(channel_id):
     return balance
 
 def is_subscribed(channel_id):
-    membership_detail = get_membership_details(channel_id)
+    membership_detail = Membership.get(conn, channel_id)
     if not membership_detail.in_db:
         # if the channel is not in db that means its new. give 28 days of free trial that means 199 rs
         with conn:

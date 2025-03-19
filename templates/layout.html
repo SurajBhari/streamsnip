@@ -35,6 +35,7 @@
             var ul = document.getElementsByTagName("ul");
             var cards = document.getElementsByClassName("card");
             var sign_in = document.getElementById("google_sign_in");
+            var alerts = document.getElementsByClassName("alert");
             // append "select" objects to "a" list 
             var select = document.getElementsByTagName("select");
             if (!localStorage.getItem("darkTheme")) {
@@ -47,7 +48,7 @@
             }
             var body = document.body;
             var theme_button = document.getElementById("theme_button");
-            var navbar = document.getElementById("navbar_id");
+            var navbar = document.getElementsByClassName("navbar");
             var site_icon = document.getElementById("site_icon");
             var dropdown_items = document.getElementsByClassName("dropdown-item");
             if (isDarkTheme) {
@@ -101,17 +102,29 @@
             }
             if(isDarkTheme){
                 theme_button.innerHTML = '<i class="fa-solid fa-moon"></i>';
-                navbar.classList.add("bg-dark");
-                navbar.classList.remove("bg-light");
-                navbar.classList.add("navbar-dark");
-                navbar.classList.remove("navbar-light");
+                for(let i=0; i<navbar.length; i++){
+                    navbar[i].classList.add("bg-dark");
+                    navbar[i].classList.remove("bg-light");
+                    navbar[i].classList.add("navbar-dark");
+                    navbar[i].classList.remove("navbar-light");
+                }
+                for(let i=0; alerts.length; i++){
+                    alerts[i].classList.add("dark-theme");
+                }
+
                 site_icon.src = "/static/logo.svg";
             } else {
                 theme_button.innerHTML = '<i class="fa-solid fa-sun"></i>';
-                navbar.classList.remove("bg-dark");
-                navbar.classList.add("bg-light");
-                navbar.classList.remove("navbar-dark");
-                navbar.classList.add("navbar-light");
+                for(let i=0; i<navbar.length; i++){
+                    navbar[i].classList.add("bg-light");
+                    navbar[i].classList.remove("bg-dark");
+                    navbar[i].classList.add("navbar-light");
+                    navbar[i].classList.remove("navbar-dark");
+                }
+                for(let i=0; alerts.length; i++){
+                    alerts[i].classList.remove("dark-theme");
+                }
+                
                 site_icon.src = "/static/logo-grey.svg";
             }
         }
@@ -168,6 +181,21 @@
     {% endblock %}
 </head>
 <header>
+    {%if alert%}
+    <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="w-100">
+                <div class="alert alert-{{color}} alert-dismissible fade show mb-0 d-flex justify-content-center align-items-center text-center" role="alert">
+                    <div>
+                        <strong>Alert! Your Membership Expires in {{days_left}} days. <u><a href="/membership" class="text-decoration-none">Renew it here</a></u></strong> {{alert}}
+                    </div>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        </nav>
+    </div>    
+    {%endif%}
+    
     <div class="container">
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="navbar_id">
             <a class="navbar-brand" href="/"><img src="/static/logo-grey.svg" alt="logo" width="32" height="32" class="bi me-2" id="site_icon">StreamSnip</a>
