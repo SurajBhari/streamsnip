@@ -160,50 +160,80 @@ def periodic_task():
         os.system("reboot")
     # omg i hate this part with a passion
     cut_money = True
+    basic_cost = 99 / 28
+    pro_cost = 199 / 28
+    love_cost = 299 / 28    
     with conn:
         cur = conn.cursor()
-        # get last transaction which is today and have "fee for day" in it 
-        today_0 = datetime.today().replace(hour=0,minute=0,second=0,microsecond=0).timestamp()
-        cur.execute("SELECT * FROM TRANSACTIONS WHERE time > ? AND description LIKE '%Fee for day%' ORDER BY time DESC LIMIT 1", (today_0,))
-        last_transaction = cur.fetchone()
-        if not last_transaction:
-            cut_money = True
-        else:
-            cut_money = False # we have already cut the money today
-    if cut_money:
-        with conn:
-            cur = conn.cursor()
-            cur.execute("SELECT * FROM QUERIES WHERE time > ?", (today_0,))
-            todays_channels = [x[0] for x in cur.fetchall()]
-
-            cur.execute("SELECT * FROM MEMBERSHIP WHERE type is not 'paused'")
-            # what a mess
-            # today_clips 
-            membership_members = [x[0] for x in cur.fetchall()]
-            todays_channels.extend(membership_members)
-            members = list(set(todays_channels))
-            print(members)
+        
+        # Get today's 00:00 timestamp
+        today_0 = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+        
+        # Get today's channels
+        cur.execute("SELECT * FROM QUERIES WHERE time > ?", (today_0,))
+        todays_channels = [x[0] for x in cur.fetchall()]
+        
+        # Membership types and corresponding costs
+        membership_costs = {
+            "basic": basic_cost,
+            "pro": pro_cost,
+            "love": love_cost
+        }
+        
+        cutted_money = [] 
+        
+        for mtype in ["basic", "love", "pro"]:
+            # Check if fee has already been charged today for this membership type
+            cur.execute(f"SELECT * FROM TRANSACTIONS WHERE time > ? AND description LIKE '%Fee for day%_{mtype}' ORDER BY time DESC LIMIT 1", (today_0,))
+            last_transaction = cur.fetchone()
+            
+            cut_money = not bool(last_transaction)
+            
+            if not cut_money:
+                continue
+            
+            # Get all members of this membership type
+            cur.execute("SELECT channel_id FROM MEMBERSHIP WHERE type = ?", (mtype,))
+            members = cur.fetchall()
+            
             for member in members:
-                cur.execute("SELECT * FROM MEMBERSHIP WHERE channel_id = ?", (member,))
-                member_type = cur.fetchone()[1]
-                if member_type == "basic":
-                    cost = 99/28
-                elif member_type == "pro":
-                    cost = 199/28
-                elif member_type == "love":
-                    cost = 299/28
-                cost = cost*-1
-                date = datetime.today().strftime("%Y-%m-%d")
-                balance = 0
-                cur.execute("SELECT * FROM TRANSACTIONS WHERE channel_id = ?", (member,))
-                for row in cur.fetchall():
-                    balance += row[1]
-                if balance < cost*-1:
-                    cost = balance*-1
-                if cost == 0:
+                user_id = member[0]
+                
+                # Charge money
+                cost = membership_costs[mtype]
+                description = f"Fee for day_{mtype}"
+                timestamp = datetime.now().timestamp()
+                transaction_id = None
+                
+                cur.execute("INSERT INTO TRANSACTIONS (channel_id, amount, time, transaction_id, description) VALUES (?, ?, ?, ?, ?)",
+                            (user_id, -cost, timestamp, transaction_id, description))
+                cutted_money.append(user_id)
+        
+        # Assuming there's a USERS table with all user IDs
+        cur.execute("SELECT * FROM QUERIES WHERE time > ?", (today_0,))
+        today_users = set([row[0] for row in cur.fetchall()])
+        
+        
+        # Check if basic fee has already been charged today
+        cur.execute("SELECT * FROM TRANSACTIONS WHERE time > ? AND description LIKE '%Fee for day%_basic' ORDER BY time DESC LIMIT 1", (today_0,))
+        basic_fee_cut = not bool(cur.fetchone())
+        
+        if basic_fee_cut:
+            for user_id in today_users:
+                if user_id in cutted_money:
                     continue
-                cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?)", (member, cost, int(time.time()), f"{member}_{date.replace('-','_')}", "Fee for day - "+member_type + " "+date))
-                conn.commit()
+                cost = basic_cost
+                description = "Fee for day_basic (non-member)"
+                timestamp = datetime.now().timestamp()
+                transaction_id = None
+                
+                cur.execute("INSERT INTO TRANSACTIONS (channel_id, amount, time, transaction_id, description) VALUES (?, ?, ?, ?, ?)",
+                            (user_id, -cost, timestamp, transaction_id, description))
+                cutted_money.append(user_id)
+        
+        print("Money cut for users:", cutted_money)
+
+        
         
     return  # lock it for now
     clips = get_channel_clips()[:250]
