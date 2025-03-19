@@ -771,27 +771,32 @@ def channels():
 def slash():
     returning = generate_home_data()
     pinned = config.get("pinned_channels", [])
+    with conn:
+        cur = conn.cursor()
+        cur.execute("SELECT channel_id FROM MEMBERSHIP WHERE type='love'")
+        data = cur.fetchall()
+    love_members = [x[0] for x in data]
+    alert = False
+    color = None
     if current_user.logged_in:
         # in this case we get the membership detail and show it as banner
         days_left = calculate_days_left(current_user.membership.type, current_user.balance)
-        alert = False
-        color = None
         if days_left < 15:
             alert = True
             color = "warning"
         if days_left < 5:
             alert = True
             color = "danger"
-        return render_template(
-            "home.html", 
-            data=returning, 
-            sub_based_sort=not current_user.is_authenticated, 
-            pinned=pinned, 
-            days_left = days_left,
-            alert = alert,
-            color = color
-            )
-    return render_template("home.html", data=returning, sub_based_sort=not current_user.is_authenticated, pinned=pinned)
+    return render_template(
+        "home.html", 
+        data=returning, 
+        sub_based_sort=not current_user.is_authenticated, 
+        pinned=pinned, 
+        days_left = days_left,
+        alert = alert,
+        color = color,
+        love_members = love_members
+        )
 
 @app.route("/privacy-policy")
 def privacy():
@@ -1177,7 +1182,7 @@ def membership():
         available=available,
         transactions=transactions[::-1],
         each_day=f"{each_day:.2f}",
-        free_trial=free_trial
+        free_trial=False
     )
 
 @app.route("/change_membership_plan", methods=["POST"])
@@ -1192,6 +1197,7 @@ def change_membership():
     old_membership = Membership.get(conn, current_user.id)
     transactions = get_transactions(current_user.id)
     free_trial = is_free_trial(transactions)
+    free_trial = False
     if free_trial:
         return "You can't change membership during free trial", 400
     if old_membership.in_db:

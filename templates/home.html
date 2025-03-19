@@ -66,6 +66,7 @@
 <script>
     var data = {{ data|tojson }};
     var pinned = {{ pinned|tojson }};
+    var love_members = {{ love_members|tojson }};
     var all=false;
     var sort_by = document.getElementById("sortby").value;
     function update_sort_by(){
@@ -158,6 +159,9 @@
             // Pinned icon in top-right corner
             if (pinned.includes(data[i]['id'])) {
                 html += '<i class="fa-solid fa-thumbtack position-absolute" style="top: 18px; right: 18px; color: white; transform: rotate(45deg) scale(1.5);"></i>';
+            }
+            else if (love_members.includes(data[i]['id'])) {
+                html += '<i class="fa-solid fa-heart position-absolute" style="top: 18px; right: 18px; color: white; transform: scale(1.5);"></i>';
             }
 
             html += '</div>'; // Close image wrapper
