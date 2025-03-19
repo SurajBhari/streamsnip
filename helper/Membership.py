@@ -21,3 +21,11 @@ class Membership:
             "type": self.type,
             "in_db": self.in_db
         }
+    @staticmethod
+    def get(conn: sqlite3.Connection, channel_id: str):
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM membership WHERE channel_id=?", (channel_id,))
+        data = cursor.fetchone()
+        if not data:
+            return Membership()
+        return Membership(data)
