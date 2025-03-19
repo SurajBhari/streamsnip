@@ -774,7 +774,6 @@ def slash():
     if current_user.logged_in:
         # in this case we get the membership detail and show it as banner
         days_left = calculate_days_left(current_user.membership.type, current_user.balance)
-        days_left = 1
         alert = False
         color = None
         if days_left < 15:
