@@ -209,11 +209,18 @@ def periodic_task():
         membership_costs = {"basic": basic_cost, "pro": pro_cost, "love": love_cost}
 
         cutted_money = []
+        # unique users who have already been charged today
+        cur.execute(
+            "SELECT DISTINCT channel_id FROM TRANSACTIONS WHERE time > ? AND amount < 0 ",
+            (today_0,),
+        )
+        cutted_money = [x[0] for x in cur.fetchall()]
+        print("Already cut money for users:", cutted_money)
 
         for mtype in ["basic", "love", "pro"]:
             # Check if fee has already been charged today for this membership type
             cur.execute(
-                f"SELECT * FROM TRANSACTIONS WHERE time > ? AND description LIKE '%Fee for day%_{mtype}' ORDER BY time DESC LIMIT 1",
+                f"SELECT * FROM TRANSACTIONS WHERE time > ? AND description LIKE '%Fee for day%_{mtype}%' ORDER BY time DESC LIMIT 1",
                 (today_0,),
             )
             last_transaction = cur.fetchone()
