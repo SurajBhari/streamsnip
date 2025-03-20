@@ -1061,9 +1061,9 @@ def webedit():
     channel_id = clip.channel
     sub_detail = is_subscribed(channel_id)
     if sub_detail == "paused":
-        return "Your subscription is paused. Unpause the subscription at https://streamsnip.com/membership"
+        return f"Your subscription is paused. Unpause the subscription at {base_domain}/membership"
     if not sub_detail:
-        return "You do not have any membership. Get the subscription at https://streamsnip.com/membership"
+        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
 
     if not current_user.admin:
         if clip.channel != current_user.id:
@@ -1086,9 +1086,9 @@ def webdelete():
     channel_id = clip.channel
     sub_detail = is_subscribed(channel_id)
     if sub_detail == "paused":
-        return "Your subscription is paused. Unpause the subscription at https://streamsnip.com/membership"
+        return f"Your subscription is paused. Unpause the subscription at {base_domain}/membership"
     if not sub_detail:
-        return "You do not have any membership. Get the subscription at https://streamsnip.com/membership"
+        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
     if not current_user.admin:
         if clip.channel != current_user.id:
             return "You can't do this. You are not the owner of this channel"
@@ -1197,7 +1197,8 @@ def pay():
     amount = (
         amount * 100
     )  # 100 paise per rupee i have no idea why we have to pass it in paise and not rs.
-    data = {"amount": amount, "currency": "INR", "receipt": "order_rcptid_11"}
+    
+    data = {"amount": amount, "currency": "INR", "receipt": "order_rcptid_11", "offers":[]}
     payment = razorclient.order.create(data=data)
     callback = "/pay/callback"
     name = channel_info[current_user.id]["name"]
@@ -1405,7 +1406,7 @@ def clips():
         data=data,
         clips_string=create_simplified(data),
         channel_name="All channels",
-        channel_image="https://streamsnip.com/static/logo.png",
+        channel_image=f"{base_domain}/static/logo.png",
         owner_icon=owner_icon,
         mod_icon=mod_icon,
         regular_icon=regular_icon,
@@ -1965,7 +1966,7 @@ def time_stats(start=None, end=None):
         streamers_labels=list(streamer_trend_data.keys()),
         time_distribution=time_distribution,
         channel_name=start.strftime("%Y-%m-%d") + " to " + end.strftime("%Y-%m-%d"),
-        channel_image="https://streamsnip.com/static/logo.png",
+        channel_image=f"{base_domain}/static/logo.png",
         most_clipped_streams=most_clipped_streams,
         best_days={},
         first_clip_d={},
@@ -2421,7 +2422,7 @@ def stats():
         time_distribution=time_distribution,
         first_clip_d=first_clip_d,
         channel_name="All channels",
-        channel_image="https://streamsnip.com/static/logo.png",
+        channel_image=f"{base_domain}/static/logo.png",
         most_clipped_streams=most_clipped_streams,
         best_days=best_days,
         search_route="/searchchannel",
@@ -3050,9 +3051,9 @@ def clip(message_id, clip_desc=None):
 
     sub_detail = is_subscribed(channel_id)
     if sub_detail == "paused":
-        return "Your subscription is paused. Unpause the subscription at https://streamsnip.com/membership"
+        return f"Your subscription is paused. Unpause the subscription at {base_domain}/membership"
     if not sub_detail:
-        return "You do not have any membership. Get the subscription at https://streamsnip.com/membership"
+        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
     channel_settings = get_channel_settings(channel_id)
     if sub_detail != "basic":
         # in this case take the default arguments
@@ -3351,9 +3352,9 @@ def delete(clip_id=None):
     channel_id = channel.get("providerId")[0]
     sub_detail = is_subscribed(channel_id)
     if sub_detail == "paused":
-        return "Your subscription is paused. Unpause the subscription at https://streamsnip.com/membership"
+        return f"Your subscription is paused. Unpause the subscription at {base_domain}/membership"
     if not sub_detail:
-        return "You do not have any membership. Get the subscription at https://streamsnip.com/membership"
+        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
     if not clip_id:
         clips = get_channel_clips(channel_id)
         if not clips:
@@ -3413,9 +3414,9 @@ def edit(clip_id=None):
     channel_id = channel.get("providerId")[0]
     sub_detail = is_subscribed(channel_id)
     if sub_detail == "paused":
-        return "Your subscription is paused. Unpause the subscription at https://streamsnip.com/membership"
+        return f"Your subscription is paused. Unpause the subscription at {base_domain}/membership"
     if not sub_detail:
-        return "You do not have any membership. Get the subscription at https://streamsnip.com/membership"
+        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
     clip = get_clip(clip_id.split(" ")[0], channel_id)
     if not clip:
         # we are talking about last clip that was made from this channel in this case
