@@ -1,4 +1,6 @@
 import sqlite3
+
+
 class UserSettings:
     def __init__(self, data: list = None):
         # default values
@@ -23,7 +25,7 @@ class UserSettings:
             elif data[i] == "True":
                 data[i] = True
         # assign values
-        self.channel_id = data[0] 
+        self.channel_id = data[0]
         self.show_link = data[1]
         self.screenshot = data[2]
         self.delay = data[3]
@@ -33,13 +35,13 @@ class UserSettings:
         self.webhook = data[7]
         if self.webhook == "None":
             self.webhook = None
-        if self.webhook and not self.webhook.startswith("https://discord.com/api/webhooks/"):
-            self.webhook =  "https://discord.com/api/webhooks/" + self.webhook
+        if self.webhook and not self.webhook.startswith(
+            "https://discord.com/api/webhooks/"
+        ):
+            self.webhook = "https://discord.com/api/webhooks/" + self.webhook
         self.message_level = data[8]
         self.take_delays = data[9]
         self.comments = data[10]
-
-
 
     """CREATE TABLE IF NOT EXISTS SETTINGS (
         channel_id VARCHAR(40) UNIQUE,
@@ -54,8 +56,8 @@ class UserSettings:
         takedelays INT DEFAULT 'False'
         comments VARCHAR(128) DEFAULT 'False'
         )"""
-    
-    def write(self, conn:sqlite3.Connection):
+
+    def write(self, conn: sqlite3.Connection):
         if not self.channel_id:
             return False
         with conn:
@@ -75,17 +77,19 @@ class UserSettings:
                 comments = ? 
                 WHERE channel_id = ?
                 """,
-                (str(self.show_link), 
-                str(self.screenshot), 
-                str(self.delay), 
-                str(self.force_desc), 
-                str(self.silent), 
-                str(self.private), 
-                str(self.webhook), 
-                str(self.message_level), 
-                str(self.take_delays), 
-                str(self.comments),
-                str(self.channel_id))
+                (
+                    str(self.show_link),
+                    str(self.screenshot),
+                    str(self.delay),
+                    str(self.force_desc),
+                    str(self.silent),
+                    str(self.private),
+                    str(self.webhook),
+                    str(self.message_level),
+                    str(self.take_delays),
+                    str(self.comments),
+                    str(self.channel_id),
+                ),
             )
             conn.commit()
             return True

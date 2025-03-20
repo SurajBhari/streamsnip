@@ -1,5 +1,7 @@
 import sqlite3
 from datetime import datetime
+
+
 class Membership:
     def __init__(self, data: list = None):
         # default values
@@ -11,16 +13,18 @@ class Membership:
         if not data:
             return
         self.channel_id = data[0]
-        self.type = data[1] 
+        self.type = data[1]
         self.active = self.type != "paused"
         self.in_db = True
+
     def json(self):
         return {
-            "channel_id": self.channel_id, 
-            "active": self.active, 
+            "channel_id": self.channel_id,
+            "active": self.active,
             "type": self.type,
-            "in_db": self.in_db
+            "in_db": self.in_db,
         }
+
     @staticmethod
     def get(conn: sqlite3.Connection, channel_id: str):
         cursor = conn.cursor()
