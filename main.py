@@ -157,6 +157,11 @@ project_repo_link = "https://github.com/SurajBhari/streamsnip"
 project_logo_discord = "https://raw.githubusercontent.com/SurajBhari/streamsnip/main/static/256_discord_ss.png"  # link to logo that is used in discord
 sub_based_sort = True  # sort the channels on home page based on sub count
 pay_dictionary = {}
+subscription_model = {
+    "basic": {1:99, 3:249, 6:499, 12:999},
+    "pro": {1:199, 3:499, 6:999, 12:1999},
+    "premium": {1:399, 3:999, 6:1999, 12:3999},
+}
 
 jar = None
 if "cookies.txt" in os.listdir("./helper"):
@@ -290,49 +295,20 @@ with conn:
 with conn:
     cur = conn.cursor()
     cur.execute(
-        "CREATE TABLE IF NOT EXISTS MEMBERSHIP(channel_id VARCHAR(40), till INT)"
+        "CREATE TABLE IF NOT EXISTS MEMBERSHIP(channel_id VARCHAR(40),type VARCHAR(40), till DATETIME, start DATETIME, end DATETIME)"
     )
     conn.commit()
-    cur.execute("PRAGMA table_info(MEMBERSHIP)")
-    data = cur.fetchall()
-    colums = [xp[1] for xp in data]
-    if "till" in colums:
-        # delete the old style table
-        cur.execute("DROP TABLE MEMBERSHIP")
-        conn.commit()
-        print("Dropped old MEMBERSHIP table")
-        cur.execute(
-            "CREATE TABLE IF NOT EXISTS MEMBERSHIP(channel_id VARCHAR(40), type VARCHAR(40))"
-        )
-        conn.commit()
-        print("Created new MEMBERSHIP table")
-
     cur.execute(
-        "CREATE TABLE IF NOT EXISTS TRANSACTIONS(channel_id VARCHAR(40), amount INT, time INT, transaction_id VARCHAR(40))"
+        "CREATE TABLE IF NOT EXISTS TRANSACTIONS(channel_id VARCHAR(40), amount INT, time INT, transaction_id VARCHAR(40), membership_type VARCHAR(40), description VARCHAR(40))"
     )
     conn.commit()
-    cur.execute("PRAGMA table_info(TRANSACTIONS)")
-    data = cur.fetchall()
-    colums = [xp[1] for xp in data]
-    if "description" not in colums:
-        cur.execute("ALTER TABLE TRANSACTIONS ADD COLUMN description VARCHAR(40)")
-        conn.commit()
-        print("Added description column to TRANSACTIONS table")
-
-    cur.execute("PRAGMA table_info(MEMBERSHIP)")
-    data = cur.fetchall()
-    colums = [xp[1] for xp in data]
-    if "type" not in colums:
-        cur.execute("ALTER TABLE MEMBERSHIP ADD COLUMN type INT DEFAULT 0")
-        conn.commit()
-        print("Added type column to MEMBERSHIP table")
-
 
 class AnonymousUser(AnonymousUserMixin):
     def __init__(self):
         super().__init__()
         self.admin = False
         self.logged_in = False
+        self.id = "anonymous"
 
 
 class User(UserMixin):
@@ -868,11 +844,10 @@ def slash():
     love_members = [x[0] for x in data]
     alert = False
     color = None
+    days_left = None
     if current_user.logged_in:
         # in this case we get the membership detail and show it as banner
-        days_left = calculate_days_left(
-            current_user.membership.type, current_user.balance
-        )
+        days_left = current_user.membership.days_left
         if days_left < 15:
             alert = True
             color = "warning"
@@ -1060,8 +1035,6 @@ def webedit():
         return "Clip not found", 404
     channel_id = clip.channel
     sub_detail = is_subscribed(channel_id)
-    if sub_detail == "paused":
-        return f"Your subscription is paused. Unpause the subscription at {base_domain}/membership"
     if not sub_detail:
         return f"You do not have any membership. Get the subscription at {base_domain}/membership"
 
@@ -1085,8 +1058,6 @@ def webdelete():
         return "Clip not found", 404
     channel_id = clip.channel
     sub_detail = is_subscribed(channel_id)
-    if sub_detail == "paused":
-        return f"Your subscription is paused. Unpause the subscription at {base_domain}/membership"
     if not sub_detail:
         return f"You do not have any membership. Get the subscription at {base_domain}/membership"
     if not current_user.admin:
@@ -1122,22 +1093,6 @@ def default_settings():
         conn.commit()
     add_default_settings(current_user.id)
     return "OK", 200
-
-
-def calculate_membership(sub_count: int) -> int:
-    if sub_count < 5000:
-        return 3.7  # around 100 rs per month
-    if sub_count < 10000:
-        return 5.55  # around 150 rs per month
-    if sub_count < 25000:
-        return 7.4  # around 200 rs per month
-    if sub_count < 50000:
-        return 9.25  # around 250 rs per month
-    if sub_count < 100000:
-        return 11.1  # around 300 rs per month
-    if sub_count < 250000:
-        return 14.8  # around 400 rs per month
-    return 18.5  # around 500 rs per month
 
 
 @app.route("/settings", methods=["POST", "GET"])
@@ -1186,23 +1141,34 @@ def settings():
 
 
 @app.route("/pay", methods=["GET", "POST"])
+@login_required
 def pay():
-    details = Membership.get(conn, current_user.id)
+    print("Payment request")
+    print(request.form)
+    membership_type = request.form.get("type")
+    if not membership_type:
+        return "Invalid request", 400
+    if membership_type not in subscription_model.keys():
+        return "Invalid request", 400
     amount = request.form.get("amount")
     if not amount:
-        return redirect("settings")
+        return "Invalid request", 400
+    if amount not in subscription_model[membership_type].values():
+        return "Invalid request", 400
+    for m, a in subscription_model[membership_type].items():
+        if a == amount:
+            amount = a
+            months = m
+            break
     amount = int(amount)
-    if amount < 1:
-        return redirect("settings")
-    amount = (
-        amount * 100
-    )  # 100 paise per rupee i have no idea why we have to pass it in paise and not rs.
-    
-    data = {"amount": amount, "currency": "INR", "receipt": "order_rcptid_11", "offers":[]}
+    amount = amount * 100  # converting it to paise
+    recepipt = f"order_rcptid_{current_user.id}_{int(time.time())}"
+    data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers":[]}
     payment = razorclient.order.create(data=data)
     callback = "/pay/callback"
     name = channel_info[current_user.id]["name"]
-    pay_dictionary[payment["id"]] = {"amount": amount}
+    pay_dictionary[payment["id"]] = {"amount": amount, "type": membership_type, "month": months}
+
     return render_template(
         "pay.html",
         rzp_id=RAZORPAY_ID,
@@ -1229,13 +1195,27 @@ def callback():
         order_details = pay_dictionary[ordid]
         amount = order_details["amount"]
         amount = amount / 100  # converting it back to rs
-        with conn:
-            cur = conn.cursor()
+        months = order_details["month"]
+        membership_type = order_details["type"]
+        old_membership_details = Membership.get(conn, current_user.id)
+        if old_membership_details.days_left:
+            start_time = old_membership_details.start_time
+            end_time = old_membership_details.end + (months * 28 * 24 * 60 * 60)
+        else:
+            end_time = int(time.time()) + (months * 28 * 24 * 60 * 60)
+            start_time = int(time.time())
+        
+        if old_membership_details.in_db:
             cur.execute(
-                "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?)",
-                (current_user.id, amount, int(time.time()), ordid, "Top up"),
+                "UPDATE MEMBERSHIP SET type=?, start=?, end=? WHERE channel_id=?",
+                (membership_type, current_user.id, start_time, end_time),
             )
-            conn.commit()
+        else:
+            cur.execute(
+                "INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)", (current_user.id, membership_type, start_time, end_time)
+            )
+        cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?)", (current_user.id, amount, int(time.time()), ordid, f"Membership {membership_type} for {months} months"))
+        conn.commit()
         return redirect("/membership", code=301)
     return "Something Went Wrong Please Try Again"
 
@@ -1257,27 +1237,6 @@ def is_free_trial(transactions):
     return total <= 199
 
 
-def each_day_cost(type):
-    if type == "basic":
-        return 99 / 28
-    if type == "pro":
-        return 199 / 28
-    if type == "love":
-        return 299 / 28
-    return 0
-
-
-def calculate_days_left(type, balance):
-    each_day = each_day_cost(type)
-    if balance:
-        try:
-            estimate_days_left = balance / each_day
-        except ZeroDivisionError:
-            estimate_days_left = 0
-        estimate_days_left = int(estimate_days_left)
-    else:
-        estimate_days_left = 0
-    return estimate_days_left
 
 
 @app.route("/membership")
@@ -1285,7 +1244,6 @@ def calculate_days_left(type, balance):
 def membership():
     transactions = get_transactions(current_user.id)
     balance = 0
-    print(transactions)
     for i in range(len(transactions)):
         transactions[i] = list(transactions[i])
         balance += transactions[i][1]
@@ -1297,10 +1255,14 @@ def membership():
     # estimate the membership end date
     # if the membership is basic then its 99 per 28 days if its pro then its 199 per 28 days if its love then its 299
     membership_details = Membership.get(conn, current_user.id)
-    estimate_days_left = calculate_days_left(membership_details.type, balance)
-    each_day = each_day_cost(membership_details.type)
 
-    available = ["basic", "pro", "love", "paused"]
+    available = list(subscription_model.keys())
+    available_upgrades = []
+    if membership_details.type == "basic":
+        available_upgrades = ["pro", "love"]
+    if membership_details.type == "pro":
+        available_upgrades = ["love"]
+    
     if membership_details.type in available:
         # put the option on top
         available.remove(membership_details.type)
@@ -1309,11 +1271,11 @@ def membership():
         "membership.html",
         membership=membership_details,
         balance=f"{balance:.2f}",
-        days_left=estimate_days_left,
         available=available,
         transactions=transactions[::-1],
-        each_day=f"{each_day:.2f}",
         free_trial=free_trial,
+        subscription_model=subscription_model,
+        available_upgrades = available_upgrades,
     )
 
 
@@ -3050,8 +3012,6 @@ def clip(message_id, clip_desc=None):
     arguments = {k.replace("?", ""): request.args[k] for k in request.args}
 
     sub_detail = is_subscribed(channel_id)
-    if sub_detail == "paused":
-        return f"Your subscription is paused. Unpause the subscription at {base_domain}/membership"
     if not sub_detail:
         return f"You do not have any membership. Get the subscription at {base_domain}/membership"
     channel_settings = get_channel_settings(channel_id)
@@ -3351,8 +3311,6 @@ def delete(clip_id=None):
         return "Not able to auth"
     channel_id = channel.get("providerId")[0]
     sub_detail = is_subscribed(channel_id)
-    if sub_detail == "paused":
-        return f"Your subscription is paused. Unpause the subscription at {base_domain}/membership"
     if not sub_detail:
         return f"You do not have any membership. Get the subscription at {base_domain}/membership"
     if not clip_id:
@@ -3413,8 +3371,6 @@ def edit(clip_id=None):
         return "Silent level should be an integer"
     channel_id = channel.get("providerId")[0]
     sub_detail = is_subscribed(channel_id)
-    if sub_detail == "paused":
-        return f"Your subscription is paused. Unpause the subscription at {base_domain}/membership"
     if not sub_detail:
         return f"You do not have any membership. Get the subscription at {base_domain}/membership"
     clip = get_clip(clip_id.split(" ")[0], channel_id)
@@ -3747,5 +3703,4 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    print(is_subscribed("UCbZZmB8L3IEHutGbvpWo9Ow"))
     app.run(debug=True, host="0.0.0.0", port=80)
