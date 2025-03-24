@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-autocolors"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-deferred/dist/chartjs-plugin-deferred.min.js"></script>
 <script>
+    var current_membership_type = "{{ membership.type }}";
     function sub(type, amount) {
         var form = document.createElement('form');
         form.method = 'POST';
@@ -135,13 +136,13 @@
         </ul>
         <div class="dropdown mb-3">
             <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-              Subscribe
+                {% if membership.type=='basic' %} Extend {%else%} Subscribe {%endif%}
             </button>
             <ul class="dropdown-menu">
               {% for months, price in subscription_model['basic'].items() %}
                 <li>
                   <a class="dropdown-item" href="#" onclick="sub('basic', {{ price }})">
-                    Subscribe for {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
+                    {% if membership.type=='basic' %} Extend {%else%} Subscribe {%endif%} for {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
                   </a>
                 </li>
               {% endfor %}
@@ -163,13 +164,13 @@
         </ul>
         <div class="dropdown mb-3">
             <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-              Subscribe
+            {% if membership.type=='pro' %} Extend {%else%} Subscribe {%endif%}
             </button>
             <ul class="dropdown-menu">
               {% for months, price in subscription_model['pro'].items() %}
                 <li>
                   <a class="dropdown-item" href="#" onclick="sub('pro', {{ price }})">
-                    Subscribe for {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
+                    {% if membership.type=='pro' %} Extend {%else%} Subscribe {%endif%} for {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
                   </a>
                 </li>
               {% endfor %}
@@ -186,19 +187,19 @@
         <p class="card-text">For those who want to support us:</p>
         <ul>
             <li>Includes everything in Basic & Pro</li>
-            <li>Discord Integration (sending message to discord)</li>
+            <li>Comments after stream ends with timestamps (BETA)</li>
             <li>Priority Support</li>
             <li>Your channels GLOWSSSS on home page.</li>
         </ul>
         <div class="dropdown mb-3">
             <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-              Subscribe
+                {% if membership.type=='premium' %} Extend {%else%} Subscribe {%endif%}
             </button>
             <ul class="dropdown-menu">
               {% for months, price in subscription_model['premium'].items() %}
                 <li>
                   <a class="dropdown-item" href="#" onclick="sub('premium', {{ price }})">
-                    Subscribe for {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
+                    {% if membership.type=='premium' %} Extend {%else%} Subscribe {%endif%} for {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
                   </a>
                 </li>
               {% endfor %}
