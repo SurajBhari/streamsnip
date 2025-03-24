@@ -1235,12 +1235,15 @@ def callback():
         membership_type = order_details["type"]
         old_membership_details = Membership.get(conn, current_user.id)
         if old_membership_details.days_left:
+            if old_membership_details.type == "FREE" and membership_type== "basic":
+                # in this case double the end time 
+                old_membership_details.end = old_membership_details.start + timedelta(days=old_membership_details.days_left * 2)
+
             start_time = old_membership_details.start
             end_time = old_membership_details.end + timedelta(days=months * 28)
         else:
             end_time = datetime.now() + timedelta(days=months * 28)
             start_time = datetime.now()
-        
         # delete old records 
         cur.execute("DELETE FROM MEMBERSHIP WHERE channel_id=?", (current_user.id,))
         cur.execute(
@@ -3691,4 +3694,5 @@ prefix_webhook = {}
 
 if __name__ == "__main__":
     is_subscribed("UCbZZmB8L3IEHutGbvpWo9Ow")
+    print(Membership.get(conn,"UCbZZmB8L3IEHutGbvpWo9Ow").json())
     app.run(debug=True, host="0.0.0.0", port=80)
