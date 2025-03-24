@@ -162,6 +162,7 @@ subscription_model = {
     "pro": {1:199, 3:499, 6:999, 12:1999},
     "premium": {1:399, 3:999, 6:1999, 12:3999},
 }
+discord_invite = "https://discord.gg/2XVBWK99Vy"
 
 jar = None
 if "cookies.txt" in os.listdir("./helper"):
@@ -295,7 +296,7 @@ with conn:
 with conn:
     cur = conn.cursor()
     cur.execute(
-        "CREATE TABLE IF NOT EXISTS MEMBERSHIP(channel_id VARCHAR(40),type VARCHAR(40), till DATETIME, start DATETIME, end DATETIME)"
+        "CREATE TABLE IF NOT EXISTS MEMBERSHIP(channel_id VARCHAR(40),type VARCHAR(40), start DATETIME, end DATETIME)"
     )
     conn.commit()
     cur.execute(
@@ -839,30 +840,15 @@ def slash():
     pinned = config.get("pinned_channels", [])
     with conn:
         cur = conn.cursor()
-        cur.execute("SELECT channel_id FROM MEMBERSHIP WHERE type='love'")
+        cur.execute("SELECT channel_id FROM MEMBERSHIP WHERE type='premium' AND end > ?", (int(time.time()),))
         data = cur.fetchall()
-    love_members = [x[0] for x in data]
-    alert = False
-    color = None
-    days_left = None
-    if current_user.logged_in:
-        # in this case we get the membership detail and show it as banner
-        days_left = current_user.membership.days_left
-        if days_left < 15:
-            alert = True
-            color = "warning"
-        if days_left < 5:
-            alert = True
-            color = "danger"
+    premium_members = [x[0] for x in data]
     return render_template(
         "home.html",
         data=returning,
         sub_based_sort=not current_user.is_authenticated,
         pinned=pinned,
-        days_left=days_left,
-        alert=alert,
-        color=color,
-        love_members=love_members,
+        premium_members=premium_members,
     )
 
 
@@ -1101,7 +1087,7 @@ def settings():
     settings = get_channel_settings(current_user.id)
     membership_details = Membership.get(conn, current_user.id)
     membership_details2 = is_subscribed(current_user.id)
-    can_edit = membership_details2 in ["pro", "love"]
+    can_edit = membership_details2 in ["pro", "premium", "FREE"]
     if not can_edit:
         delay = settings.delay
         settings = DEFAULT_SETTINGS
@@ -1134,11 +1120,59 @@ def settings():
         "settings.html",
         session=session,
         settings=settings,
-        membership_details=membership_details.json(),
+        membership_details=membership_details,
         can_edit=can_edit,
-        balance=f"{get_balance(current_user.id):.2f}",
     )
 
+@app.route("/upgrade", methods=["POST"])
+@login_required
+def upgrade():
+    switch_to = request.form.get("type")
+    if not switch_to:
+        return "Invalid request", 400
+    membership_details = Membership.get(conn, current_user.id)
+    if membership_details.type == switch_to:
+        return "You are already on this membership", 400
+    # calculate how much he have to pay
+    if membership_details.type == "FREE":
+        return "You can't upgrade from free membership", 400
+    if not membership_details.days_left:
+        return "You can't upgrade from expired membership", 400
+    if membership_details.type == "basic":
+        # basic is 99/ 28 days then per day is 
+        per_day = subscription_model["basic"][1] / 28
+    if membership_details.type == "pro":
+        per_day = subscription_model["pro"][1] / 28
+    if membership_details.type == "premium":
+        return "You are already on premium. there is no upgrade from here", 400
+    days_left = membership_details.days_left
+    if switch_to == "pro":
+        new_per_day = subscription_model["pro"][1]/ 28
+    elif switch_to == "premium":
+        new_per_day = subscription_model["premium"][1] / 28
+    else:
+        return "Invalid request", 400
+    amount = (new_per_day - per_day) * days_left
+    amount = round(amount, 2)
+    if amount < 0:
+        return "You are already on a higher membership", 400
+    amount = int(amount) # we don't really care about the cents
+    amount = amount * 100  # converting it to paise
+    recepipt = f"{current_user.id}_{int(time.time())}"
+    data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers":[]}
+    payment = razorclient.order.create(data=data)
+    callback = "/pay/callback"
+    name = channel_info[current_user.id]["name"]
+    pay_dictionary[payment["id"]] = {"amount": amount, "type": switch_to, "month": 0}
+
+    return render_template(
+        "pay.html",
+        rzp_id=RAZORPAY_ID,
+        oid=payment["id"],
+        callback=callback,
+        amount=amount,
+        name=name,
+    )
 
 @app.route("/pay", methods=["GET", "POST"])
 @login_required
@@ -1147,22 +1181,24 @@ def pay():
     print(request.form)
     membership_type = request.form.get("type")
     if not membership_type:
-        return "Invalid request", 400
+        return "Invalid request 1", 400
     if membership_type not in subscription_model.keys():
-        return "Invalid request", 400
+        return "Invalid request 2", 400
     amount = request.form.get("amount")
     if not amount:
-        return "Invalid request", 400
-    if amount not in subscription_model[membership_type].values():
-        return "Invalid request", 400
+        return "Invalid request 3", 400
+    amount = int(amount)
+    if amount not in list(subscription_model[membership_type].values()):    
+        return "Invalid request 4", 400
     for m, a in subscription_model[membership_type].items():
         if a == amount:
             amount = a
             months = m
             break
-    amount = int(amount)
     amount = amount * 100  # converting it to paise
-    recepipt = f"order_rcptid_{current_user.id}_{int(time.time())}"
+    amount = int(amount)
+
+    recepipt = f"{current_user.id}_{int(time.time())}"
     data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers":[]}
     payment = razorclient.order.create(data=data)
     callback = "/pay/callback"
@@ -1199,22 +1235,22 @@ def callback():
         membership_type = order_details["type"]
         old_membership_details = Membership.get(conn, current_user.id)
         if old_membership_details.days_left:
-            start_time = old_membership_details.start_time
-            end_time = old_membership_details.end + (months * 28 * 24 * 60 * 60)
+            start_time = old_membership_details.start
+            end_time = old_membership_details.end + timedelta(days=months * 28)
         else:
-            end_time = int(time.time()) + (months * 28 * 24 * 60 * 60)
-            start_time = int(time.time())
+            end_time = datetime.now() + timedelta(days=months * 28)
+            start_time = datetime.now()
         
-        if old_membership_details.in_db:
-            cur.execute(
-                "UPDATE MEMBERSHIP SET type=?, start=?, end=? WHERE channel_id=?",
-                (membership_type, current_user.id, start_time, end_time),
-            )
+        # delete old records 
+        cur.execute("DELETE FROM MEMBERSHIP WHERE channel_id=?", (current_user.id,))
+        cur.execute(
+            "INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)", (current_user.id, membership_type, int(start_time.timestamp()), int(end_time.timestamp()))
+        )
+        if not months:
+            desciption = f"Upgrade to {membership_type}"
         else:
-            cur.execute(
-                "INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)", (current_user.id, membership_type, start_time, end_time)
-            )
-        cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?)", (current_user.id, amount, int(time.time()), ordid, f"Membership {membership_type} for {months} months"))
+            desciption = f"Membership {membership_type} for {months} months"
+        cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)", (current_user.id, amount, int(time.time()), ordid, membership_type, desciption))
         conn.commit()
         return redirect("/membership", code=301)
     return "Something Went Wrong Please Try Again"
@@ -1226,17 +1262,6 @@ def get_transactions(channel_id: str):
         cur.execute("SELECT * FROM TRANSACTIONS WHERE channel_id=?", (channel_id,))
         data = cur.fetchall()
     return data
-
-
-def is_free_trial(transactions):
-    # if the total incoming amount is 199 or lower then its a free trial
-    total = 0
-    for transaction in transactions:
-        if float(transaction[1]) > 0:
-            total += float(transaction[1])
-    return total <= 199
-
-
 
 
 @app.route("/membership")
@@ -1251,17 +1276,20 @@ def membership():
             transactions[i][2], tz=timezone.utc
         ).strftime("%Y-%m-%d %H:%M:%S")
         transactions[i][1] = f"{transactions[i][1]:.2f}"
-    free_trial = is_free_trial(transactions)
     # estimate the membership end date
     # if the membership is basic then its 99 per 28 days if its pro then its 199 per 28 days if its love then its 299
     membership_details = Membership.get(conn, current_user.id)
 
     available = list(subscription_model.keys())
     available_upgrades = []
-    if membership_details.type == "basic":
-        available_upgrades = ["pro", "love"]
-    if membership_details.type == "pro":
-        available_upgrades = ["love"]
+    if membership_details.days_left:
+        if membership_details.type == "FREE":
+            available_upgrades = []
+        if membership_details.type == "basic":
+            available_upgrades = ["pro", "premium"]
+        if membership_details.type == "pro":
+            available_upgrades = ["premium"]
+    
     
     if membership_details.type in available:
         # put the option on top
@@ -1273,48 +1301,9 @@ def membership():
         balance=f"{balance:.2f}",
         available=available,
         transactions=transactions[::-1],
-        free_trial=free_trial,
         subscription_model=subscription_model,
         available_upgrades = available_upgrades,
     )
-
-
-@app.route("/change_membership_plan", methods=["POST"])
-@login_required
-def change_membership():
-    try:
-        new_membership = request.form.get("membership")
-    except KeyError:
-        return "Invalid request", 400
-    if new_membership not in ["basic", "pro", "love", "paused"]:
-        return "Invalid membership type", 400
-    old_membership = Membership.get(conn, current_user.id)
-    transactions = get_transactions(current_user.id)
-    free_trial = is_free_trial(transactions)
-    if free_trial:
-        return "You can't change membership during free trial", 400
-    if old_membership.in_db:
-        cur.execute(
-            "UPDATE MEMBERSHIP SET type=? WHERE channel_id=?",
-            (new_membership, current_user.id),
-        )
-    else:
-        cur.execute(
-            "INSERT INTO MEMBERSHIP VALUES (?, ?)", (current_user.id, new_membership)
-        )
-    cur.execute(
-        "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?)",
-        (
-            current_user.id,
-            0,
-            int(time.time()),
-            "None",
-            "Membership change " + old_membership.type + " to " + new_membership,
-        ),
-    )
-    conn.commit()
-
-    return redirect(url_for("membership"))
 
 
 # this is for nightbot to give back export link
@@ -2964,33 +2953,28 @@ def get_transactions(channel_id):
     return cur.fetchall()
 
 
-def get_balance(channel_id):
-    transactions = get_transactions(channel_id)
-    balance = 0
-    for transaction in transactions:
-        balance += transaction[1]
-    return balance
-
-
 def is_subscribed(channel_id):
     membership_detail = Membership.get(conn, channel_id)
     if not membership_detail.in_db:
         # if the channel is not in db that means its new. give 28 days of free trial that means 199 rs
         with conn:
-            cur.execute("INSERT INTO MEMBERSHIP VALUES (?, ?)", (channel_id, "pro"))
+            end_time = int(time.time())+ 29*24*60*60 # we give 29 to include current day too
+            start_time = int(time.time())
+            cur.execute("INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)", (channel_id, "FREE", start_time, end_time))
             cur.execute(
-                "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
                 (
                     channel_id,
                     199,
                     int(time.time()),
                     "FREE TRIAL",
+                    "FREE",
                     "Free Trial for 28 days",
                 ),
             )
             conn.commit()
         return is_subscribed(channel_id)
-    if membership_detail.active and get_balance(channel_id) > 0:
+    if membership_detail.active:
         return membership_detail.type
     return ""  # no membership
 
@@ -3014,6 +2998,9 @@ def clip(message_id, clip_desc=None):
     sub_detail = is_subscribed(channel_id)
     if not sub_detail:
         return f"You do not have any membership. Get the subscription at {base_domain}/membership"
+    if sub_detail == "FREE":
+        sub_detail = "pro"
+
     channel_settings = get_channel_settings(channel_id)
     if sub_detail != "basic":
         # in this case take the default arguments
@@ -3115,7 +3102,7 @@ def clip(message_id, clip_desc=None):
         show_link = DEFAULT_SETTINGS.show_link
         screenshot = DEFAULT_SETTINGS.screenshot
         private = DEFAULT_SETTINGS.private
-        webhook_url = get_webhook_url(channel_id) if not webhook else webhook
+        webhook_url = None
         take_delays = DEFAULT_SETTINGS.take_delays
         force_desc = DEFAULT_SETTINGS.force_desc
         # delay = DEFAULT_SETTINGS.delay # we don't need to set the delay. since we are not going to use it
@@ -3141,7 +3128,7 @@ def clip(message_id, clip_desc=None):
     if not local:
         monitor.ping(state="run")
     if not message_id:
-        return "No message id provided, You have configured it wrong. please contact AG at https://discord.gg/2XVBWK99Vy"
+        return f"No message id provided, You have configured it wrong. please contact AG at {discord_invite}"
 
     if message_id in chat_id_video:
         vid = chat_id_video[message_id]
@@ -3222,7 +3209,7 @@ def clip(message_id, clip_desc=None):
         )
         response = webhook.execute()
         if not response.status_code == 200:
-            return "Error in sending message to discord. Perhaps the webhook is invalid. Please contact AG1436 at https://discord.gg/2XVBWK99Vy"
+            return f"Error in sending message to discord. Perhaps the webhook is invalid. Please contact AG1436 at {discord_invite}"
         webhook_id = webhook.id
         if (
             show_link == 1
@@ -3703,4 +3690,5 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
+    is_subscribed("UCbZZmB8L3IEHutGbvpWo9Ow")
     app.run(debug=True, host="0.0.0.0", port=80)
