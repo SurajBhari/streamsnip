@@ -48,7 +48,7 @@ def comment_task() -> str:
         # we only talk about streams that happened after 1735410600 Sun Dec 29 2024 00:00:00 GMT+0530 (India Standard Time)
         cur = conn.cursor()
         cur.execute(
-            "SELECT channel_id FROM MEMBERSHIP WHERE type='love' OR type='pro' "
+            f"SELECT channel_id FROM MEMBERSHIP WHERE type='premium' AND end > {int(time.time())}"
         )
         members = [x[0] for x in cur.fetchall()]
         cur.execute(
