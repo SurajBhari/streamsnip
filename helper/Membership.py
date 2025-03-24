@@ -26,7 +26,7 @@ class Membership:
         self.days_left = (self.end - datetime.today()).days
         if self.days_left < 0:
             self.days_left = 0
-        self.free_trial = self.type == "FREE"
+        self.free_trial = self.type == "FREE" and self.active
         if not self.active:
             self.type = None
 
