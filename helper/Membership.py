@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import datetime
+from json import load,loads,dump,dumps
 
 
 class Membership:
@@ -7,34 +8,39 @@ class Membership:
         # default values
         self.channel_id = ""
         self.active = False
-        self.type = "basic"
+        self.type = None
         self.active = False
         self.in_db = False
         self.start = datetime.fromtimestamp(0)
         self.end = self.start
         self.days_left = 0
+        self.free_trial = False
         if not data:
             return
         self.channel_id = data[0]
         self.type = data[1]
-        self.start = data[2]
-        self.end = data[3]
-        self.active = datetime.today >= datetime.fromisoformat(data[2])
+        self.start = datetime.fromtimestamp(data[2])
+        self.end = datetime.fromtimestamp(data[3])
+        self.active = datetime.today() <= self.end
         self.in_db = True
-        self.days_left = (self.end - datetime.today).days
+        self.days_left = (self.end - datetime.today()).days
         if self.days_left < 0:
             self.days_left = 0
+        self.free_trial = self.type == "FREE"
+        if not self.active:
+            self.type = None
 
     def json(self):
-        return {
+        return dumps({
             "channel_id": self.channel_id,
             "active": self.active,
             "type": self.type,
             "in_db": self.in_db,
-            "start": self.start,
-            "end": self.end,
+            "start": self.start.timestamp(),
+            "end": self.end.timestamp(),
             "days_left": self.days_left,
-        }
+            "free_trial": self.free_trial,
+        })
 
     @staticmethod
     def get(conn: sqlite3.Connection, channel_id: str):

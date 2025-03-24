@@ -176,25 +176,33 @@
             update_mini_stats();
             setInterval(update_mini_stats, 30000);
         });
+        {% if current_user.logged_in %}
+        var membership_details = {{current_user.membership.json()|safe}};
+        if(membership_details.days_left< 15){
+            var days_left = {{current_user.membership.days_left}}
+            var color = ""
+            if(days_left < 7){
+                color = "danger"
+            }
+            else if(days_left < 15){
+                color = "warning"
+            }
+            else{
+                color = "info"
+            }
+            var alert_div = document.getElementById("alert");
+            alert_div.innerHTML = `<div class="alert alert-${color} alert-dismissible fade show" role="alert">
+                ${alert}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>`;
+        }
+        {% endif %}
     </script>
     {% block head_content %}
     {% endblock %}
 </head>
 <header>
-    {%if alert%}
-    <div class="container">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-            <div class="w-100">
-                <div class="alert alert-{{color}} alert-dismissible fade show mb-0 d-flex justify-content-center align-items-center text-center" role="alert">
-                    <div>
-                        <strong>Alert! Your Membership Expires in {{days_left}} days. <u><a href="/membership" class="text-decoration-none">Renew it here</a></u></strong>
-                    </div>
-                    <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            </div>
-        </nav>
-    </div>    
-    {%endif%}
+    <div id="alert"></div>
     
     <div class="container">
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="navbar_id">

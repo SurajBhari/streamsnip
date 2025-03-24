@@ -29,6 +29,19 @@
         form.submit();
     }
 
+    function upgrade(type) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/upgrade';
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'type';
+        input.value = type;
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
     function updatechangebutton() {
         var select = document.getElementById('membershipSelect');
         var button = document.getElementById('membershipchangebutton');
@@ -106,28 +119,7 @@
     <h2>Your Membership Details</h2> 
     Your current membership:<h3>{{ membership.type }}</h3></br>
     Days left: <h3>{{ membership.days_left }}</h3></br>
-    {% if free_trial %}<h2>FREE TRIAL</h2><h5>You can't change membership plan while in free trial.</h5>{% endif %}
-    {%if transactions %}
-    <table id="transactions" border="1px solid black">
-        <thead>
-            <tr>
-                <th>Amount</th> 
-                <th>Date</th>
-                <th>Transaction ID</th>
-                <th>Description</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for transaction in transactions %}
-            <tr>
-                <td>{{ transaction[1] }}</td>
-                <td>{{ transaction[2] }}</td>
-                <td>{{ transaction[3] }}</td>
-                <td>{{ transaction[4] }}</td>
-            </tr>
-            {% endfor %}
-    </table>
-    {% endif %}
+    {% if membership.free_trial %}<h2>FREE TRIAL</h2><h5></h5>{% endif %}
 </div>
 <br>
 <div class="card-group">
@@ -155,6 +147,9 @@
                 </li>
               {% endfor %}
             </ul>
+            {% if 'basic' in available_upgrades %}
+            <button class="btn btn-primary" onclick="upgrade('basic')">Switch</button>
+            {% endif %}
         </div>    
     </div>
     <div class="card pro-card">
@@ -181,12 +176,15 @@
                 </li>
               {% endfor %}
             </ul>
+            {% if 'pro' in available_upgrades %}
+            <button class="btn btn-primary" onclick="upgrade('pro')">Switch</button>
+            {% endif %}
         </div>
     </div>
     <div class="card">
         <h5 class="card-title">Premium 💗</h5>
-        <h6 class="card-subtitle mb-2 "><del>400₹/28 days</del></h6>
-        <h5 class="card-subtitle mb-2 ">299₹/28 days</h5>
+        <h6 class="card-subtitle mb-2 "><del>500₹/28 days</del></h6>
+        <h5 class="card-subtitle mb-2 ">399₹/28 days</h5>
         <p class="card-text">For those who want to support us:</p>
         <ul>
             <li>Includes everything in Basic & Pro</li>
@@ -205,8 +203,35 @@
                 </li>
               {% endfor %}
             </ul>
+            {% if 'premium' in available_upgrades %}
+            <button class="btn btn-primary" onclick="upgrade('premium')">Switch</button>
+            {% endif %}
         </div>
     </div>
+</div>
+<div class="membership-details">
+    {%if transactions %}
+    <h2>Previous Trasactions:</h2>
+    <table id="transactions" border="1px solid black">
+        <thead>
+            <tr>
+                <th>Amount</th> 
+                <th>Date</th>
+                <th>Transaction ID</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in transactions %}
+            <tr>
+                <td>{{ transaction[1] }}</td>
+                <td>{{ transaction[2] }}</td>
+                <td>{{ transaction[3] }}</td>
+                <td>{{ transaction[5] }}</td>
+            </tr>
+            {% endfor %}
+    </table>
+    {% endif %}
 </div>
 
 {% endblock %}
