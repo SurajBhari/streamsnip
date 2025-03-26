@@ -162,13 +162,6 @@ subscription_model = {
     "pro": {1:199, 3:499, 6:999, 12:1999},
     "premium": {1:399, 3:999, 6:1999, 12:3999},
 }
-
-subscription_model = {
-    "basic": {1:1, 3:3, 6:6, 12:12},
-    "pro": {1:2, 3:5, 6:10, 12:20},
-    "premium": {1:4, 3:10, 6:20, 12:40},
-}
-# testing purpose only 
 discord_invite = "https://discord.gg/2XVBWK99Vy"
 
 jar = None
@@ -1146,7 +1139,7 @@ def upgrade():
     membership_details = Membership.get(conn, current_user.id)
     
     if membership_details.type.lower() == "free":
-        return "You are on free trial. No upgrade available.", 400
+        return "You are on free trial. No upgrade available. Only Subscribe is avaialable.", 400
     
     if membership_details.type == switch_to:
         return "You are already on this membership.", 400
@@ -1203,14 +1196,10 @@ def pay():
 
     membership_details = Membership.get(conn, current_user.id)
 
-    # Check if free trial or no active membership
-    if membership_details.type.lower() == "free" or not membership_details.days_left:
-        return "You can't extend free or expired memberships.", 400
-
     # Check if the requested membership matches the current membership
     if membership_details.type != membership_type:
-        return "You can only extend your current membership.", 400
-
+        # in this case we are susbscribing to a new membership
+        ...
     # Validate amount
     amount = request.form.get("amount")
     if not amount:
@@ -1266,10 +1255,6 @@ def callback():
         # Fetch old membership details
         old_membership_details = Membership.get(conn, current_user.id)
 
-        # Safety check
-        if old_membership_details.type != membership_type or old_membership_details.type.lower() == "free":
-            return "Invalid membership extension.", 400
-
         # Calculate new end time
         if old_membership_details.days_left:
             start_time = old_membership_details.start
@@ -1324,29 +1309,30 @@ def membership():
 
     available = list(subscription_model.keys())
     available_upgrades = []
+    available_subscribes = []
+    if (not membership_details.type) or membership_details.type.lower() == "free":
+        available_subscribes = ["basic", "pro", "premium"]
+    else:
+        available_subscribes = [membership_details.type]
     if membership_details.days_left:
-        if membership_details.type == "FREE":
-            available_upgrades = ["basic","pro", "premium"]
+        if membership_details.type.lower() == "free":
+            available_upgrades = []
         if membership_details.type == "basic":
             available_upgrades = ["pro", "premium"]
         if membership_details.type == "pro":
             available_upgrades = ["premium"]
     
     
-    if membership_details.type in available:
-        # put the option on top
-        available.remove(membership_details.type)
-        available.insert(0, membership_details.type)
     return render_template(
         "membership.html",
         membership=membership_details,
         balance=f"{balance:.2f}",
-        available=available,
         transactions=transactions[::-1],
         base_prices = {'basic': 199, 'pro': 299, 'premium': 499},
         base_duration=28,
         subscription_model=subscription_model,
         available_upgrades = available_upgrades,
+        available_subscribes=available_subscribes,
     )
 
 
