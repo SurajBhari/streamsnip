@@ -115,20 +115,7 @@
         overflow: visible; /* Allow dropdowns to show outside */
     }
 
-    .card {
-        flex: 1;
-        max-width: 300px;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        position: relative; /* Add this */
-        z-index: 1; /* Add this */
-    }
-    
-    .dropdown-menu {
-        z-index: 1000; /* Ensure dropdown appears on top */
-    }
-    
+
 </style>
 
 {% endblock %}
@@ -136,9 +123,9 @@
 {% block content %}
 
 <div class="membership-details">
-    <h2>Your Membership Details</h2> 
+    <h2>Your Membership Details</h2>  {{available_upgrades}} {{available_subscribes}}
     Your current membership:<h3>{{ membership.type }}</h3><br>
-    Days left: <h3>{{ membership.days_left }}</h3><br> {{available_upgrades}}
+    Days left: <h3>{{ membership.days_left }}</h3><br> 
 
     {% if membership.free_trial %}<h2>FREE TRIAL</h2>{% endif %}
 </div>
@@ -178,21 +165,25 @@
         <div class="dropdown mb-3">
             {% if tier in available_upgrades %}
                 <button class="btn btn-primary" onclick="upgrade('{{ tier }}')">Upgrade</button>
-            {% elif membership.type == tier %}
+            {% elif tier in available_subscribes or tier == membership.type %}
                 <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Extend
+                    {%if tier == membership.type %}Extend{%else%}Subscribe{%endif%}
                 </button>
                 <ul class="dropdown-menu">
                 {% for months, price in subscription_model[tier].items() %}
+                    {%if tier in available_subscribes %}
                     <li>
                         <a class="dropdown-item" href="#" onclick="sub('{{ tier }}', {{ price }})">
-                        Extend for {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
-                        {% if months == 12 %} + 2 months free{% elif months == 6 %} + 1 month free{% endif %}
+                        {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
+                        {% if months == 12 %} (2 month free){% elif months == 6 %} (1 month free){% endif %}
                         </a>
                     </li>
+                    {% endif %}
                 {% endfor %}
                 </ul>
+
             {% endif %}
+
         </div>    
     </div>
     {% endfor %}
