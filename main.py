@@ -942,7 +942,7 @@ def login_google_callback():
 
     login_user(User.get(youtube_id), remember=True)
     session["logged_in"] = True
-    next = request.args.get("next")
+    next = session.pop("next_url", "/")
     return redirect(next or url_for("slash"))
 
 def get_youtube_data(access_token):
@@ -964,7 +964,7 @@ def login_google():
     next = request.args.get("next")
     redirect_uri=request.base_url + "/callback"
     if next:
-        redirect_uri += f"?next={next}"
+        session["next_url"] = "/something" # google doesn't allow query params in redirect_uri
     print(redirect_uri)
     google_provider_cfg = get_google_provider_cfg()
     authorization_endpoint = google_provider_cfg["authorization_endpoint"]
