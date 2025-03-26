@@ -962,8 +962,6 @@ def get_youtube_data(access_token):
 @app.route("/login/google")
 def login_google():
     next = request.args.get("next")
-    if next:
-        next = f"?next={next}"
     redirect_uri=request.base_url + "/callback"
     if next:
         redirect_uri += f"?next={next}"
@@ -972,7 +970,7 @@ def login_google():
     authorization_endpoint = google_provider_cfg["authorization_endpoint"]
     request_uri = oauthclient.prepare_request_uri(
         authorization_endpoint,
-        redirect_uri=request.base_url + "/callback",
+        redirect_uri=redirect_uri,
         scope=[
             "openid",
             "email",
