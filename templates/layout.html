@@ -181,7 +181,7 @@
             {% if current_user.logged_in %}
             var days_left = {{current_user.membership.days_left}};
             var is_free_trial = {{current_user.membership.free_trial|tojson}};
-            if(days_left< 15){
+            if(days_left< 15 || is_free_trial){
                 var color = ""
                 if(is_free_trial){
                     var alert = `Your free trial will end in ${days_left} days. <a href='/membership'>Please consider upgrading your membership.</a>`;
@@ -196,7 +196,10 @@
                     color = "warning"
                 }
                 else{
-                    return;
+                    if(!is_free_trial){
+                        return;
+                    }
+                    color="danger";
                 }
                 var alert_div = document.getElementById("alert");
                 alert_div.innerHTML = `<div class="alert alert-${color} alert-dismissible fade show mb-0 d-flex justify-content-center align-items-center text-center" role="alert">${alert}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
