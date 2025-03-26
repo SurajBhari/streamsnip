@@ -162,6 +162,13 @@ subscription_model = {
     "pro": {1:199, 3:499, 6:999, 12:1999},
     "premium": {1:399, 3:999, 6:1999, 12:3999},
 }
+
+subscription_model = {
+    "basic": {1:1, 3:3, 6:6, 12:12},
+    "pro": {1:2, 3:5, 6:10, 12:20},
+    "premium": {1:4, 3:10, 6:20, 12:40},
+}
+# testing purpose only 
 discord_invite = "https://discord.gg/2XVBWK99Vy"
 
 jar = None
@@ -935,8 +942,8 @@ def login_google_callback():
 
     login_user(User.get(youtube_id), remember=True)
     session["logged_in"] = True
-    return redirect(url_for("slash"))
-
+    next = request.args.get("next")
+    return redirect(next or url_for("slash"))
 
 def get_youtube_data(access_token):
     youtube_url = "https://www.googleapis.com/youtube/v3/channels"
@@ -954,6 +961,12 @@ def get_youtube_data(access_token):
 
 @app.route("/login/google")
 def login_google():
+    next = request.args.get("next")
+    if next:
+        next = f"?next={next}"
+    redirect_uri=request.base_url + "/callback"
+    if next:
+        redirect_uri += f"?next={next}"
     google_provider_cfg = get_google_provider_cfg()
     authorization_endpoint = google_provider_cfg["authorization_endpoint"]
     request_uri = oauthclient.prepare_request_uri(
@@ -1130,37 +1143,44 @@ def upgrade():
     switch_to = request.form.get("type")
     if not switch_to:
         return "Invalid request", 400
+
     membership_details = Membership.get(conn, current_user.id)
+    
+    if membership_details.type.lower() == "free":
+        return "You are on free trial. No upgrade available.", 400
+    
     if membership_details.type == switch_to:
-        return "You are already on this membership", 400
-    # calculate how much he have to pay
-    if membership_details.type == "FREE":
-        return "You can't upgrade from free membership", 400
+        return "You are already on this membership.", 400
+
     if not membership_details.days_left:
-        return "You can't upgrade from expired membership", 400
-    if membership_details.type == "basic":
-        # basic is 99/ 28 days then per day is 
-        per_day = subscription_model["basic"][1] / 28
-    if membership_details.type == "pro":
-        per_day = subscription_model["pro"][1] / 28
-    if membership_details.type == "premium":
-        return "You are already on premium. there is no upgrade from here", 400
+        return "You can't upgrade from expired membership.", 400
+
+    allowed_upgrades = {
+        "basic": ["pro", "premium"],
+        "pro": ["premium"],
+        "premium": []
+    }
+
+    current_type = membership_details.type
+    if switch_to not in allowed_upgrades.get(current_type, []):
+        return "Upgrade not allowed from your current membership.", 400
+
+    # Per day prices
+    per_day_current = subscription_model[current_type][1] / 28
+    per_day_new = subscription_model[switch_to][1] / 28
+
+    # Calculate amount
     days_left = membership_details.days_left
-    if switch_to == "pro":
-        new_per_day = subscription_model["pro"][1]/ 28
-    elif switch_to == "premium":
-        new_per_day = subscription_model["premium"][1] / 28
-    else:
-        return "Invalid request", 400
-    amount = (new_per_day - per_day) * days_left
-    amount = round(amount, 2)
-    if amount < 0:
-        return "You are already on a higher membership", 400
-    amount = int(amount) # we don't really care about the cents
-    amount = amount * 100  # converting it to paise
+    amount = (per_day_new - per_day_current) * days_left
+    if amount <= 0:
+        return "Invalid upgrade request.", 400
+
+    amount = int(round(amount)) * 100  # Convert to paise
+
     recepipt = f"{current_user.id}_{int(time.time())}"
     data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers":[]}
     payment = razorclient.order.create(data=data)
+
     callback = "/pay/callback"
     name = channel_info[current_user.id]["name"]
     pay_dictionary[payment["id"]] = {"amount": amount, "type": switch_to, "month": 0}
@@ -1178,28 +1198,37 @@ def upgrade():
 @login_required
 def pay():
     print("Payment request")
-    print(request.form)
     membership_type = request.form.get("type")
     if not membership_type:
-        return "Invalid request 1", 400
-    if membership_type not in subscription_model.keys():
-        return "Invalid request 2", 400
+        return "Invalid request: Membership type missing.", 400
+
+    membership_details = Membership.get(conn, current_user.id)
+
+    # Check if free trial or no active membership
+    if membership_details.type.lower() == "free" or not membership_details.days_left:
+        return "You can't extend free or expired memberships.", 400
+
+    # Check if the requested membership matches the current membership
+    if membership_details.type != membership_type:
+        return "You can only extend your current membership.", 400
+
+    # Validate amount
     amount = request.form.get("amount")
     if not amount:
-        return "Invalid request 3", 400
+        return "Invalid request: Amount missing.", 400
     amount = int(amount)
     if amount not in list(subscription_model[membership_type].values()):    
-        return "Invalid request 4", 400
+        return "Invalid request: Invalid amount.", 400
+
+    # Find months
     for m, a in subscription_model[membership_type].items():
         if a == amount:
-            amount = a
             months = m
             break
-    amount = amount * 100  # converting it to paise
-    amount = int(amount)
 
+    amount = amount * 100  # Convert to paise
     recepipt = f"{current_user.id}_{int(time.time())}"
-    data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers":[]}
+    data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers": []}
     payment = razorclient.order.create(data=data)
     callback = "/pay/callback"
     name = channel_info[current_user.id]["name"]
@@ -1220,43 +1249,54 @@ def callback():
     pid = request.form.get("razorpay_payment_id")
     ordid = request.form.get("razorpay_order_id")
     sign = request.form.get("razorpay_signature")
-    print(f"The payment id : {pid}, order id : {ordid} and signature : {sign}")
+    print(f"The payment id: {pid}, order id: {ordid}, signature: {sign}")
+
     params = {
         "razorpay_order_id": ordid,
         "razorpay_payment_id": pid,
         "razorpay_signature": sign,
     }
+
     final = razorclient.utility.verify_payment_signature(params)
     if final is True:
         order_details = pay_dictionary[ordid]
-        amount = order_details["amount"]
-        amount = amount / 100  # converting it back to rs
+        amount = order_details["amount"] // 100  # Convert back to INR
         months = order_details["month"]
         membership_type = order_details["type"]
-        old_membership_details = Membership.get(conn, current_user.id)
-        if old_membership_details.days_left:
-            if old_membership_details.type == "FREE" and membership_type== "basic":
-                # in this case double the end time 
-                old_membership_details.end = old_membership_details.start + timedelta(days=old_membership_details.days_left * 2)
 
+        # Fetch old membership details
+        old_membership_details = Membership.get(conn, current_user.id)
+
+        # Safety check
+        if old_membership_details.type != membership_type or old_membership_details.type.lower() == "free":
+            return "Invalid membership extension.", 400
+
+        # Calculate new end time
+        if old_membership_details.days_left:
             start_time = old_membership_details.start
             end_time = old_membership_details.end + timedelta(days=months * 28)
         else:
-            end_time = datetime.now() + timedelta(days=months * 28)
+            # Should not reach here, but fallback
             start_time = datetime.now()
-        # delete old records 
+            end_time = datetime.now() + timedelta(days=months * 28)
+
+        # Update database
         cur.execute("DELETE FROM MEMBERSHIP WHERE channel_id=?", (current_user.id,))
         cur.execute(
-            "INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)", (current_user.id, membership_type, int(start_time.timestamp()), int(end_time.timestamp()))
+            "INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)",
+            (current_user.id, membership_type, int(start_time.timestamp()), int(end_time.timestamp()))
         )
-        if not months:
-            desciption = f"Upgrade to {membership_type}"
-        else:
-            desciption = f"Membership {membership_type} for {months} months"
-        cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)", (current_user.id, amount, int(time.time()), ordid, membership_type, desciption))
+
+        description = f"Membership {membership_type} extended for {months} month{'s' if months != 1 else ''}"
+        cur.execute(
+            "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
+            (current_user.id, amount, int(time.time()), ordid, membership_type, description)
+        )
         conn.commit()
         return redirect("/membership", code=301)
-    return "Something Went Wrong Please Try Again"
+
+    return "Something went wrong, please try again."
+
 
 
 def get_transactions(channel_id: str):
@@ -1287,7 +1327,7 @@ def membership():
     available_upgrades = []
     if membership_details.days_left:
         if membership_details.type == "FREE":
-            available_upgrades = []
+            available_upgrades = ["basic","pro", "premium"]
         if membership_details.type == "basic":
             available_upgrades = ["pro", "premium"]
         if membership_details.type == "pro":
@@ -1304,6 +1344,8 @@ def membership():
         balance=f"{balance:.2f}",
         available=available,
         transactions=transactions[::-1],
+        base_prices = {'basic': 199, 'pro': 299, 'premium': 499},
+        base_duration=28,
         subscription_model=subscription_model,
         available_upgrades = available_upgrades,
     )
@@ -2968,7 +3010,7 @@ def is_subscribed(channel_id):
                 "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
                 (
                     channel_id,
-                    199,
+                    0,
                     int(time.time()),
                     "FREE TRIAL",
                     "FREE",
