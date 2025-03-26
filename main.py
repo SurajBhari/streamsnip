@@ -967,6 +967,7 @@ def login_google():
     redirect_uri=request.base_url + "/callback"
     if next:
         redirect_uri += f"?next={next}"
+    print(redirect_uri)
     google_provider_cfg = get_google_provider_cfg()
     authorization_endpoint = google_provider_cfg["authorization_endpoint"]
     request_uri = oauthclient.prepare_request_uri(
