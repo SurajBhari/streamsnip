@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-wordcloud"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-autocolors"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-deferred/dist/chartjs-plugin-deferred.min.js"></script>
+
 <script>
     var current_membership_type = "{{ membership.type }}";
     function sub(type, amount) {
@@ -53,6 +54,7 @@
         }
     }
 </script>
+
 <style>
     .card-group {
         display: flex;
@@ -98,7 +100,6 @@
         border: 1px solid black;
     }
 
-    /* Responsive Design */
     @media (max-width: 768px) {
         .card-group {
             flex-direction: column;
@@ -110,110 +111,97 @@
             max-width: none;
         }
     }
+    .card-group {
+        overflow: visible; /* Allow dropdowns to show outside */
+    }
 
+    .card {
+        flex: 1;
+        max-width: 300px;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        position: relative; /* Add this */
+        z-index: 1; /* Add this */
+    }
+    
+    .dropdown-menu {
+        z-index: 1000; /* Ensure dropdown appears on top */
+    }
+    
 </style>
+
 {% endblock %}
 
 {% block content %}
 
 <div class="membership-details">
     <h2>Your Membership Details</h2> 
-    Your current membership:<h3>{{ membership.type }}</h3></br>
-    Days left: <h3>{{ membership.days_left }}</h3></br>
-    {% if membership.free_trial %}<h2>FREE TRIAL</h2><h5></h5>{% endif %}
+    Your current membership:<h3>{{ membership.type }}</h3><br>
+    Days left: <h3>{{ membership.days_left }}</h3><br> {{available_upgrades}}
+
+    {% if membership.free_trial %}<h2>FREE TRIAL</h2>{% endif %}
 </div>
 <br>
 <div class="card-group">
-    <div class="card">
-        <h5 class="card-title">Basic</h5>
-        <h6 class="card-subtitle mb-2 "><del>200₹/28 days</del></h6>
-        <h5 class="card-subtitle mb-2 ">99₹/28 days</h5>
-        <p class="card-text">Enjoy essential features:</p>
-        <ul>
-            <li>Use <code>!clip</code> with default settings</li>
-            <li>Unlimited Clips</li>
-            <li>Access <code>!edit</code> and <code>!delete</code></li>
-        </ul>
-        <div class="dropdown mb-3">
-            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                {% if membership.type=='basic' %} Extend {%else%} Subscribe {%endif%}
-            </button>
-            <ul class="dropdown-menu">
-              {% for months, price in subscription_model['basic'].items() %}
-                <li>
-                  <a class="dropdown-item" href="#" onclick="sub('basic', {{ price }})">
-                    {% if membership.type=='basic' %} Extend {%else%} Subscribe {%endif%} for {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
-                  </a>
-                </li>
-              {% endfor %}
+    {% set base_prices = {'basic': 99, 'pro': 199, 'premium': 399} %}
+    {% for tier in ['basic', 'pro', 'premium'] %}
+    <div class="card {% if tier == 'pro' %}pro-card{% endif %}">
+        <h5 class="card-title">{{ tier|capitalize }} {% if tier == 'pro' %}⭐{% elif tier == 'premium' %}💗{% endif %}</h5>
+        <h6 class="card-subtitle mb-2 "><del>{{ base_prices[tier] * 2 }}₹/28 days</del></h6>
+        <h5 class="card-subtitle mb-2 ">{{ base_prices[tier] }}₹/28 days</h5>
+        <p class="card-text">
+            {% if tier == 'basic' %}
+            Enjoy essential features:
+            <ul>
+                <li>Use <code>!clip</code> with default settings</li>
+                <li>Unlimited Clips</li>
+                <li>Access <code>!edit</code> and <code>!delete</code></li>
             </ul>
-            {% if 'basic' in available_upgrades %}
-            <button class="btn btn-primary" onclick="upgrade('basic')">Switch</button>
+            {% elif tier == 'pro' %}
+            Unlock advanced features:
+            <ul>
+                <li>Everything in Basic</li>
+                <li><a href="https://github.com/SurajBhari/streamsnip?tab=readme-ov-file#optional-arguments">Customize all arguments</a></li>
+                <li>Discord Integration (sending message to discord)</li>
+            </ul>
+            {% else %}
+            For those who want to support us:
+            <ul>
+                <li>Includes everything in Basic & Pro</li>
+                <li>Comments after stream ends with timestamps (BETA)</li>
+                <li>Priority Support</li>
+                <li>Your channels GLOWSSSS on home page.</li>
+            </ul>
+            {% endif %}
+        </p>
+        <div class="dropdown mb-3">
+            {% if tier in available_upgrades %}
+                <button class="btn btn-primary" onclick="upgrade('{{ tier }}')">Upgrade</button>
+            {% elif membership.type == tier %}
+                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Extend
+                </button>
+                <ul class="dropdown-menu">
+                {% for months, price in subscription_model[tier].items() %}
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="sub('{{ tier }}', {{ price }})">
+                        Extend for {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
+                        {% if months == 12 %} + 2 months free{% elif months == 6 %} + 1 month free{% endif %}
+                        </a>
+                    </li>
+                {% endfor %}
+                </ul>
             {% endif %}
         </div>    
     </div>
-    <div class="card pro-card">
-        <h5 class="card-title">Pro ⭐</h5>
-        <h6 class="card-subtitle mb-2 "><del>300₹/28 days</del></h6>
-        <h5 class="card-subtitle mb-2 ">199₹/28 days</h5>
-        <p class="card-text">Unlock advanced features:</p>
-        <ul>
-            <li>Everything in Basic</li>
-            <li><a href="https://github.com/SurajBhari/streamsnip?tab=readme-ov-file#optional-arguments">Customize all arguments</a></li>
-            <li>Discord Integration (sending message to discord)</li>
-        </ul>
-        <div class="dropdown mb-3">
-            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            {% if membership.type=='pro' %} Extend {%else%} Subscribe {%endif%}
-            </button>
-            <ul class="dropdown-menu">
-              {% for months, price in subscription_model['pro'].items() %}
-                <li>
-                  <a class="dropdown-item" href="#" onclick="sub('pro', {{ price }})">
-                    {% if membership.type=='pro' %} Extend {%else%} Subscribe {%endif%} for {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
-                  </a>
-                </li>
-              {% endfor %}
-            </ul>
-            {% if 'pro' in available_upgrades %}
-            <button class="btn btn-primary" onclick="upgrade('pro')">Switch</button>
-            {% endif %}
-        </div>
-    </div>
-    <div class="card">
-        <h5 class="card-title">Premium 💗</h5>
-        <h6 class="card-subtitle mb-2 "><del>500₹/28 days</del></h6>
-        <h5 class="card-subtitle mb-2 ">399₹/28 days</h5>
-        <p class="card-text">For those who want to support us:</p>
-        <ul>
-            <li>Includes everything in Basic & Pro</li>
-            <li>Comments after stream ends with timestamps (BETA)</li>
-            <li>Priority Support</li>
-            <li>Your channels GLOWSSSS on home page.</li>
-        </ul>
-        <div class="dropdown mb-3">
-            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                {% if membership.type=='premium' %} Extend {%else%} Subscribe {%endif%}
-            </button>
-            <ul class="dropdown-menu">
-              {% for months, price in subscription_model['premium'].items() %}
-                <li>
-                  <a class="dropdown-item" href="#" onclick="sub('premium', {{ price }})">
-                    {% if membership.type=='premium' %} Extend {%else%} Subscribe {%endif%} for {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
-                  </a>
-                </li>
-              {% endfor %}
-            </ul>
-            {% if 'premium' in available_upgrades %}
-            <button class="btn btn-primary" onclick="upgrade('premium')">Switch</button>
-            {% endif %}
-        </div>
-    </div>
+    {% endfor %}
 </div>
+
 <div class="membership-details">
-    {%if transactions %}
-    <h2>Previous Trasactions:</h2>
-    <table id="transactions" border="1px solid black">
+    {% if transactions %}
+    <h2>Previous Transactions:</h2>
+    <table id="transactions">
         <thead>
             <tr>
                 <th>Amount</th> 
@@ -231,6 +219,7 @@
                 <td>{{ transaction[5] }}</td>
             </tr>
             {% endfor %}
+        </tbody>
     </table>
     {% endif %}
 </div>
