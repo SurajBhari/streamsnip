@@ -150,7 +150,11 @@
             html += '<div class="col-3">';
             html += `<span title="Last Clip - ${data[i]['last_clip']['timesince']}\n${data[i]['sub_count']} Subscribers\nFirst Clip - ${data[i]['first_clip_timesince']}\n${data[i]['clip_count']} Clips">`;
             html += '<a href="' + data[i]['link'] + '">';
-            html += '<div class="card noborder position-relative">';
+            if(premium_members.includes(data[i]['id']))
+                html += '<div class="card noborder card-glow position-relative">';
+            else{
+                html += '<div class="card noborder position-relative">';
+            }
 
             // Image with pinned icon
             html += '<div class="position-relative">';

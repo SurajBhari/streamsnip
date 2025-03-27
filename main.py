@@ -335,8 +335,8 @@ class User(UserMixin):
         return get_transactions(self.id)
 
     @property
-    def balance(self):
-        return get_balance(self.id)
+    def can_avail_trial(self):
+        return can_avail_free_trial(self.id)
 
     def get_id(self):
         return self.id
@@ -757,6 +757,14 @@ def load_user(user_id):
 
 login_manager.anonymous_user = AnonymousUser
 
+@app.route("/start_free_trial")
+def start_free_trial():
+    if not current_user.is_authenticated:
+        return redirect(url_for("login"))
+    if not current_user.can_avail_trial:
+        return "You have already availed the free trial"
+    is_subscribed(current_user.id) # automatically starts the trial
+    return redirect(url_for("slash"))
 
 @app.route("/cache")
 def cache():
@@ -2982,6 +2990,13 @@ def get_transactions(channel_id):
     cur.execute("SELECT * FROM TRANSACTIONS WHERE channel_id=?", (channel_id,))
     return cur.fetchall()
 
+def can_avail_free_trial(channel_id):
+    membership_details = Membership.get(conn, channel_id)
+    if not membership_details.in_db:
+        return True
+    if membership_details.type == "FREE":
+        return False
+    return False
 
 def is_subscribed(channel_id):
     membership_detail = Membership.get(conn, channel_id)
@@ -3720,6 +3735,5 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    is_subscribed("UCbZZmB8L3IEHutGbvpWo9Ow")
-    print(Membership.get(conn,"UCbZZmB8L3IEHutGbvpWo9Ow").json())
+    #is_subscribed("UCbZZmB8L3IEHutGbvpWo9Ow")
     app.run(debug=True, host="0.0.0.0", port=80)

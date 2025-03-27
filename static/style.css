@@ -65,6 +65,31 @@ body.container {
   --bs-card-bg: rgba(33, 37, 41, 1);
 }
 
+@keyframes glowRotate {
+  0% {
+      box-shadow: 0 0 10px red;
+  }
+  33% {
+      box-shadow: 0 0 10px green;
+  }
+  66% {
+      box-shadow: 0 0 10px blue;
+  }
+  100% {
+      box-shadow: 0 0 10px red;
+  }
+}
+
+.card-glow {
+  color: white;
+  border-radius: 50px;
+  margin-bottom: 10px;
+  text-align: center;
+  transition: 0.3s;
+  animation: glowRotate 3s linear infinite;
+}
+
+
 .noborder {
   border: 0px;
 }
@@ -153,6 +178,10 @@ body.dark-theme {
 
 /* a links in alert.dark-theme */
 .alert.dark-theme a {
+  color: rgb(0, 0, 0);
+}
+/* a links in alert */
+.alert a {
   color: rgb(0, 0, 0);
 }
 

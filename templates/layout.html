@@ -179,32 +179,41 @@
         });
         function give_alert(){
             {% if current_user.logged_in %}
-            var days_left = {{current_user.membership.days_left}};
-            var is_free_trial = {{current_user.membership.free_trial|tojson}};
-            if(days_left< 15 || is_free_trial){
-                var color = ""
-                if(is_free_trial){
-                    var alert = `Your free trial will end in ${days_left} days. <a href='/membership'>Please consider upgrading your membership.</a>`;
-                }
-                else{
-                    var alert = `Your membership will end in ${days_left} days. <a href='/membership'>Please consider renewing your membership. </a>`;
-                }
-                if(days_left < 7){
-                    color = "danger"
-                }
-                else if(days_left < 15){
-                    color = "warning"
-                }
-                else{
-                    if(!is_free_trial){
-                        return;
+                {% if current_user.membership.type %}
+                    var days_left = {{current_user.membership.days_left}};
+                    var is_free_trial = {{current_user.membership.free_trial|tojson}};
+                    if(days_left< 15 || is_free_trial){
+                        var color = ""
+                        if(is_free_trial){
+                            var alert = `Your free trial will end in ${days_left} days. <a style="color:blue;" href='/membership'>Please consider upgrading your membership.</a>`;
+                        }
+                        else{
+                            var alert = `Your membership will end in ${days_left} days. <a style="color:blue;" href='/membership'>Please consider renewing your membership. </a>`;
+                        }
+                        if(days_left < 7){
+                            color = "danger"
+                        }
+                        else if(days_left < 15){
+                            color = "warning"
+                        }
+                        else{
+                            if(!is_free_trial){
+                                return;
+                            }
+                            color="danger";
+                        }
+                        var alert_div = document.getElementById("alert");
+                        alert_div.innerHTML = `<div style="color:black;" class="alert alert-${color} alert-dismissible fade show mb-0 d-flex justify-content-center align-items-center text-center" role="alert">${alert}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
                     }
-                    color="danger";
-                }
-                var alert_div = document.getElementById("alert");
-                alert_div.innerHTML = `<div class="alert alert-${color} alert-dismissible fade show mb-0 d-flex justify-content-center align-items-center text-center" role="alert">${alert}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
-            }
-            {% endif %}
+                {%else%}
+                    var can_avail = {{current_user.can_avail_trial|tojson}};
+                    if(can_avail){
+                        var alert_div = document.getElementById("alert");
+                        alert_div.innerHTML = `<div class="alert alert-warning alert-dismissible fade show mb-0 d-flex justify-content-center align-items-center text-center" role="alert">You are eligible for a free trial. <a style="color:blue;" href='/start_free_trial'>Click here to avail it.</a><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
+                    }
+                {%endif%}
+            {%endif%}
+
         }
 
     </script>
