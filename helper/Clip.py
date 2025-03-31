@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+
 try:
     from .util import *
 except ImportError:
@@ -8,11 +9,12 @@ from discord_webhook import DiscordWebhook
 import sqlite3
 import typing
 
-def time_since(time:datetime) -> str:
+
+def time_since(time: datetime) -> str:
     current = datetime.now(timezone.utc)
     elapsed = current - time
     elapsed = elapsed.total_seconds()
-    msPerMinute = 60 
+    msPerMinute = 60
     msPerHour = msPerMinute * 60
     msPerDay = msPerHour * 24
     msPerMonth = msPerDay * 30
@@ -41,7 +43,7 @@ def time_since(time:datetime) -> str:
         if int(elapsed / 31536000) == 1:
             return f"~ 1 year ago"
         return f"~ {int(elapsed / 31536000)} years ago"
-    
+
 
 class Clip:
     channel = None
@@ -118,10 +120,9 @@ class Clip:
         x["private"] = self.private
         x["message_level"] = self.message_level
         x["timesince"] = self.timesince
-        x['channel'] = self.channel
+        x["channel"] = self.channel
         return x
 
-    
     def edit(self, new_desc: str, conn: sqlite3.Connection):
         with conn:
             cur = conn.cursor()

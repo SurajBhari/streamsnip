@@ -66,6 +66,7 @@
 <script>
     var data = {{ data|tojson }};
     var pinned = {{ pinned|tojson }};
+    var premium_members = {{ premium_members|tojson }};
     var all=false;
     var sort_by = document.getElementById("sortby").value;
     function update_sort_by(){
@@ -149,7 +150,11 @@
             html += '<div class="col-3">';
             html += `<span title="Last Clip - ${data[i]['last_clip']['timesince']}\n${data[i]['sub_count']} Subscribers\nFirst Clip - ${data[i]['first_clip_timesince']}\n${data[i]['clip_count']} Clips">`;
             html += '<a href="' + data[i]['link'] + '">';
-            html += '<div class="card noborder position-relative">';
+            if(premium_members.includes(data[i]['id']))
+                html += '<div class="card noborder card-glow position-relative">';
+            else{
+                html += '<div class="card noborder position-relative">';
+            }
 
             // Image with pinned icon
             html += '<div class="position-relative">';
@@ -158,6 +163,9 @@
             // Pinned icon in top-right corner
             if (pinned.includes(data[i]['id'])) {
                 html += '<i class="fa-solid fa-thumbtack position-absolute" style="top: 18px; right: 18px; color: white; transform: rotate(45deg) scale(1.5);"></i>';
+            }
+            else if (premium_members.includes(data[i]['id'])) {
+                html += '<i class="fa-solid fa-heart position-absolute" style="top: 18px; right: 18px; color: white; transform: scale(1.5);"></i>';
             }
 
             html += '</div>'; // Close image wrapper
