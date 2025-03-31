@@ -32,7 +32,7 @@ def time_to_hms(seconds: int):
 
 def get_webhook_url(channel_id) -> Optional[str]:
     with open("config.json", "r") as f:
-        creds = load(f)['creds']
+        creds = load(f)["creds"]
 
     try:
         webhook_url = creds[channel_id]
@@ -40,13 +40,16 @@ def get_webhook_url(channel_id) -> Optional[str]:
         return None
     return webhook_url
 
+
 def get_json_from_html(html: str, key: str, num_chars: int = 2, stop: str = '"') -> str:
     pos_begin = html.find(key) + len(key) + num_chars
     pos_end = html.find(stop, pos_begin)
     return html[pos_begin:pos_end]
 
+
 # Scopes for the YouTube Data API
 SCOPES = ["https://www.googleapis.com/auth/youtube.force-ssl"]
+
 
 def authenticate_youtube():
     """Authenticate with OAuth2 and return an authorized YouTube API client."""
@@ -54,7 +57,7 @@ def authenticate_youtube():
     if os.path.exists("token.pickle"):
         with open("token.pickle", "rb") as token:
             creds = pickle.load(token)
-    
+
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
@@ -63,24 +66,23 @@ def authenticate_youtube():
                 "client_secrets.json", SCOPES
             )
             creds = flow.run_local_server(port=0)
-        
+
         # Save credentials for the next run
         with open("token.pickle", "wb") as token:
             pickle.dump(creds, token)
-    
+
     return build("youtube", "v3", credentials=creds)
+
 
 def is_video_live(video_id):
     youtube = authenticate_youtube()
-    request = youtube.videos().list(
-        part="snippet,statistics",
-        id=video_id
-    )
+    request = youtube.videos().list(part="snippet,statistics", id=video_id)
     response = request.execute()
     try:
-        return response['items'][0]['snippet']['liveBroadcastContent'] == "live"
+        return response["items"][0]["snippet"]["liveBroadcastContent"] == "live"
     except KeyError:
         return False
+
 
 def post_comment(video_id, comment_text):
     """Post a comment on a YouTube video."""
@@ -90,25 +92,20 @@ def post_comment(video_id, comment_text):
         body={
             "snippet": {
                 "videoId": video_id,
-                "topLevelComment": {
-                    "snippet": {
-                        "textOriginal": comment_text
-                    }
-                }
+                "topLevelComment": {"snippet": {"textOriginal": comment_text}},
             }
-        }
+        },
     )
     response = request.execute()
     print("Comment posted:", response)
 
+
 def list_comments(video_id):
     youtube = authenticate_youtube()
 
-    request = youtube.commentThreads().list(
-        part="snippet",
-        videoId=video_id
-    )
+    request = youtube.commentThreads().list(part="snippet", videoId=video_id)
     return request.execute()
+
 
 def prepare_comment_text(clips: List) -> str:
     string = "Clips For This stream: (this is a BETA option. please take this with a grain of salt)\n"
@@ -118,7 +115,7 @@ def prepare_comment_text(clips: List) -> str:
         elif clip.userlevel == "owner":
             icon = owner_icon
         elif clip.userlevel == "moderator":
-            icon = mod_icon 
+            icon = mod_icon
         elif clip.userlevel == "subscriber":
             icon = subscriber_icon
         elif clip.userlevel == "regular":
@@ -128,10 +125,11 @@ def prepare_comment_text(clips: List) -> str:
         string += f"{clip.hms} | {clip.id} | {clip.desc} -- {icon} {clip.user_name}\n"
     string += "\nThat's all. \n\nThis is a BETA feature. Please take this with a grain of salt. If you have any feedback, please let me know."
     return string
-    
+
+
 if __name__ == "__main__":
     # Replace with your video ID and comment text
     VIDEO_ID = "mtfr0OkzTks"
     COMMENT_TEXT = "This is a test comment from a Python script!"
-    
+
     post_comment(VIDEO_ID, COMMENT_TEXT)

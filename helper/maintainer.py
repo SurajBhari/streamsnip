@@ -8,6 +8,7 @@ import psutil
 import threading
 import sqlite3
 from typing import Optional, List, Any
+from datetime import datetime
 
 import os
 from Clip import Clip
@@ -39,23 +40,45 @@ DiscordWebhook(url=management_webhook_url, content="Maintainer started").execute
 conn = sqlite3.connect("../queries.db")
 
 failed_ids = []
+
+
 def comment_task() -> str:
     COMMENTS = ""
     with conn:
         # we only talk about streams that happened after 1735410600 Sun Dec 29 2024 00:00:00 GMT+0530 (India Standard Time)
         cur = conn.cursor()
-        cur.execute("CREATE TABLE IF NOT EXISTS COMMENTS (video_id TEXT, comment TEXT, time INTEGER)")
+        cur.execute(
+            f"SELECT channel_id FROM MEMBERSHIP WHERE type='premium' AND end > {int(time.time())}"
+        )
+        members = [x[0] for x in cur.fetchall()]
+        cur.execute(
+            "CREATE TABLE IF NOT EXISTS COMMENTS (video_id TEXT, comment TEXT, time INTEGER)"
+        )
         conn.commit()
         two_days_ago = int(time.time()) - 2 * 24 * 60 * 60
-        cur.execute(f"SELECT * FROM queries WHERE time > {two_days_ago} GROUP BY message_id")  # grouping will make sure we get 1 clip from each streams
+        cur.execute(
+            f"SELECT * FROM queries WHERE time > {two_days_ago} GROUP BY message_id"
+        )  # grouping will make sure we get 1 clip from each streams
         clips = [Clip(x) for x in cur.fetchall()]
-        previously_done = [x[0] for x in cur.execute("SELECT video_id FROM COMMENTS").fetchall()]
-        comments_subscribers = [x[0] for x in cur.execute("SELECT channel_id from SETTINGS WHERE comments = 'True'").fetchall()]
-        comment_count = 0   
+        previously_done = [
+            x[0] for x in cur.execute("SELECT video_id FROM COMMENTS").fetchall()
+        ]
+        comments_subscribers = [
+            x[0]
+            for x in cur.execute(
+                "SELECT channel_id from SETTINGS WHERE comments = 'True'"
+            ).fetchall()
+        ]
+        comment_count = 0
         for clip in clips:
             if clip.channel not in comments_subscribers:
+                print(f"Skipping {clip.channel} as comments are disabled")
+                continue
+            if clip.channel not in members:
+                print(f"Skipping {clip.channel} as they are not a member")
                 continue
             if clip.stream_id in previously_done:
+                print(f"Skipping {clip.stream_id} as it is already commented")
                 continue
             cur.execute(
                 """
@@ -73,8 +96,11 @@ def comment_task() -> str:
                 break
             try:
                 if failed_ids.count(clip.stream_id) > 2:
-                    COMMENTS += "\n" + f"Failed to comment 3 times. Skipping this stream {clip.stream_id}"
-                    comment_count -= 1 # we are not commenting on this stream so we need to reduce the count
+                    COMMENTS += (
+                        "\n"
+                        + f"Failed to comment 3 times. Skipping this stream {clip.stream_id}"
+                    )
+                    comment_count -= 1  # we are not commenting on this stream so we need to reduce the count
                     continue
                 if is_video_live(clip.stream_id):
                     COMMENTS += "\n" + f"Stream is live. Skipping {clip.stream_id}"
@@ -86,12 +112,16 @@ def comment_task() -> str:
                 COMMENTS += f"\nFailed to post comment for {clip.stream_id} {e}"
                 failed_ids.append(clip.stream_id)
                 print(e)
-                continue # go to next stream. we will try again later
-            cur.execute("INSERT INTO COMMENTS VALUES (?, ?, ?)", (clip.stream_id, string, int(time.time())))
+                continue  # go to next stream. we will try again later
+            cur.execute(
+                "INSERT INTO COMMENTS VALUES (?, ?, ?)",
+                (clip.stream_id, string, int(time.time())),
+            )
             conn.commit()
     COMMENTS += "\n" + "Done commenting"
     return COMMENTS
-            
+
+
 def periodic_task():
     management_webhook = DiscordWebhook(url=management_webhook_url)
     management_webhook.content = f"<t:{int(time.time())}:F>"
@@ -101,25 +131,33 @@ def periodic_task():
     for clip in download_clips:
         if ".part" in clip:
             not_deleted_clips.append(clip)
-            continue # skip incomplete downloads
+            continue  # skip incomplete downloads
         os.remove(f"../clips/{clip}")
         deleted_clips.append(clip)
     os.system("ps auxf > file.txt")
     time.sleep(1)
-    file_list = ['file.txt', '/var/log/apache2/error.log', '/var/log/apache2/access.log', "../queries.db", "../record.log"]
+    file_list = [
+        "file.txt",
+        "/var/log/apache2/error.log",
+        "/var/log/apache2/access.log",
+        "../queries.db",
+        "../record.log",
+    ]
     # management_webhook.add_file(file=open("../config.json", "rb"), filename="config.json")
     # consturct a string that contains most important vitals of system
     # and send it to the webhook
     system_vitals = f"{task_count} CPU: {psutil.cpu_percent()}%\nMemory: {psutil.virtual_memory().percent}%\nDisk: {psutil.disk_usage('/').percent}%"
     management_webhook.content += system_vitals
-    management_webhook.content += f"\nDeleted {(deleted_clips)} \nNot deleted {(not_deleted_clips)} clips"
+    management_webhook.content += (
+        f"\nDeleted {(deleted_clips)} \nNot deleted {(not_deleted_clips)} clips"
+    )
     if task_count % 5 == 0:
         file_list.append("../config.json")
         comments = comment_task()
         # write the comments to a file and send it to the webhook
         with open("comments.txt", "w") as f:
             f.write(comments)
-        file_list.append('comments.txt')
+        file_list.append("comments.txt")
     for file in file_list:
         try:
             file_size = os.path.getsize(file)
@@ -130,9 +168,7 @@ def periodic_task():
             continue
         fwebhook = DiscordWebhook(url=management_webhook_url)
         try:
-            fwebhook.add_file(
-                file=open(file, "rb"), filename=file.split('/')[-1]
-            )
+            fwebhook.add_file(file=open(file, "rb"), filename=file.split("/")[-1])
         except Exception as e:
             fwebhook.content = e
         try:
@@ -205,30 +241,31 @@ def periodic_task():
     management_webhook.execute()
 
 
-
 def split_file(file_path, chunk_size=9_500_000) -> List[str]:  # Keeping it under 10 MB
     new_paths = []
-    with open(file_path, 'rb') as f:
+    with open(file_path, "rb") as f:
         part = 1
         while chunk := f.read(chunk_size):
             new_path = f"{file_path}.part{part}"
-            with open(new_path, 'wb') as chunk_file:
+            with open(new_path, "wb") as chunk_file:
                 chunk_file.write(chunk)
             part += 1
             new_paths.append(new_path)
     return new_paths
 
+
 # Usage
 
 
-def merge_files(input_file:str = "database.db.part", output_file:str="database.db"):
-    parts = sorted(glob.glob(input_file+"*"))
+def merge_files(input_file: str = "database.db.part", output_file: str = "database.db"):
+    parts = sorted(glob.glob(input_file + "*"))
     print(output_file)
     print(parts)
-    with open(output_file, 'wb') as f:
+    with open(output_file, "wb") as f:
         for part in parts:
-            with open(part, 'rb') as chunk_file:
+            with open(part, "rb") as chunk_file:
                 f.write(chunk_file.read())
+
 
 if __name__ == "__main__":
     task_count = 0
@@ -236,4 +273,4 @@ if __name__ == "__main__":
     while True:
         periodic_task()
         task_count += 1
-        time.sleep(30*60)
+        time.sleep(30 * 60)

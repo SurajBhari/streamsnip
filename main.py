@@ -39,10 +39,18 @@ from flask import (
     send_file,
     session,
     jsonify,
-    send_from_directory
+    send_from_directory,
 )
 from flask_cors import CORS
-from flask_login import LoginManager, UserMixin, login_user, login_required, current_user, logout_user, AnonymousUserMixin
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    login_user,
+    login_required,
+    current_user,
+    logout_user,
+    AnonymousUserMixin,
+)
 from flask_sitemap import Sitemap
 from discord_webhook import DiscordWebhook, DiscordEmbed
 from chat_downloader.sites import YouTubeChatDownloader
@@ -81,14 +89,16 @@ except FileNotFoundError:
     exit(1)
 
 try:
-    GOOGLE_CLIENT_ID = config["google"]['client_id']
-    GOOGLE_CLIENT_SECRET = config["google"]['client_secret']
-    GOOGLE_DISCOVERY_URL = config["google"]['discovery_url']
-    RAZORPAY_ID = config["razorpay"]['id']
-    RAZORPAY_SECRET = config["razorpay"]['secret']
+    GOOGLE_CLIENT_ID = config["google"]["client_id"]
+    GOOGLE_CLIENT_SECRET = config["google"]["client_secret"]
+    GOOGLE_DISCOVERY_URL = config["google"]["discovery_url"]
+    RAZORPAY_ID = config["razorpay"]["id"]
+    RAZORPAY_SECRET = config["razorpay"]["secret"]
     razorclient = razorpay.Client(auth=(RAZORPAY_ID, RAZORPAY_SECRET))
 except KeyError:
-    GOOGLE_CLIENT_ID = GOOGLE_CLIENT_SECRET = GOOGLE_DISCOVERY_URL = None # we don't have google creds
+    GOOGLE_CLIENT_ID = GOOGLE_CLIENT_SECRET = GOOGLE_DISCOVERY_URL = (
+        None  # we don't have google creds
+    )
     RAZORPAY_ID = RAZORPAY_SECRET = None
     razorclient = None
 
@@ -97,7 +107,7 @@ try:
     cronitor.api_key = config["cronitor_api_key"]
 except FileNotFoundError:
     cronitor.api_key = None
-    
+
 
 if not local:
     monitor = cronitor.Monitor.put(key="Streamsnip-Clips-Performance", type="job")
@@ -106,7 +116,9 @@ else:
 
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("WSGISecretKey", "supersecretkey") # if we are running on apache we have a WSGISecretKey, its not really secret.
+app.secret_key = os.environ.get(
+    "WSGISecretKey", "supersecretkey"
+)  # if we are running on apache we have a WSGISecretKey, its not really secret.
 CORS(app)
 ext = Sitemap(app=app)
 
@@ -126,11 +138,11 @@ regular_icon = "🧑‍🌾"
 subscriber_icon = "⭐"
 allowed_ip = [
     "127.0.0.1",
-    "10.20.0.2"
+    "10.20.0.2",
 ]  # store the nightbot ips here. or your own ip for testing purpose
 # add local ip just to make sure we go through if we are testing locally
 allowed_ip.append(get("https://api.ipify.org/").text)
-show_fake_error = False # for blacklisted channel show fake error message or not 
+show_fake_error = False  # for blacklisted channel show fake error message or not
 requested_myself = (
     False  # on startup we request ourself so that apache build the cache.
 )
@@ -142,9 +154,15 @@ downloader_base_url = "https://azure-internal-verse.glitch.me"
 project_name = "StreamSnip"
 project_logo = base_domain + "/static/logo.png"
 project_repo_link = "https://github.com/SurajBhari/streamsnip"
-project_logo_discord = "https://raw.githubusercontent.com/SurajBhari/streamsnip/main/static/256_discord_ss.png" # link to logo that is used in discord 
-sub_based_sort = True # sort the channels on home page based on sub count
+project_logo_discord = "https://raw.githubusercontent.com/SurajBhari/streamsnip/main/static/256_discord_ss.png"  # link to logo that is used in discord
+sub_based_sort = True  # sort the channels on home page based on sub count
 pay_dictionary = {}
+subscription_model = {
+    "basic": {1:99, 3:249, 6:499, 12:999},
+    "pro": {1:199, 3:499, 6:999, 12:1999},
+    "premium": {1:399, 3:999, 6:1999, 12:3999},
+}
+discord_invite = "https://discord.gg/2XVBWK99Vy"
 
 jar = None
 if "cookies.txt" in os.listdir("./helper"):
@@ -159,36 +177,44 @@ if "youtubeemoji.json" in os.listdir("./helper"):
 else:
     emoji_lookup_table = {}
 
-def is_it_expired(t:int): # we add some randomness so that not all of the cache get invalidated and added back at same time. 
+
+def is_it_expired(
+    t: int,
+):  # we add some randomness so that not all of the cache get invalidated and added back at same time.
     if local:
-        return False # we don't need to expire the cache we have for testing purposes
+        return False  # we don't need to expire the cache we have for testing purposes
     three_days_ago = int(time.time()) - 3 * 24 * 60 * 60
     last_time = three_days_ago + random.randint(0, 48) * 60 * 60
     if t < last_time:
         return True
     return False
 
+
 def get_creds():
     try:
         with open("config.json", "r", encoding="utf-8") as f:
             jcreds = load(f)
-            creds = jcreds['creds']
-            creds['password'] = jcreds['password']  
-            creds['admin'] = jcreds['password'] # for admin password relation. make it easy to work with
+            creds = jcreds["creds"]
+            creds["password"] = jcreds["password"]
+            creds["admin"] = jcreds[
+                "password"
+            ]  # for admin password relation. make it easy to work with
     except (FileNotFoundError, KeyError):
         creds = {}
     return creds
 
-def write_creds(new_creds:dict):
+
+def write_creds(new_creds: dict):
     if not new_creds:
         return
     # load the config as whole and then update the creds
     with open("config.json", "r", encoding="utf-8") as f:
         config = load(f)
-    config['creds'] = new_creds
+    config["creds"] = new_creds
     with open("config.json", "w", encoding="utf-8") as f:
         dump(config, f, indent=4)
     return True
+
 
 if not project_logo_discord:
     project_logo_discord = project_logo
@@ -241,7 +267,8 @@ with conn:
 
 with conn:
     cur = conn.cursor()
-    cur.execute("""
+    cur.execute(
+        """
         CREATE TABLE IF NOT EXISTS SETTINGS (
         channel_id VARCHAR(40) UNIQUE,
         showlink VARCHAR(40) DEFAULT 'True',
@@ -253,56 +280,38 @@ with conn:
         webhook VARCHAR(128) DEFAULT 'None',
         messagelevel INT DEFAULT 0,
         takedelays INT DEFAULT 'False'
-        )""")
+        )"""
+    )
     conn.commit()
     cur.execute("PRAGMA table_info(SETTINGS)")
     data = cur.fetchall()
     colums = [xp[1] for xp in data]
     if "comments" not in colums:
-        cur.execute("ALTER TABLE SETTINGS ADD COLUMN comments VARCHAR(40) DEFAULT 'False'")
+        cur.execute(
+            "ALTER TABLE SETTINGS ADD COLUMN comments VARCHAR(40) DEFAULT 'False'"
+        )
         conn.commit()
         print("Added comments column to SETTINGS table")
 
 with conn:
     cur = conn.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS MEMBERSHIP(channel_id VARCHAR(40), till INT)")
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS MEMBERSHIP(channel_id VARCHAR(40),type VARCHAR(40), start DATETIME, end DATETIME)"
+    )
     conn.commit()
-    cur.execute("PRAGMA table_info(MEMBERSHIP)")
-    data = cur.fetchall()
-    colums = [xp[1] for xp in data]
-    if "till" in colums:
-        # delete the old style table
-        cur.execute("DROP TABLE MEMBERSHIP")
-        conn.commit()
-        print("Dropped old MEMBERSHIP table")
-        cur.execute("CREATE TABLE IF NOT EXISTS MEMBERSHIP(channel_id VARCHAR(40), type VARCHAR(40))")
-        conn.commit()
-        print("Created new MEMBERSHIP table")
-    
-    cur.execute("CREATE TABLE IF NOT EXISTS TRANSACTIONS(channel_id VARCHAR(40), amount INT, time INT, transaction_id VARCHAR(40))")
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS TRANSACTIONS(channel_id VARCHAR(40), amount INT, time INT, transaction_id VARCHAR(40), membership_type VARCHAR(40), description VARCHAR(40))"
+    )
     conn.commit()
-    cur.execute("PRAGMA table_info(TRANSACTIONS)")
-    data = cur.fetchall()
-    colums = [xp[1] for xp in data]
-    if "description" not in colums:
-        cur.execute("ALTER TABLE TRANSACTIONS ADD COLUMN description VARCHAR(40)")
-        conn.commit()
-        print("Added description column to TRANSACTIONS table")
-    
-    cur.execute("PRAGMA table_info(MEMBERSHIP)")
-    data = cur.fetchall()
-    colums = [xp[1] for xp in data]
-    if "type" not in colums:
-        cur.execute("ALTER TABLE MEMBERSHIP ADD COLUMN type INT DEFAULT 0")
-        conn.commit()
-        print("Added type column to MEMBERSHIP table")
 
-    
 class AnonymousUser(AnonymousUserMixin):
     def __init__(self):
         super().__init__()
         self.admin = False
-    
+        self.logged_in = False
+        self.id = "anonymous"
+
+
 class User(UserMixin):
     def __init__(self, user_id, username, password, image=None, sub_count=0):
         self.id = user_id
@@ -313,8 +322,21 @@ class User(UserMixin):
         self.name = username
         self.password = password
         self.image = image
-        self.admin = True if self.id.lower() == 'admin' else False
+        self.admin = True if self.id.lower() == "admin" else False
         self.sub_count = sub_count
+        self.logged_in = True
+
+    @property
+    def membership(self):
+        return Membership.get(conn, self.id)
+
+    @property
+    def transactions(self):
+        return get_transactions(self.id)
+
+    @property
+    def can_avail_trial(self):
+        return can_avail_free_trial(self.id)
 
     def get_id(self):
         return self.id
@@ -326,11 +348,12 @@ class User(UserMixin):
         password = creds.get(user_id, None)
         username, image = get_channel_name_image(user_id)
         try:
-            sub_count = channel_info[user_id]['sub_count']
+            sub_count = channel_info[user_id]["sub_count"]
         except KeyError:
             sub_count = 0
         return User(user_id, username, password, image, sub_count=sub_count)
-    
+
+
 def get_channel_settings(user_id) -> UserSettings:
     with conn:
         cur = conn.cursor()
@@ -343,16 +366,18 @@ def get_channel_settings(user_id) -> UserSettings:
             return x
     return UserSettings(list(data))
 
+
 # if there is no folder named clips then make one
 if not os.path.exists("clips"):
     os.makedirs("clips")
     print("Created clips folder")
 
 try:
-    creds = config['creds']
+    creds = config["creds"]
 except KeyError:
     creds = {}
-    config['creds'] = creds
+    config["creds"] = creds
+
 
 def is_blacklisted(channel_id):
     try:
@@ -361,6 +386,7 @@ def is_blacklisted(channel_id):
     except FileNotFoundError:
         data = []
     return channel_id in data
+
 
 def get_clip(clip_id, channel=None) -> Optional[Clip]:
     try:
@@ -389,7 +415,8 @@ def get_clip(clip_id, channel=None) -> Optional[Clip]:
     x = Clip(data[0])
     return x
 
-def get_video_clips(video_id, private=False) ->  List[Optional[Clip]]:
+
+def get_video_clips(video_id, private=False) -> List[Optional[Clip]]:
     with conn:
         cur = conn.cursor()
         if private:
@@ -398,7 +425,8 @@ def get_video_clips(video_id, private=False) ->  List[Optional[Clip]]:
             )
         else:
             cur.execute(
-                "SELECT * FROM QUERIES WHERE stream_link like ? AND private is not '1'", (f"%{video_id}%",)
+                "SELECT * FROM QUERIES WHERE stream_link like ? AND private is not '1'",
+                (f"%{video_id}%",),
             )
         data = cur.fetchall()
     if not data:
@@ -439,24 +467,33 @@ def create_simplified(clips: list) -> str:
 
 
 def get_channel_name_image(channel_id: str, force_refresh=False) -> Tuple[str, str]:
-    if channel_id in channel_info and not force_refresh: # if its a force refresh we don't want to use the cache
+    if (
+        channel_id in channel_info and not force_refresh
+    ):  # if its a force refresh we don't want to use the cache
         if "last_updated" not in channel_info[channel_id]:
-            channel_info[channel_id]["last_updated"] = 0 # forcing to outdate the value so that it gets updated
+            channel_info[channel_id][
+                "last_updated"
+            ] = 0  # forcing to outdate the value so that it gets updated
         if "sub_count" not in channel_info[channel_id]:
-            channel_info[channel_id]["last_updated"] = 0 # forcing to outdate the value so that it gets updated
+            channel_info[channel_id][
+                "last_updated"
+            ] = 0  # forcing to outdate the value so that it gets updated
         if is_it_expired(channel_info[channel_id]["last_updated"]):
             return get_channel_name_image(channel_id, force_refresh=True)
         try:
             return channel_info[channel_id]["name"], channel_info[channel_id]["image"]
         except Exception as e:
             logging.log(logging.ERROR, e)
-    
+
     channel_link = f"https://youtube.com/channel/{channel_id}"
     response = get(channel_link)
     if response.status_code != 200:
         # don't store anything. just for this instance return the default values. can be youtube side issue too
-        return "<deleted channel>", "https://yt3.googleusercontent.com/a/default-user=s100-c-k-c0x00ffffff-no-rj"
-        
+        return (
+            "<deleted channel>",
+            "https://yt3.googleusercontent.com/a/default-user=s100-c-k-c0x00ffffff-no-rj",
+        )
+
     html_data = response.text
     # with open("youtube.html", "w", encoding="utf-8") as f:
     #     f.write(html_data)
@@ -471,14 +508,29 @@ def get_channel_name_image(channel_id: str, force_refresh=False) -> Tuple[str, s
         channel_image = soup.find("meta", property="og:image")["content"]
         channel_name = soup.find("meta", property="og:title")["content"]
         try:
-            sub_count = yt_initial_data['header']['pageHeaderRenderer']['content']['pageHeaderViewModel']['metadata']['contentMetadataViewModel']['metadataRows'][1]['metadataParts'][0]['text']['content']
+            sub_count = yt_initial_data["header"]["pageHeaderRenderer"]["content"][
+                "pageHeaderViewModel"
+            ]["metadata"]["contentMetadataViewModel"]["metadataRows"][1][
+                "metadataParts"
+            ][
+                0
+            ][
+                "text"
+            ][
+                "content"
+            ]
             sub_count = convert_sub_count(sub_count)
         except:
             sub_count = 0
         try:
-            channel_username = yt_initial_data['metadata']['channelMetadataRenderer']['vanityChannelUrl'].split("/")[-1]
+            channel_username = yt_initial_data["metadata"]["channelMetadataRenderer"][
+                "vanityChannelUrl"
+            ].split("/")[-1]
         except KeyError:
-            return channel_name, channel_image # stop caring abot channel username and putting it to cache 
+            return (
+                channel_name,
+                channel_image,
+            )  # stop caring abot channel username and putting it to cache
     except TypeError:  # in case the channel is deleted or not found
         channel_image = "https://yt3.googleusercontent.com/a/default-user=s100-c-k-c0x00ffffff-no-rj"
         channel_name = "<deleted channel>"
@@ -486,18 +538,19 @@ def get_channel_name_image(channel_id: str, force_refresh=False) -> Tuple[str, s
         sub_count = 0
     last_updated = int(time.time())
     channel_info[channel_id] = {
-        "name": channel_name, 
-        "image": channel_image, 
-        "username": channel_username, 
+        "name": channel_name,
+        "image": channel_image,
+        "username": channel_username,
         "last_updated": last_updated,
-        "sub_count": sub_count
+        "sub_count": sub_count,
     }
     # write channel_info to channel_cache.json
     write_channel_cache(channel_info)
-    
+
     return channel_name, channel_image
 
-def convert_sub_count(sub_count:str) -> int:
+
+def convert_sub_count(sub_count: str) -> int:
     sub_count = sub_count.split(" ")[0]
     sub_count = sub_count.upper()
     if "K" in sub_count:
@@ -506,9 +559,9 @@ def convert_sub_count(sub_count:str) -> int:
     elif "M" in sub_count:
         sub_count = sub_count.replace("M", "")
         sub_count = float(sub_count) * 1000000
-    elif "B" in sub_count: # lmao like this is ever gonna happen xd 
+    elif "B" in sub_count:  # lmao like this is ever gonna happen xd
         sub_count = sub_count.replace("B", "")
-        sub_count = float(sub_count) * 1000000000 
+        sub_count = float(sub_count) * 1000000000
     else:
         sub_count = int(sub_count)
     return int(sub_count)
@@ -517,29 +570,31 @@ def convert_sub_count(sub_count:str) -> int:
 def take_screenshot(video_url: str, seconds: int) -> str:
     # Get the video URL using yt-dlp
     params = {
-        'forceurl': True,
-        'format':   'bestvideo',
-        'noprogress': True,
-        'quiet': True,
-        'simulate': True,
+        "forceurl": True,
+        "format": "bestvideo",
+        "noprogress": True,
+        "quiet": True,
+        "simulate": True,
     }
     if cookies:
-        params['cookiefile'] = cookies
+        params["cookiefile"] = cookies
 
     with yt_dlp.YoutubeDL(params) as ydl:
         video_info = ydl.extract_info(video_url, download=False)
-    
+
     # Remove leading/trailing whitespace and newline characters from the video URL
-    video_url = video_info['url']
+    video_url = video_info["url"]
     file_name = "ss.jpg"
-    r = GET(video_url, cookies=jar) # this uses Jar because it can't parse a txt file with cookies
+    r = GET(
+        video_url, cookies=jar
+    )  # this uses Jar because it can't parse a txt file with cookies
     if r.status_code != 200:
         return None
-    index = 'index.m3u8'
+    index = "index.m3u8"
     with open(index, "wb") as f:
         f.write(r.content)
-        
-    # Think Think 
+
+    # Think Think
     # FFmpeg command
     ffmpeg_command = [
         "ffmpeg",
@@ -577,7 +632,7 @@ def get_clip_with_desc(clip_desc: str, channel_id: str) -> Optional[Clip]:
     return None
 
 
-def download_and_store(clip_id, format:str = None) -> str:
+def download_and_store(clip_id, format: str = None) -> str:
     with conn:
         cur = conn.cursor()
         data = cur.execute(
@@ -623,7 +678,9 @@ def download_and_store(clip_id, format:str = None) -> str:
     }
     if format:
         params["final_ext"] = format
-        params['postprocessors'] = [{'key': 'FFmpegVideoConvertor', 'preferedformat': 'mp4'}]
+        params["postprocessors"] = [
+            {"key": "FFmpegVideoConvertor", "preferedformat": "mp4"}
+        ]
     with yt_dlp.YoutubeDL(params) as ydl:
         try:
             ydl.download([video_url])
@@ -643,14 +700,15 @@ def mini_stats():
     ).timestamp()
     with conn:
         cur = conn.cursor()
-        todays_clips = cur.execute("SELECT * FROM QUERIES WHERE time >= ? AND private is not '1'", (today,))
+        todays_clips = cur.execute(
+            "SELECT * FROM QUERIES WHERE time >= ? AND private is not '1'", (today,)
+        )
         todays_clips = todays_clips.fetchall()
         today_count = len(todays_clips)
         last_clip = None
         if today_count:
             last_clip = Clip(todays_clips[-1]).json()
     return dict(today_count=today_count, last_clip=last_clip)
-
 
 
 @app.before_request
@@ -663,7 +721,9 @@ def before_request():
     """
     # if request is for /clip or /delete or /edit then check if its from real
     if "/clip" in request.path or "/delete" in request.path or "/edit" in request.path:
-        if "/extension/" in request.path: # make an exception for all the /extension routes
+        if (
+            "/extension/" in request.path
+        ):  # make an exception for all the /extension routes
             return
         ip = request.remote_addr
         if ip in allowed_ip:
@@ -675,7 +735,13 @@ def before_request():
                 ".nightbot.net."
             ):
                 raise ValueError("Not a nightbot request")
-        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, ValueError, dns.resolver.LifetimeTimeout, dns.resolver.NoNameservers):
+        except (
+            dns.resolver.NoAnswer,
+            dns.resolver.NXDOMAIN,
+            ValueError,
+            dns.resolver.LifetimeTimeout,
+            dns.resolver.NoNameservers,
+        ):
             return f"You are not Nightbot. are you ?, your ip {ip}"
         else:
             # print(f"Request from {ip} is allowed")
@@ -683,24 +749,37 @@ def before_request():
     else:
         pass
 
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.get(user_id)
 
+
 login_manager.anonymous_user = AnonymousUser
+
+@app.route("/start_free_trial")
+def start_free_trial():
+    if not current_user.is_authenticated:
+        return redirect(url_for("login"))
+    if not current_user.can_avail_trial:
+        return "You have already availed the free trial"
+    is_subscribed(current_user.id) # automatically starts the trial
+    return redirect(url_for("slash"))
 
 @app.route("/cache")
 def cache():
     return dumps(channel_info, indent=4)
 
+
 @app.route("/mini_stats")
 def mini_stats_r():
     if request.args.get("home") == "true":
         ms = mini_stats()
-        ms['data'] = generate_home_data()
+        ms["data"] = generate_home_data()
         return dict(ms)
-    
+
     return mini_stats()
+
 
 # this function exists just because google chrome assumes that the favicon is at /favicon.ico
 @app.route("/favicon.ico")
@@ -716,18 +795,20 @@ def robots():
 def generate_home_data():
     with conn:
         cur = conn.cursor()
-        cur.execute(f"SELECT *, COUNT(*) AS channel_count, MIN(time) AS first_clip_time FROM QUERIES WHERE private is not '1' GROUP BY channel_id ORDER BY MAX(time) DESC;")
+        cur.execute(
+            f"SELECT *, COUNT(*) AS channel_count, MIN(time) AS first_clip_time FROM QUERIES WHERE private is not '1' GROUP BY channel_id ORDER BY MAX(time) DESC;"
+        )
         data = cur.fetchall()
     returning = []
     for clip in data:
-        ch = {} 
+        ch = {}
         channel_name, channel_image = get_channel_name_image(clip[0])
         ch["image"] = channel_image
         ch["name"] = channel_name
         try:
-            ch['sub_count'] = channel_info[clip[0]]['sub_count']
+            ch["sub_count"] = channel_info[clip[0]]["sub_count"]
         except KeyError:
-            ch['sub_count'] = 0
+            ch["sub_count"] = 0
         ch["id"] = clip[0]
         ch["image"] = channel_image.replace(
             "s900-c-k-c0x00ffffff-no-rj", "s300-c-k-c0x00ffffff-no-rj"
@@ -737,27 +818,47 @@ def generate_home_data():
             htt = "https://"
         else:
             htt = "http://"
-        ch["link"] = f"{htt}{request.host}{url_for('exports', channel_id=get_channel_at(clip[0]))}"
-        ch['clip_count'] = clip[-2]
-        ch['first_clip_time'] = clip[-1]
-        ch['first_clip_timesince'] = time_since(datetime.fromtimestamp(clip[-1], tz=timezone.utc))
-        ch['deleted'] = True if "deleted channel" in channel_name else False
-        if ch['deleted']:
-            ch['link'] = f"{htt}{request.host}{url_for('exports', channel_id=get_channel_id_any(clip[0]))}" # we can't get channel @ as its a deleted channel
-        #ch["last_clip"] = get_channel_clips(ch_id[0])[0].json()
+        ch["link"] = (
+            f"{htt}{request.host}{url_for('exports', channel_id=get_channel_at(clip[0]))}"
+        )
+        ch["clip_count"] = clip[-2]
+        ch["first_clip_time"] = clip[-1]
+        ch["first_clip_timesince"] = time_since(
+            datetime.fromtimestamp(clip[-1], tz=timezone.utc)
+        )
+        ch["deleted"] = True if "deleted channel" in channel_name else False
+        if ch["deleted"]:
+            ch["link"] = (
+                f"{htt}{request.host}{url_for('exports', channel_id=get_channel_id_any(clip[0]))}"  # we can't get channel @ as its a deleted channel
+            )
+        # ch["last_clip"] = get_channel_clips(ch_id[0])[0].json()
         returning.append(ch)
     return returning
+
 
 @app.route("/channels")
 def channels():
     returning = generate_home_data()
     return render_template("channels.html", data=returning)
 
+
 @app.route("/")
 def slash():
     returning = generate_home_data()
     pinned = config.get("pinned_channels", [])
-    return render_template("home.html", data=returning, sub_based_sort=not current_user.is_authenticated, pinned=pinned)
+    with conn:
+        cur = conn.cursor()
+        cur.execute("SELECT channel_id FROM MEMBERSHIP WHERE type='premium' AND end > ?", (int(time.time()),))
+        data = cur.fetchall()
+    premium_members = [x[0] for x in data]
+    return render_template(
+        "home.html",
+        data=returning,
+        sub_based_sort=not current_user.is_authenticated,
+        pinned=pinned,
+        premium_members=premium_members,
+    )
+
 
 @app.route("/privacy-policy")
 def privacy():
@@ -773,6 +874,7 @@ def data():
     clips = [x.json() for x in clips]
     return clips
 
+
 @app.route("/session", methods=["GET"])
 def session_data():
     if session:
@@ -780,10 +882,12 @@ def session_data():
     else:
         return "No session data"
 
+
 @app.route("/user")
 @login_required
 def _user():
     return dumps(current_user.__dict__, indent=4)
+
 
 def get_google_provider_cfg():
     return get(GOOGLE_DISCOVERY_URL).json()
@@ -793,7 +897,7 @@ def get_google_provider_cfg():
 def login_google_callback():
     code = request.args.get("code")
     google_provider_cfg = get_google_provider_cfg()
-    
+
     # Step 1: Exchange Authorization Code for Token
     token_endpoint = google_provider_cfg["token_endpoint"]
     try:
@@ -801,7 +905,7 @@ def login_google_callback():
             token_endpoint,
             authorization_response=request.url,
             redirect_url=request.base_url,
-            code=code
+            code=code,
         )
     except (AccessDeniedError, InvalidGrantError, MissingCodeError):
         return redirect(url_for("login_google"))
@@ -825,30 +929,31 @@ def login_google_callback():
     # Step 3: Fetch YouTube Data (Example)
     youtube_data = get_youtube_data(access_token)
 
-
     if youtube_data.get("error"):
-        return redirect(url_for("login_google")) # we do need to get the scope to validate the user
-    
+        return redirect(
+            url_for("login_google")
+        )  # we do need to get the scope to validate the user
+
     try:
-        youtube_id = youtube_data['items'][0]['id']
+        youtube_id = youtube_data["items"][0]["id"]
     except KeyError:
-        return redirect(url_for("login_google")) # we do need to get the scope to validate the user
-    
+        return redirect(
+            url_for("login_google")
+        )  # we do need to get the scope to validate the user
+
     login_user(User.get(youtube_id), remember=True)
-    session['logged_in'] = True
-    return redirect(url_for("slash"))
+    session["logged_in"] = True
+    next = session.pop("next_url", "/")
+    return redirect(next or url_for("slash"))
 
 def get_youtube_data(access_token):
     youtube_url = "https://www.googleapis.com/youtube/v3/channels"
     headers = {"Authorization": f"Bearer {access_token}"}
-    
-    params = {
-        "part": "snippet,statistics",
-        "mine": "true"
-    }
+
+    params = {"part": "snippet,statistics", "mine": "true"}
 
     response = get(youtube_url, headers=headers, params=params)
-    
+
     if response.status_code == 200:
         return response.json()
     else:
@@ -857,19 +962,26 @@ def get_youtube_data(access_token):
 
 @app.route("/login/google")
 def login_google():
+    next = request.args.get("next")
+    redirect_uri=request.base_url + "/callback"
+    if next:
+        session["next_url"] = next # google doesn't allow query params in redirect_uri
+    print(redirect_uri)
     google_provider_cfg = get_google_provider_cfg()
     authorization_endpoint = google_provider_cfg["authorization_endpoint"]
     request_uri = oauthclient.prepare_request_uri(
         authorization_endpoint,
-        redirect_uri=request.base_url + "/callback",
+        redirect_uri=redirect_uri,
         scope=[
             "openid",
             "email",
             "profile",
-            "https://www.googleapis.com/auth/youtube.readonly"
+            "https://www.googleapis.com/auth/youtube.readonly",
         ],
     )
     return redirect(request_uri)
+
+
 @app.route("/login", methods=["POST", "GET"])
 def login():
     if request.method == "POST":
@@ -880,27 +992,33 @@ def login():
         for cred in creds:
             if creds[cred][-88:] == request.form["password"][-88:]:
                 if cred == "password":
-                    session['id'] = "admin"
+                    session["id"] = "admin"
                 else:
                     session["id"] = cred
-                session['logged_in'] = True
+                session["logged_in"] = True
 
                 login_user(User.get(session["id"]), remember=remember)
-                
-                next = request.args.get('next')
-                return redirect(next or url_for('slash'))
+
+                next = request.args.get("next")
+                return redirect(next or url_for("slash"))
         return render_template("login.html", msg="INVALID PASSWORD")
-    next = request.args.get('next', "")
+    next = request.args.get("next", "")
     if next:
         next = f"?next={next}"
-    return render_template("login.html", msg="Password is the webhook URL that you are using for your channel.", next=next)
+    return render_template(
+        "login.html",
+        msg="Password is the webhook URL that you are using for your channel.",
+        next=next,
+    )
 
-@app.route("/logout", methods=["POST", "GET"]) 
+
+@app.route("/logout", methods=["POST", "GET"])
 @login_required
 def logout():
     session.clear()
     logout_user()
     return redirect(url_for("slash"))
+
 
 @app.route("/webedit", methods=["POST"])
 @login_required
@@ -914,11 +1032,16 @@ def webedit():
 
     if not clip:
         return "Clip not found", 404
+    channel_id = clip.channel
+    sub_detail = is_subscribed(channel_id)
+    if not sub_detail:
+        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
+
     if not current_user.admin:
         if clip.channel != current_user.id:
             return "You can't do this. You are not the owner of this channel"
     clip.edit(new_message, conn)
-    
+
     return clip.desc, 200
 
 
@@ -932,6 +1055,10 @@ def webdelete():
     clip = get_clip(clip_id=clip_id)
     if not clip:
         return "Clip not found", 404
+    channel_id = clip.channel
+    sub_detail = is_subscribed(channel_id)
+    if not sub_detail:
+        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
     if not current_user.admin:
         if clip.channel != current_user.id:
             return "You can't do this. You are not the owner of this channel"
@@ -955,6 +1082,7 @@ def get_video_id(video_link):
 def get_ip():
     return request.remote_addr
 
+
 @app.route("/settings/default", methods=["POST"])
 @login_required
 def default_settings():
@@ -965,207 +1093,256 @@ def default_settings():
     add_default_settings(current_user.id)
     return "OK", 200
 
-def get_membership_details(channel_id):
-    with conn:
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM MEMBERSHIP WHERE channel_id=?", (channel_id,))
-        data = cur.fetchone()
-    membership = Membership(data)
-    if not data:
-        membership.channel_id = channel_id
-    return Membership(data)
 
-def calculate_membership(sub_count:int) -> int:
-    if sub_count < 5000:
-        return 3.7 # around 100 rs per month
-    if sub_count < 10000:
-        return 5.55 # around 150 rs per month
-    if sub_count < 25000:
-        return 7.4 # around 200 rs per month
-    if sub_count < 50000:
-        return 9.25 # around 250 rs per month
-    if sub_count < 100000:
-        return 11.1 # around 300 rs per month
-    if sub_count < 250000:
-        return 14.8 # around 400 rs per month
-    return 18.5 # around 500 rs per month
-
-@app.route("/settings-new" , methods=["POST", "GET"])
-@login_required
-def settings_new():
-    settings = get_channel_settings(current_user.id)
-    membership_details = get_membership_details(current_user.id)
-    try: # fuck around
-        getattr(current_user, "sub_count")
-    except AttributeError: # find out
-        current_user.sub_count = channel_info[current_user.id]["sub_count"]
-    if request.method == "POST":
-        settings.show_link = request.json.get("show_link")
-        settings.screenshot = request.json.get("screenshot")
-        settings.delay = request.json.get("delay")
-        settings.force_desc = request.json.get("force_desc")
-        settings.silent = request.json.get("silent")
-        settings.private = request.json.get("private")
-        settings.webhook = request.json.get("webhook")
-        settings.message_level = request.json.get("message_level")
-        settings.take_delays = request.json.get("take_delays")
-        settings.comments = request.json.get("comments")
-        
-        if not settings.write(conn):
-            return "Failed to write settings", 500
-        return "OK", 200
-    return render_template(
-        "settings-new.html", 
-        session=session, 
-        settings=settings, 
-        membership_details=membership_details.json(), 
-    )
-
-@app.route("/settings" , methods=["POST", "GET"])
+@app.route("/settings", methods=["POST", "GET"])
 @login_required
 def settings():
     settings = get_channel_settings(current_user.id)
-    membership_details = get_membership_details(current_user.id)
-    try: # fuck around
+    membership_details = Membership.get(conn, current_user.id)
+    membership_details2 = is_subscribed(current_user.id)
+    can_edit = membership_details2 in ["pro", "premium", "FREE"]
+    if not can_edit:
+        delay = settings.delay
+        settings = DEFAULT_SETTINGS
+        settings.delay = delay  # we don't want to change the delay
+    try:  # fuck around
         getattr(current_user, "sub_count")
-    except AttributeError: # find out
+    except AttributeError:  # find out
         current_user.sub_count = channel_info[current_user.id]["sub_count"]
-    multiplier = calculate_membership(current_user.sub_count)
     if request.method == "POST":
-        settings.show_link = request.json.get("show_link")
-        settings.screenshot = request.json.get("screenshot")
-        settings.delay = request.json.get("delay")
-        settings.force_desc = request.json.get("force_desc")
-        settings.silent = request.json.get("silent")
-        settings.private = request.json.get("private")
-        settings.webhook = request.json.get("webhook")
-        settings.message_level = request.json.get("message_level")
-        settings.take_delays = request.json.get("take_delays")
-        settings.comments = request.json.get("comments")
-        
+        if can_edit:
+            settings.show_link = request.json.get("show_link")
+            settings.screenshot = request.json.get("screenshot")
+            settings.force_desc = request.json.get("force_desc")
+            settings.silent = request.json.get("silent")
+            settings.private = request.json.get("private")
+            settings.webhook = request.json.get("webhook")
+            settings.message_level = request.json.get("message_level")
+            settings.take_delays = request.json.get("take_delays")
+            settings.comments = request.json.get("comments")
+
+        settings.delay = request.json.get(
+            "delay"
+        )  # make an exception for delay as it can be still be edited
+        settings.channel_id = current_user.id
         if not settings.write(conn):
             return "Failed to write settings", 500
         return "OK", 200
+
     return render_template(
-        "settings.html", 
-        session=session, 
-        settings=settings, 
-        membership_details=membership_details.json(), 
-        multiplier=multiplier
+        "settings.html",
+        session=session,
+        settings=settings,
+        membership_details=membership_details,
+        can_edit=can_edit,
     )
 
-@app.route('/pay', methods=["GET", "POST"])
+@app.route("/upgrade", methods=["POST"])
+@login_required
+def upgrade():
+    switch_to = request.form.get("type")
+    if not switch_to:
+        return "Invalid request", 400
+
+    membership_details = Membership.get(conn, current_user.id)
+    
+    if membership_details.type.lower() == "free":
+        return "You are on free trial. No upgrade available. Only Subscribe is avaialable.", 400
+    
+    if membership_details.type == switch_to:
+        return "You are already on this membership.", 400
+
+    if not membership_details.days_left:
+        return "You can't upgrade from expired membership.", 400
+
+    allowed_upgrades = {
+        "basic": ["pro", "premium"],
+        "pro": ["premium"],
+        "premium": []
+    }
+
+    current_type = membership_details.type
+    if switch_to not in allowed_upgrades.get(current_type, []):
+        return "Upgrade not allowed from your current membership.", 400
+
+    # Per day prices
+    per_day_current = subscription_model[current_type][1] / 28
+    per_day_new = subscription_model[switch_to][1] / 28
+
+    # Calculate amount
+    days_left = membership_details.days_left
+    amount = (per_day_new - per_day_current) * days_left
+    if amount <= 0:
+        return "Invalid upgrade request.", 400
+
+    amount = int(round(amount)) * 100  # Convert to paise
+
+    recepipt = f"{current_user.id}_{int(time.time())}"
+    data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers":[]}
+    payment = razorclient.order.create(data=data)
+
+    callback = "/pay/callback"
+    name = channel_info[current_user.id]["name"]
+    pay_dictionary[payment["id"]] = {"amount": amount, "type": switch_to, "month": 0}
+
+    return render_template(
+        "pay.html",
+        rzp_id=RAZORPAY_ID,
+        oid=payment["id"],
+        callback=callback,
+        amount=amount,
+        name=name,
+    )
+
+@app.route("/pay", methods=["GET", "POST"])
+@login_required
 def pay():
-    details = get_membership_details(current_user.id)
+    print("Payment request")
+    membership_type = request.form.get("type")
+    if not membership_type:
+        return "Invalid request: Membership type missing.", 400
+
+    membership_details = Membership.get(conn, current_user.id)
+
+    # Check if the requested membership matches the current membership
+    if membership_details.type != membership_type:
+        # in this case we are susbscribing to a new membership
+        ...
+    # Validate amount
     amount = request.form.get("amount")
     if not amount:
-        return redirect('settings')
+        return "Invalid request: Amount missing.", 400
     amount = int(amount)
-    if amount < 1:
-        return redirect('settings')
-    amount = amount * 100 # 100 paise per rupee i have no idea why we have to pass it in paise and not rs. 
-    data = { "amount": amount, "currency": "INR", "receipt": "order_rcptid_11" }
+    if amount not in list(subscription_model[membership_type].values()):    
+        return "Invalid request: Invalid amount.", 400
+
+    # Find months
+    for m, a in subscription_model[membership_type].items():
+        if a == amount:
+            months = m
+            break
+
+    amount = amount * 100  # Convert to paise
+    recepipt = f"{current_user.id}_{int(time.time())}"
+    data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers": []}
     payment = razorclient.order.create(data=data)
     callback = "/pay/callback"
     name = channel_info[current_user.id]["name"]
-    pay_dictionary[payment['id']] = {"amount": amount}
-    return render_template("pay.html", rzp_id=RAZORPAY_ID, oid=payment["id"], callback=callback, amount=amount, name=name)
+    pay_dictionary[payment["id"]] = {"amount": amount, "type": membership_type, "month": months}
+
+    return render_template(
+        "pay.html",
+        rzp_id=RAZORPAY_ID,
+        oid=payment["id"],
+        callback=callback,
+        amount=amount,
+        name=name,
+    )
+
 
 @app.route("/pay/callback", methods=["POST"])
 def callback():
-    pid=request.form.get("razorpay_payment_id")
-    ordid=request.form.get("razorpay_order_id")
-    sign=request.form.get("razorpay_signature")
-    print(f"The payment id : {pid}, order id : {ordid} and signature : {sign}")
-    params={
-        'razorpay_order_id': ordid,
-        'razorpay_payment_id': pid,
-        'razorpay_signature': sign
+    pid = request.form.get("razorpay_payment_id")
+    ordid = request.form.get("razorpay_order_id")
+    sign = request.form.get("razorpay_signature")
+    print(f"The payment id: {pid}, order id: {ordid}, signature: {sign}")
+
+    params = {
+        "razorpay_order_id": ordid,
+        "razorpay_payment_id": pid,
+        "razorpay_signature": sign,
     }
-    final=razorclient.utility.verify_payment_signature(params)
+
+    final = razorclient.utility.verify_payment_signature(params)
     if final is True:
         order_details = pay_dictionary[ordid]
-        amount = order_details["amount"]
-        amount = amount / 100 # converting it back to rs
-        old_membership = get_membership_details(current_user.id)
-        with conn:
-            cur = conn.cursor()
-            cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?)", (current_user.id, amount, int(time.time()), ordid, "Top up"))
-            conn.commit()
-        return redirect("/membership", code=301)
-    return "Something Went Wrong Please Try Again"
+        amount = order_details["amount"] // 100  # Convert back to INR
+        months = order_details["month"]
+        membership_type = order_details["type"]
 
-def get_transactions(channel_id:str):
+        # Fetch old membership details
+        old_membership_details = Membership.get(conn, current_user.id)
+
+        # Calculate new end time
+        if old_membership_details.days_left:
+            start_time = old_membership_details.start
+            end_time = old_membership_details.end + timedelta(days=months * 28)
+        else:
+            # Should not reach here, but fallback
+            start_time = datetime.now()
+            end_time = datetime.now() + timedelta(days=months * 28)
+
+        # Update database
+        cur.execute("DELETE FROM MEMBERSHIP WHERE channel_id=?", (current_user.id,))
+        cur.execute(
+            "INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)",
+            (current_user.id, membership_type, int(start_time.timestamp()), int(end_time.timestamp()))
+        )
+
+        description = f"Membership {membership_type} extended for {months} month{'s' if months != 1 else ''}"
+        cur.execute(
+            "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
+            (current_user.id, amount, int(time.time()), ordid, membership_type, description)
+        )
+        conn.commit()
+        return redirect("/membership", code=301)
+
+    return "Something went wrong, please try again."
+
+
+
+def get_transactions(channel_id: str):
     with conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM TRANSACTIONS WHERE channel_id=?", (channel_id,))
         data = cur.fetchall()
     return data
 
+
 @app.route("/membership")
 @login_required
 def membership():
     transactions = get_transactions(current_user.id)
     balance = 0
-    print(transactions)
     for i in range(len(transactions)):
         transactions[i] = list(transactions[i])
         balance += transactions[i][1]
-        transactions[i][2] = datetime.fromtimestamp(transactions[i][2], tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        transactions[i][2] = datetime.fromtimestamp(
+            transactions[i][2], tz=timezone.utc
+        ).strftime("%Y-%m-%d %H:%M:%S")
+        transactions[i][1] = f"{transactions[i][1]:.2f}"
     # estimate the membership end date
     # if the membership is basic then its 99 per 28 days if its pro then its 199 per 28 days if its love then its 299
-    membership_details = get_membership_details(current_user.id)
-    estimate_days_left = 0
-    if membership_details.type == "basic":
-        each_day = 99 / 28
-    elif membership_details == "pro":
-        each_day = 199 / 28
-    elif membership_details == "love":
-        each_day = 299 / 28
+    membership_details = Membership.get(conn, current_user.id)
+
+    available = list(subscription_model.keys())
+    available_upgrades = []
+    available_subscribes = []
+    if (not membership_details.type) or membership_details.type.lower() == "free":
+        available_subscribes = ["basic", "pro", "premium"]
     else:
-        each_day = 0
-    if balance:
-        try:
-            estimate_days_left = balance / each_day
-        except ZeroDivisionError:
-            estimate_days_left = 0
-        estimate_days_left = int(estimate_days_left)
-    else:
-        estimate_days_left = 0
+        available_subscribes = [membership_details.type]
+    if membership_details.days_left:
+        if membership_details.type.lower() == "free":
+            available_upgrades = []
+        if membership_details.type == "basic":
+            available_upgrades = ["pro", "premium"]
+        if membership_details.type == "pro":
+            available_upgrades = ["premium"]
     
-    available = ["basic", "pro", "love", "paused"]
-    if membership_details.type in available:
-        # put the option on top
-        available.remove(membership_details.type)
-        available.insert(0, membership_details.type)
+    
     return render_template(
-        "membership.html", 
-        membership=membership_details, 
-        balance=balance, 
-        days_left = estimate_days_left,
-        available=available,
+        "membership.html",
+        membership=membership_details,
+        balance=f"{balance:.2f}",
         transactions=transactions[::-1],
-        each_day=each_day
+        base_prices = {'basic': 199, 'pro': 299, 'premium': 499},
+        base_duration=28,
+        subscription_model=subscription_model,
+        available_upgrades = available_upgrades,
+        available_subscribes=available_subscribes,
     )
 
-@app.route("/change_membership_plan", methods=["POST"])
-@login_required
-def change_membership():
-    try:
-        new_membership = request.form.get("membership")
-    except KeyError:
-        return "Invalid request", 400
-    if new_membership not in ["basic", "pro", "love", "paused"]:
-        return "Invalid membership type", 400
-    old_membership = get_membership_details(current_user.id)
-    if old_membership.in_db:
-        cur.execute("UPDATE MEMBERSHIP SET type=? WHERE channel_id=?", (new_membership, current_user.id))
-    else:
-        cur.execute("INSERT INTO MEMBERSHIP VALUES (?, ?)", (current_user.id, new_membership))
-    cur.execute("INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?)", (current_user.id, 0, int(time.time()), "None", "Membership change "+ old_membership.type + " to " + new_membership))
-    conn.commit()
-
-    return redirect(url_for("membership"))
 
 # this is for nightbot to give back export link
 @app.route("/export")
@@ -1208,40 +1385,51 @@ def clips():
                     continue
                 j = response.json()
                 prefix_webhook[clip['channel']] = f"https://discord.com/channels/{j['guild_id']}/{j['channel_id']}"
-                clip['discord_url'] = f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"""
-        clip['discord_url'] = "#a" # we don't want to do it for all clips. cuz its slowwwww
+                clip['discord_url'] = f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}
+        """
+        clip["discord_url"] = (
+            "#a"  # we don't want to do it for all clips. cuz its slowwwww
+        )
     return render_template(
         "export.html",
         data=data,
         clips_string=create_simplified(data),
         channel_name="All channels",
-        channel_image="https://streamsnip.com/static/logo.png",
+        channel_image=f"{base_domain}/static/logo.png",
         owner_icon=owner_icon,
         mod_icon=mod_icon,
         regular_icon=regular_icon,
         subscriber_icon=subscriber_icon,
         channel_id="all",
-        emoji_lookup_table=emoji_lookup_table
+        emoji_lookup_table=emoji_lookup_table,
     )
 
-def get_channel_id_any(hint): # returns the UC id of the channel 
+
+def get_channel_id_any(hint):  # returns the UC id of the channel
     if hint.lower().startswith("uc"):
-        return hint # already a channel id
+        return hint  # already a channel id
     if hint.startswith("@"):
-        available = [x for x in channel_info if hint.lower() in channel_info[x].get("username").lower()]
+        available = [
+            x
+            for x in channel_info
+            if hint.lower() in channel_info[x].get("username").lower()
+        ]
         if available:
             return available[0]
-    available = [x for x in channel_info if hint.lower() == channel_info[x].get("name").lower()] # we are first trying to find exact match.
+    available = [
+        x for x in channel_info if hint.lower() == channel_info[x].get("name").lower()
+    ]  # we are first trying to find exact match.
     if available:
         return available[0]
-    available = [x for x in channel_info if hint.lower() in channel_info[x].get("name").lower()]
+    available = [
+        x for x in channel_info if hint.lower() in channel_info[x].get("name").lower()
+    ]
     if available:
         return available[0]
     return None
-    
-    
 
-def get_channel_at(channel_id): # returns the @username of the channel
+
+def get_channel_at(channel_id):  # returns the @username of the channel
     """
     channel_info = {
         "UCnSgtnvG74e9nxI9SibI-LA":{
@@ -1255,47 +1443,64 @@ def get_channel_at(channel_id): # returns the @username of the channel
     """
     if channel_id.startswith("@"):
         return channel_id
-    get_channel_name_image(channel_id) # this will just come back if there is already a channel_id. 
+    get_channel_name_image(
+        channel_id
+    )  # this will just come back if there is already a channel_id.
     channel = channel_info.get(channel_id)
     if not channel:
         return channel_id
     return channel["username"]
 
-        
+
 # this is for specific channel
 @app.route("/exports/<channel_id>")
 @app.route("/e/<channel_id>")
 def exports(channel_id=None):
     channel_id = get_channel_id_any(channel_id)
     if not channel_id:
-        return redirect(url_for("slash")) # not found
+        return redirect(url_for("slash"))  # not found
     try:
         channel_name, channel_image = get_channel_name_image(channel_id)
     except Exception as e:
         print(e)
         return redirect(url_for("slash"))
     data = get_channel_clips(channel_id)
-    if current_user.admin: # no data should be hidden from admin 
+    sub_detail = is_subscribed(channel_id)
+    can_edit = current_user.id == channel_id or current_user.admin
+    if sub_detail == "paused":
+        can_edit = False
+    if not sub_detail:
+        can_edit = False
+    if current_user.admin:  # no data should be hidden from admin
         data = [x.json() for x in data]
     else:
         data = [x.json() for x in data if not x.private]
     for clip in data:
-        if clip['discord']['webhook']:
-            if clip['channel'] in prefix_webhook and prefix_webhook.get(clip['channel']) is not None:
-                clip['discord_url'] = f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
+        if clip["discord"]["webhook"]:
+            if (
+                clip["channel"] in prefix_webhook
+                and prefix_webhook.get(clip["channel"]) is not None
+            ):
+                clip["discord_url"] = (
+                    f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
+                )
             else:
-                webhook_url = creds.get(clip['channel'])
+                webhook_url = creds.get(clip["channel"])
                 if not webhook_url:
                     continue
                 response = get(webhook_url)
                 if response.status_code != 200:
-                    prefix_webhook[clip['channel']] = None
+                    prefix_webhook[clip["channel"]] = None
                     continue
                 j = response.json()
-                prefix_webhook[clip['channel']] = f"https://discord.com/channels/{j['guild_id']}/{j['channel_id']}"
-                clip['discord_url'] = f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
+                prefix_webhook[clip["channel"]] = (
+                    f"https://discord.com/channels/{j['guild_id']}/{j['channel_id']}"
+                )
+                clip["discord_url"] = (
+                    f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
+                )
         else:
-            clip['discord_url'] = "#"
+            clip["discord_url"] = "#"
     return render_template(
         "export.html",
         data=data,
@@ -1307,7 +1512,8 @@ def exports(channel_id=None):
         regular_icon=regular_icon,
         subscriber_icon=subscriber_icon,
         channel_id=get_channel_at(channel_id),
-        emoji_lookup_table=emoji_lookup_table
+        emoji_lookup_table=emoji_lookup_table,
+        can_edit=can_edit,
     )
 
 
@@ -1478,7 +1684,7 @@ def channel_stats(channel_id=None):
     for clip in clips:
         hm = int((clip.time + timedelta(hours=5, minutes=30)).strftime("%H"))
         time_distribution[hm] += 1
-     # get the top most clipped streams
+    # get the top most clipped streams
     cur.execute(
         """
             SELECT stream_link, COUNT(message_id) AS occurrence_count
@@ -1491,7 +1697,7 @@ def channel_stats(channel_id=None):
         (channel_id,),
     )
     mcs = cur.fetchall()
-    most_clipped_streams = {} # stream_link: count
+    most_clipped_streams = {}  # stream_link: count
     for x in mcs:
         most_clipped_streams[get_video_id(x[0])] = x[1]
     message = f"Channel Stats for {streamer_name}. {user_count} users clipped\n{clip_count} clips till now. \nand counting."
@@ -1516,7 +1722,7 @@ def channel_stats(channel_id=None):
         best_days=best_days,
         first_clip_d={},
         search_route="/searchchannel",
-        search_for = "channel",
+        search_for="channel",
     )
 
 
@@ -1545,7 +1751,13 @@ def time_stats(start=None, end=None):
         end = datetime.strptime(end, "%Y-%m-%d")
     with conn:
         cur = conn.cursor()
-        cur.execute("SELECT * FROM QUERIES WHERE private is not '1' AND time >= ? AND time < ?", (start.timestamp(), end.timestamp(),))
+        cur.execute(
+            "SELECT * FROM QUERIES WHERE private is not '1' AND time >= ? AND time < ?",
+            (
+                start.timestamp(),
+                end.timestamp(),
+            ),
+        )
         data = cur.fetchall()
     clips = []
     for x in data:
@@ -1588,7 +1800,7 @@ def time_stats(start=None, end=None):
             break
         top_25_ids.append(k)
         user_clips[k] = v
-    user_clips["Others"] = sum(list(_user_clips.values())[max_count-1:])
+    user_clips["Others"] = sum(list(_user_clips.values())[max_count - 1 :])
     if user_clips["Others"] == 0:
         user_clips.pop("Others")
     top_clippers = {
@@ -1596,8 +1808,7 @@ def time_stats(start=None, end=None):
         for k, v in sorted(top_clippers.items(), key=lambda item: item[1], reverse=True)
     }
     notes = {
-        k:  v
-        for k, v in sorted(notes.items(), key=lambda item: item[1], reverse=True)
+        k: v for k, v in sorted(notes.items(), key=lambda item: item[1], reverse=True)
     }
     notes = dict(list(notes.items())[:150])
     # replace dict_keys with actual channel
@@ -1635,20 +1846,20 @@ def time_stats(start=None, end=None):
     while temp_start < end:
         new_dict[temp_start.strftime("%Y-%m-%d %H")] = 0
         temp_start += timedelta(hours=1)
-        
+
     for clip in clips:
         day = (clip.time + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H")
         if day not in new_dict:
             new_dict[day] = 0
         new_dict[day] += 1
-    
-    # sort the new_dict 
+
+    # sort the new_dict
     time_trend = new_dict
 
     streamer_trend_data = {}
     # streamer: {day: no_of_clips}
     streamers_trend_days = []
-    
+
     for clip in clips:
         day = (clip.time + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H")
         channel_id = clip.channel
@@ -1660,12 +1871,15 @@ def time_stats(start=None, end=None):
 
         temp_start = start
         while temp_start < end:
-            if temp_start.strftime("%Y-%m-%d %H") not in streamer_trend_data[channel_id]:
+            if (
+                temp_start.strftime("%Y-%m-%d %H")
+                not in streamer_trend_data[channel_id]
+            ):
                 streamer_trend_data[channel_id][temp_start.strftime("%Y-%m-%d %H")] = 0
                 if temp_start.strftime("%Y-%m-%d %H") not in streamers_trend_days:
                     streamers_trend_days.append(temp_start.strftime("%Y-%m-%d %H"))
             temp_start += timedelta(hours=1)
-        
+
         if day not in streamer_trend_data[channel_id]:
             streamer_trend_data[channel_id][day] = 0
         streamer_trend_data[channel_id][day] += 1
@@ -1673,9 +1887,9 @@ def time_stats(start=None, end=None):
             streamers_trend_days.append(day)
     # for that hour that have no clips, add 0
     # get all hours from start date to end date
-    
-    #streamers_trend_days.sort()
-    # only top 25 and others 
+
+    # streamers_trend_days.sort()
+    # only top 25 and others
     streamer_trend_data = {
         k: v
         for k, v in sorted(
@@ -1687,7 +1901,7 @@ def time_stats(start=None, end=None):
     new_dict = {}
     known_k = []
     max_count = 0
-    new_dict['Others'] = {}
+    new_dict["Others"] = {}
     for k, v in streamer_trend_data.items():
         max_count += 1
         if k != "Others":
@@ -1715,10 +1929,13 @@ def time_stats(start=None, end=None):
             ORDER BY occurrence_count DESC
             LIMIT 12;
         """,
-        (start.timestamp(), end.timestamp(),),
+        (
+            start.timestamp(),
+            end.timestamp(),
+        ),
     )
     mcs = cur.fetchall()
-    most_clipped_streams = {} # stream_link: count
+    most_clipped_streams = {}  # stream_link: count
     for x in mcs:
         most_clipped_streams[get_video_id(x[0])] = x[1]
     message = f"{user_count} users clipped\n{clip_count} clips on \n{channel_count} channels on {start.strftime('%Y-%m-%d')} till {end.strftime('%Y-%m-%d')}."
@@ -1738,13 +1955,14 @@ def time_stats(start=None, end=None):
         streamers_labels=list(streamer_trend_data.keys()),
         time_distribution=time_distribution,
         channel_name=start.strftime("%Y-%m-%d") + " to " + end.strftime("%Y-%m-%d"),
-        channel_image="https://streamsnip.com/static/logo.png",
+        channel_image=f"{base_domain}/static/logo.png",
         most_clipped_streams=most_clipped_streams,
         best_days={},
         first_clip_d={},
         search_route=None,
-        search_for = None,
+        search_for=None,
     )
+
 
 @app.route("/userstats")
 @app.route("/userstats/")
@@ -1790,7 +2008,7 @@ def user_stats(channel_id=None):
         if clip.channel not in top_clippers:
             top_clippers[clip.channel] = 0
         top_clippers[clip.channel] += 1
-        
+
     # sort
     notes = {
         k: 5 + 5 * v
@@ -1914,7 +2132,7 @@ def user_stats(channel_id=None):
     for clip in clips:
         hm = int((clip.time + timedelta(hours=5, minutes=30)).strftime("%H"))
         time_distribution[hm] += 1
-     # get the top most clipped streams
+    # get the top most clipped streams
     cur.execute(
         """
             SELECT stream_link, COUNT(message_id) AS occurrence_count
@@ -1924,10 +2142,10 @@ def user_stats(channel_id=None):
             ORDER BY occurrence_count DESC
             LIMIT 12;
         """,
-        (channel_id,)
+        (channel_id,),
     )
     mcs = cur.fetchall()
-    most_clipped_streams = {} # stream_link: count
+    most_clipped_streams = {}  # stream_link: count
     for x in mcs:
         most_clipped_streams[get_video_id(x[0])] = x[1]
     message = f"User Stats for {streamer_name}. Clipped\n{clip_count} clips in {user_count} channels till now. and counting."
@@ -1951,8 +2169,8 @@ def user_stats(channel_id=None):
         most_clipped_streams=most_clipped_streams,
         best_days=best_days,
         first_clip_d={},
-        search_route = "/searchuser",
-        search_for = "user",
+        search_route="/searchuser",
+        search_for="user",
     )
 
 
@@ -2010,7 +2228,7 @@ def stats():
             break
         top_25_ids.append(k)
         user_clips[k] = v
-    user_clips["Others"] = sum(list(_user_clips.values())[max_count-1:])
+    user_clips["Others"] = sum(list(_user_clips.values())[max_count - 1 :])
     if user_clips["Others"] == 0:
         user_clips.pop("Others")
     top_clippers = {
@@ -2018,8 +2236,7 @@ def stats():
         for k, v in sorted(top_clippers.items(), key=lambda item: item[1], reverse=True)
     }
     notes = {
-        k:  v
-        for k, v in sorted(notes.items(), key=lambda item: item[1], reverse=True)
+        k: v for k, v in sorted(notes.items(), key=lambda item: item[1], reverse=True)
     }
     notes = dict(list(notes.items())[:150])
     # replace dict_keys with actual channel
@@ -2078,7 +2295,7 @@ def stats():
     for clip in clips:
         day = (clip.time + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d")
         if clip.time.timestamp() < three_months_ago:
-            continue # we don't need to show old data
+            continue  # we don't need to show old data
         channel_id = clip.channel
         if channel_id not in top_25_ids:
             channel_id = "Others"
@@ -2090,7 +2307,7 @@ def stats():
         if day not in streamers_trend_days:
             streamers_trend_days.append(day)
     streamers_trend_days.sort()
-    # only top 25 and others 
+    # only top 25 and others
     streamer_trend_data = {
         k: v
         for k, v in sorted(
@@ -2102,7 +2319,7 @@ def stats():
     new_dict = {}
     known_k = []
     max_count = 0
-    new_dict['Others'] = {}
+    new_dict["Others"] = {}
     for k, v in streamer_trend_data.items():
         max_count += 1
         if k != "Others":
@@ -2132,35 +2349,45 @@ def stats():
         """
     )
     mcs = cur.fetchall()
-    most_clipped_streams = {} # stream_link: count
+    most_clipped_streams = {}  # stream_link: count
     for x in mcs:
         most_clipped_streams[get_video_id(x[0])] = x[1]
     message = f"{user_count} users clipped\n{clip_count} clips on \n{channel_count} channels till now. \nand counting."
 
     first_clip_d = {}
     # now make a graph of first_clip to day
-    this_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=timezone.utc)
+    this_month = (
+        datetime.now()
+        .replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        .replace(tzinfo=timezone.utc)
+    )
     # if this is in first half of the month then we need to get the last month's data
     if datetime.now().day < 15:
         if this_month.month == 1:
-            this_month = this_month.replace(month=12, year=this_month.year-1)
+            this_month = this_month.replace(month=12, year=this_month.year - 1)
         else:
-            this_month = this_month.replace(month=this_month.month-1)
+            this_month = this_month.replace(month=this_month.month - 1)
     if current_user.admin:
-        cur.execute(f"SELECT * FROM QUERIES WHERE time GROUP BY channel_id ORDER BY time DESC")
+        cur.execute(
+            f"SELECT * FROM QUERIES WHERE time GROUP BY channel_id ORDER BY time DESC"
+        )
     else:
-        cur.execute(f"SELECT * FROM QUERIES WHERE PRIVATE IS NOT '1' AND time GROUP BY channel_id ORDER BY time DESC")
+        cur.execute(
+            f"SELECT * FROM QUERIES WHERE PRIVATE IS NOT '1' AND time GROUP BY channel_id ORDER BY time DESC"
+        )
     first_clip_sql = cur.fetchall()[::-1]
     first_day = this_month.date()
     last_day = Clip(first_clip_sql[-1]).time.date()
     # map first_clip_d to 0 for every day in between
-    date_generated = [first_day + timedelta(days=x) for x in range(0, (last_day-first_day).days)]
+    date_generated = [
+        first_day + timedelta(days=x) for x in range(0, (last_day - first_day).days)
+    ]
     for single_date in date_generated:
         first_clip_d[single_date.strftime("%Y-%m-%d")] = 0
-    for clip in first_clip_sql: # reverse so that we get the first clip first 
+    for clip in first_clip_sql:  # reverse so that we get the first clip first
         clip = Clip(clip)
         if clip.time < this_month:
-            continue 
+            continue
         time = clip.time
         date = time.strftime("%Y-%m-%d")
         try:
@@ -2184,11 +2411,11 @@ def stats():
         time_distribution=time_distribution,
         first_clip_d=first_clip_d,
         channel_name="All channels",
-        channel_image="https://streamsnip.com/static/logo.png",
+        channel_image=f"{base_domain}/static/logo.png",
         most_clipped_streams=most_clipped_streams,
         best_days=best_days,
-        search_route = "/searchchannel",
-        search_for = "channel",
+        search_route="/searchchannel",
+        search_for="channel",
     )
 
 
@@ -2218,7 +2445,14 @@ def admin():
         ] = f"{htt}{request.host}{url_for('exports', channel_id=key)}"
     users = generate_home_data()
     settings = vars(UserSettings())
-    return render_template("admin.html", ids=clip_ids, channel_info=channel_info_admin, users=users, settings=settings)
+    return render_template(
+        "admin.html",
+        ids=clip_ids,
+        channel_info=channel_info_admin,
+        users=users,
+        settings=settings,
+    )
+
 
 @app.route("/update_settings", methods=["POST"])
 def update_settings():
@@ -2228,7 +2462,7 @@ def update_settings():
     user_ids = []
     settings = {}
     for key, value in request.form.items():
-        if key == 'new':
+        if key == "new":
             continue
         if key.startswith("UC"):
             user_ids.append(key)
@@ -2244,18 +2478,21 @@ def update_settings():
             setattr(user_settings, key, value)
         user_settings.write(conn=conn)
     return "ok"
+
+
 def get_channel_id(path):
     html_data = get(path).text
     soup = BeautifulSoup(html_data, "html.parser")
-    identifier = soup.find('meta', itemprop="identifier")
+    identifier = soup.find("meta", itemprop="identifier")
     if not identifier:
         return None
-    channel_id = identifier['content']
+    channel_id = identifier["content"]
     return channel_id
+
 
 @app.route("/autoapprove")
 def autoapprove():
-    # verify if the entry is eligible to be autoapproved i.e there have been no previous creds. 
+    # verify if the entry is eligible to be autoapproved i.e there have been no previous creds.
     key = request.args.get("key")
     value = request.args.get("value")
     if not any([key, value]):
@@ -2272,18 +2509,22 @@ def autoapprove():
         return f"Value isn't of discord webhook"
     if not channel_id:
         return "Channel id not found"
-    password = config['password']
+    password = config["password"]
     request.args = {"pass": password, "key": key, "value": value, "email": email}
     creds = get_creds()
     channel_clips = get_channel_clips(channel_id)
 
     if channel_id in creds or channel_clips:
         if "management_webhook" in config:
-            webhook = DiscordWebhook(url=config["management_webhook"], username=project_name, avatar_url=project_logo_discord)
+            webhook = DiscordWebhook(
+                url=config["management_webhook"],
+                username=project_name,
+                avatar_url=project_logo_discord,
+            )
             embed = DiscordEmbed(
-                title=f"Auto-approve request", 
+                title=f"Auto-approve request",
                 description=f"Auto-approve request for {key} to [discord webhook]({value})",
-                )
+            )
             approve_url = url_for("approve", _external=True, **request.args)
             embed.add_embed_field(name="Email", value=email)
             embed.add_embed_field(name="Approve", value=f"[Approve]({approve_url})")
@@ -2291,15 +2532,14 @@ def autoapprove():
             # even if we want to directly embed the image we can't. since its on google drive and not accessible to everyone.
             if proof:
                 embed.add_embed_field(name="Proof", value=proof)
-            embed.set_color(0xebf0f7)
+            embed.set_color(0xEBF0F7)
             webhook.add_embed(embed)
             webhook.execute()
         if channel_id in creds:
-            return "Channel already have a webhook. can't auto approve"    
+            return "Channel already have a webhook. can't auto approve"
         else:
             return "Channel already have clips. can't auto approve"
     return approve()
-
 
 
 @app.route("/approve")
@@ -2309,30 +2549,35 @@ def approve():
     key = request.args.get("key")
     value = request.args.get("value")
     applier_email = request.args.get("email")
-    
+
     value = value.replace("discordapp.com", "discord.com")
 
-    if password != config['password']:
+    if password != config["password"]:
         return "Wrong password"
     if "youtube.com" not in key:
         return f"Key isn't of youtube "
     if "/api/webhooks" not in value:
         return f"Value isn't of discord webhook "
     if not key.startswith("htt"):
-        key = "https://" + key # care about both http and https 
+        key = "https://" + key  # care about both http and https
     channel_id = get_channel_id(key)
     if not channel_id:
         return "Channel id not found"
 
     channel_name, channel_image = get_channel_name_image(channel_id)
-    webhook = DiscordWebhook(url=value, username=project_name, avatar_url=project_logo_discord)
+    webhook = DiscordWebhook(
+        url=value, username=project_name, avatar_url=project_logo_discord
+    )
     embed = DiscordEmbed(
-        title=f"Welcome to {project_name}!", 
+        title=f"Welcome to {project_name}!",
         description=f"I will send clips for {channel_name} here",
-        )
-    embed.add_embed_field(name="Add Nightbot command", value=f"If you haven't already. add Nightbot commands from [github]({project_repo_link}) .")
+    )
+    embed.add_embed_field(
+        name="Add Nightbot command",
+        value=f"If you haven't already. add Nightbot commands from [github]({project_repo_link}) .",
+    )
     embed.set_thumbnail(url=project_logo_discord)
-    embed.set_color(0xebf0f7)
+    embed.set_color(0xEBF0F7)
     webhook.add_embed(embed)
     response = webhook.execute()
     if response.status_code != 200:
@@ -2341,31 +2586,39 @@ def approve():
     creds[channel_id] = value
     write_creds(creds)
     if "update_webhook" in config:
-        webhook = DiscordWebhook(url=config["update_webhook"], username=project_name, avatar_url=project_logo_discord)
+        webhook = DiscordWebhook(
+            url=config["update_webhook"],
+            username=project_name,
+            avatar_url=project_logo_discord,
+        )
         embed = DiscordEmbed(
             title=f"New webhook added",
             description=f"New webhook added for {channel_name}",
         )
         embed.set_thumbnail(url=channel_image)
-        embed.set_color(0xebf0f7)
+        embed.set_color(0xEBF0F7)
         webhook.add_embed(embed)
         webhook.execute()
     email = config.get("smtp", None)
     if email and applier_email:
-        send_email(applier_email, f"Welcome to {project_name}! \nI will send clips for {channel_name} on your discord channel. \n\nIf you haven't already, add Nightbot commands from {project_repo_link}?tab=readme-ov-file#nightbot-command .\n\n\n\nBest Of Luck\n{project_name}")
+        send_email(
+            applier_email,
+            f"Welcome to {project_name}! \nI will send clips for {channel_name} on your discord channel. \n\nIf you haven't already, add Nightbot commands from {project_repo_link}?tab=readme-ov-file#nightbot-command .\n\n\n\nBest Of Luck\n{project_name}",
+        )
     return "Done"
+
 
 def send_email(email=None, message="New webhook added"):
     try:
-        user = config['smtp']['auth']['user']
+        user = config["smtp"]["auth"]["user"]
         if not user:
             raise KeyError
     except KeyError:
         return "Email not configured"
-    smtp = config['smtp']
-    host = smtp['host']
-    port = smtp['port']
-    password = smtp['auth']['pass']
+    smtp = config["smtp"]
+    host = smtp["host"]
+    port = smtp["port"]
+    password = smtp["auth"]["pass"]
     if not all([host, port, password]):
         return "Email not configured"
     try:
@@ -2375,7 +2628,7 @@ def send_email(email=None, message="New webhook added"):
         return str(e)
     return "Email sent"
 
-    
+
 @app.route("/ed", methods=["POST"])
 @login_required
 def edit_delete():
@@ -2419,24 +2672,33 @@ def edit_delete():
 
         channel_name, channel_image = get_channel_name_image(key)
         if value.startswith("https://discord"):
-            webhook = DiscordWebhook(url=value, username=project_name, avatar_url=project_logo_discord)
+            webhook = DiscordWebhook(
+                url=value, username=project_name, avatar_url=project_logo_discord
+            )
             embed = DiscordEmbed(
-                title=f"Welcome to {project_name}!", 
+                title=f"Welcome to {project_name}!",
                 description=f"I will send clips for {channel_name} here",
-                )
-            embed.add_embed_field(name="Add Nightbot command", value=f"If you haven't already. add Nightbot commands from [github]({project_repo_link}?tab=readme-ov-file#nightbot-command) .")
+            )
+            embed.add_embed_field(
+                name="Add Nightbot command",
+                value=f"If you haven't already. add Nightbot commands from [github]({project_repo_link}?tab=readme-ov-file#nightbot-command) .",
+            )
             embed.set_thumbnail(url=project_logo_discord)
-            embed.set_color(0xebf0f7)
+            embed.set_color(0xEBF0F7)
             webhook.add_embed(embed)
             webhook.execute()
         if "update_webhook" in config:
-            webhook = DiscordWebhook(url=config["update_webhook"], username=project_name, avatar_url=project_logo_discord)
+            webhook = DiscordWebhook(
+                url=config["update_webhook"],
+                username=project_name,
+                avatar_url=project_logo_discord,
+            )
             embed = DiscordEmbed(
                 title=f"New webhook added",
                 description=f"New webhook added for {channel_name}",
             )
             embed.set_thumbnail(url=channel_image)
-            embed.set_color(0xebf0f7)
+            embed.set_color(0xEBF0F7)
             webhook.add_embed(embed)
             webhook.execute()
         return jsonify(creds)
@@ -2444,19 +2706,19 @@ def edit_delete():
         return jsonify(get_creds())
     elif request.form.get("refresh") == "refresh cache":
         global channel_info
-        channel_info = {} # set channel_info to empty
+        channel_info = {}  # set channel_info to empty
         write_channel_cache(channel_info)
         return redirect(url_for("admin"))
     elif request.form.get("refreshdeleted") == "refresh deleted":
         lc = deepcopy(channel_info)
         for channel in lc:
-            if "deleted" in channel_info[channel]['name']:
+            if "deleted" in channel_info[channel]["name"]:
                 print(f"deleting {channel}")
                 del channel_info[channel]
         del lc
         return redirect(url_for("admin"))
     else:
-        return f"what ? {request.form}" 
+        return f"what ? {request.form}"
 
 
 def get_latest_live(channel_id):
@@ -2486,7 +2748,7 @@ def add():
         data = request.form
         if data.get("new") == "Submit":
             link = data.get("link", None)
-            # sanitize the link / remove all the arguments except the v 
+            # sanitize the link / remove all the arguments except the v
             if not link:
                 return "Youtube Link not found"
             # reconstruct the link
@@ -2500,7 +2762,10 @@ def add():
                 return "Invalid link"
             vid = YouTubeChatDownloader(cookies=cookies).get_video_data(video_id=vid_id)
             streamer_id = vid["author_id"]
-            if not current_user.password == get_webhook_url(streamer_id) and not current_user.admin:
+            if (
+                not current_user.password == get_webhook_url(streamer_id)
+                and not current_user.admin
+            ):
                 return "Provided stream is not of the current logged in user."
             right_chats = []
             channel_clips = get_channel_clips(streamer_id)
@@ -2530,9 +2795,7 @@ def add():
                     if chat["message_type"] == "text_message":
                         if chat["message"].startswith(desc):
                             right_chats.append(chat)
-            return render_template(
-                "add.html", link=link, desc=desc, chats=right_chats
-            )
+            return render_template("add.html", link=link, desc=desc, chats=right_chats)
         else:
             # second time
             link = data.get("link", None)
@@ -2548,7 +2811,10 @@ def add():
                 delay = 0
             vid = YouTubeChatDownloader(cookies=cookies).get_video_data(video_id=vid_id)
             streamer_id = vid["author_id"]
-            if not current_user.password == get_webhook_url(streamer_id) and not current_user.admin:
+            if (
+                not current_user.password == get_webhook_url(streamer_id)
+                and not current_user.admin
+            ):
                 return "Provided stream is not of the current logged in user."
             right_chats = []
             for chat in ChatDownloader().get_chat(vid_id):
@@ -2648,10 +2914,11 @@ def stream_info():
     channel_id = channel.get("providerId")[0]
     return get_latest_live(channel_id)
 
+
 @app.route("/recent")
 @app.route("/record")
 def recent():
-    default_value = 5 
+    default_value = 5
     try:
         channel = parse_qs(request.headers["Nightbot-Channel"])
         user = parse_qs(request.headers["Nightbot-User"])
@@ -2665,14 +2932,15 @@ def recent():
         request_count = int(request_count)
     except ValueError:
         request_count = default_value
-        
+
     for clip in clips[:request_count]:
         if len(clip.desc) > 10:
             clip.desc = clip.desc[:10] + "..."
         string += f"{clip.desc} {clip.id} | "
     if len(string) > 256:
-        return string[:256] # youtube limits to 256 characters. who are we to disobey
+        return string[:256]  # youtube limits to 256 characters. who are we to disobey
     return string
+
 
 @app.route("/nstats")
 @app.route("/nstat")
@@ -2698,12 +2966,15 @@ def nstats():
         if clip.stream_id == this_stream_id:
             this_stream_count += 1
         else:
-            break # this is cause the clips are sorted by time. so if we find a clip that is not of this stream. we can break and save time
-    
-    percentage = (user_clip_count / total_clips) * 100 
+            break  # this is cause the clips are sorted by time. so if we find a clip that is not of this stream. we can break and save time
+
+    percentage = (user_clip_count / total_clips) * 100
     percentage = round(percentage, 2)
-    today_count_string = f" ({this_stream_count} today)" if this_stream_count != 0 else f""
+    today_count_string = (
+        f" ({this_stream_count} today)" if this_stream_count != 0 else f""
+    )
     return f"{total_clips} clips have been made {today_count_string} by total {total_users} users, out of which {user_clip_count} clips ({percentage}%) have been made by you."
+
 
 @app.route("/clip/<guild_id>/<channel_id>/")
 @app.route("/clip/<guild_id>/<channel_id>/<message>")
@@ -2713,6 +2984,45 @@ def discord_clip(guild_id, channel_id, message=None):
     if not channel_id:
         return "Channel id not found"
     return f"Guild id: {guild_id} Channel id: {channel_id} Message: {message} Probably not what you are looking for. use !clip on youtube only. --Admin ({base_domain})"
+
+
+def get_transactions(channel_id):
+    cur.execute("SELECT * FROM TRANSACTIONS WHERE channel_id=?", (channel_id,))
+    return cur.fetchall()
+
+def can_avail_free_trial(channel_id):
+    membership_details = Membership.get(conn, channel_id)
+    if not membership_details.in_db:
+        return True
+    if membership_details.type == "FREE":
+        return False
+    return False
+
+def is_subscribed(channel_id):
+    membership_detail = Membership.get(conn, channel_id)
+    if not membership_detail.in_db:
+        # if the channel is not in db that means its new. give 28 days of free trial that means 199 rs
+        with conn:
+            end_time = int(time.time())+ 29*24*60*60 # we give 29 to include current day too
+            start_time = int(time.time())
+            cur.execute("INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)", (channel_id, "FREE", start_time, end_time))
+            cur.execute(
+                "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    channel_id,
+                    0,
+                    int(time.time()),
+                    "FREE TRIAL",
+                    "FREE",
+                    "Free Trial for 28 days",
+                ),
+            )
+            conn.commit()
+        return is_subscribed(channel_id)
+    if membership_detail.active:
+        return membership_detail.type
+    return ""  # no membership
+
 
 # /clip/<message_id>/<clip_desc>?showlink=true&screenshot=true&dealy=-10&silent=2
 @app.route("/clip/<message_id>/")
@@ -2730,87 +3040,125 @@ def clip(message_id, clip_desc=None):
 
     arguments = {k.replace("?", ""): request.args[k] for k in request.args}
 
+    sub_detail = is_subscribed(channel_id)
+    if not sub_detail:
+        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
+    if sub_detail == "FREE":
+        sub_detail = "pro"
 
     channel_settings = get_channel_settings(channel_id)
-    show_link = arguments.get("showlink", channel_settings.show_link)
-    screenshot = arguments.get("screenshot", channel_settings.screenshot)
-    # if taken from argument then it will be a string. either 'true' or 'false'
-    silent = arguments.get("silent", channel_settings.silent)  # silent level. if not then 2
-    private = arguments.get("private", channel_settings.private)
-    webhook = arguments.get("webhook", channel_settings.webhook)
-    if webhook and not webhook.startswith("https://discord.com/api/webhooks/"):
-        webhook = f"https://discord.com/api/webhooks/{webhook}"
-    webhook_url = get_webhook_url(channel_id) if not webhook else webhook
+    if sub_detail != "basic":
+        # in this case take the default arguments
+        show_link = arguments.get("showlink", channel_settings.show_link)
+        screenshot = arguments.get("screenshot", channel_settings.screenshot)
+        # if taken from argument then it will be a string. either 'true' or 'false'
+        silent = arguments.get(
+            "silent", channel_settings.silent
+        )  # silent level. if not then 2
+        private = arguments.get("private", channel_settings.private)
+        webhook = arguments.get("webhook", channel_settings.webhook)
+        if webhook and not webhook.startswith("https://discord.com/api/webhooks/"):
+            webhook = f"https://discord.com/api/webhooks/{webhook}"
+        webhook_url = get_webhook_url(channel_id) if not webhook else webhook
 
-    take_delays = arguments.get("take_delays", channel_settings.take_delays)
-    force_desc = arguments.get("force_desc", channel_settings.force_desc)
-    delay = arguments.get("delay", channel_settings.delay)
-    message_level = arguments.get(
-        "message_level", channel_settings.message_level
-    )  # 0 is normal. 1 is to persist the defautl webhook name. 2 is for no record on discord message. 3 is for service badging
-    try:
-        message_level = int(message_level)
-    except ValueError:
-        message_level = channel_settings.message_level
-    logging.log(
-        level=logging.INFO,
-        msg=f"A request for clip with arguments {arguments} and headers {request.headers}",
-    )
-    if webhook and not webhook.startswith("https://discord.com/api/webhooks/"):
-        webhook = f"https://discord.com/api/webhooks/{webhook}"
-    try:
-        silent = int(silent)
-    except ValueError:
-        silent = channel_settings.silent
-    
-    if type(show_link) == str: # we got this from the arguments. we must convert it to boolean
-        show_link = False if show_link.lower() == "false" else channel_settings.show_link # we revert back to the channel settings if we can't convert it to boolean
-    if type(screenshot) == str:
-        screenshot = True if screenshot.lower() == "true" else channel_settings.screenshot
-    if type(private) == str:
-        private = True if private.lower() == "true" else channel_settings.private
-    if type(take_delays) == str:
-        take_delays = True if take_delays.lower() == "true" else channel_settings.take_delays
-    if type(force_desc) == str:
-        force_desc = True if force_desc.lower() == "true" else channel_settings.force_desc
-    if type(delay) == str:
-        try:
-            delay = int(delay)
-        except ValueError:
-            delay = channel_settings.delay
-    if type(message_level) == str:
+        take_delays = arguments.get("take_delays", channel_settings.take_delays)
+        force_desc = arguments.get("force_desc", channel_settings.force_desc)
+        delay = arguments.get("delay", channel_settings.delay)
+        message_level = arguments.get(
+            "message_level", channel_settings.message_level
+        )  # 0 is normal. 1 is to persist the defautl webhook name. 2 is for no record on discord message. 3 is for service badging
         try:
             message_level = int(message_level)
         except ValueError:
             message_level = channel_settings.message_level
-    logging.log(logging.INFO, f"""
-                Arguments {arguments} - show-link {show_link} - screenshot {screenshot} - private {private} - take_delays {take_delays} - force_desc {force_desc} - delay {delay} - message_level {message_level} - webhook {webhook_url} - silent {silent} - channel_id {channel_id} - user_id {user_id} - user_name {user_name} - message_id {message_id} - clip_desc {clip_desc}"""
-                ) 
-    show_link_message = ""
-    try:
-        delay = 0 if not delay else int(delay)
-    except ValueError:
-        return "Delay should be an integer (plus or minus)"
-    if not clip_desc:
-        if force_desc:
-            return "Clip denied. You must give a title to the clip."
-        clip_desc = "None"
-    if take_delays:
-        splitted = clip_desc.split()
-        candidates = [splitted[0], splitted[-1]]
-        for c in candidates:
+        logging.log(
+            level=logging.INFO,
+            msg=f"A request for clip with arguments {arguments} and headers {request.headers}",
+        )
+        if webhook and not webhook.startswith("https://discord.com/api/webhooks/"):
+            webhook = f"https://discord.com/api/webhooks/{webhook}"
+        try:
+            silent = int(silent)
+        except ValueError:
+            silent = channel_settings.silent
+
+        if (
+            type(show_link) == str
+        ):  # we got this from the arguments. we must convert it to boolean
+            show_link = (
+                False if show_link.lower() == "false" else channel_settings.show_link
+            )  # we revert back to the channel settings if we can't convert it to boolean
+        if type(screenshot) == str:
+            screenshot = (
+                True if screenshot.lower() == "true" else channel_settings.screenshot
+            )
+        if type(private) == str:
+            private = True if private.lower() == "true" else channel_settings.private
+        if type(take_delays) == str:
+            take_delays = (
+                True if take_delays.lower() == "true" else channel_settings.take_delays
+            )
+        if type(force_desc) == str:
+            force_desc = (
+                True if force_desc.lower() == "true" else channel_settings.force_desc
+            )
+        if type(delay) == str:
             try:
-                extra_delay = int(c)
-                # if extra delay is in positive. make sure its appended with a + sign
-                # cases like `!clip 200 iq play` should not actually add 200 seconds. but `!clip +200 iq play` should
-                if extra_delay > 0:
-                    if not c.startswith("+"):
-                        continue
-                clip_desc = clip_desc.replace(c, "")
-                delay += extra_delay
-                break
+                delay = int(delay)
             except ValueError:
-                pass
+                delay = channel_settings.delay
+        if type(message_level) == str:
+            try:
+                message_level = int(message_level)
+            except ValueError:
+                message_level = channel_settings.message_level
+        logging.log(
+            logging.INFO,
+            f"""
+                    Arguments {arguments} - show-link {show_link} - screenshot {screenshot} - private {private} - take_delays {take_delays} - force_desc {force_desc} - delay {delay} - message_level {message_level} - webhook {webhook_url} - silent {silent} - channel_id {channel_id} - user_id {user_id} - user_name {user_name} - message_id {message_id} - clip_desc {clip_desc}""",
+        )
+        show_link_message = ""
+        try:
+            delay = 0 if not delay else int(delay)
+        except ValueError:
+            return "Delay should be an integer (plus or minus)"
+        if not clip_desc:
+            if force_desc:
+                return "Clip denied. You must give a title to the clip."
+            clip_desc = "None"
+        if take_delays:
+            splitted = clip_desc.split()
+            candidates = [splitted[0], splitted[-1]]
+            for c in candidates:
+                try:
+                    extra_delay = int(c)
+                    # if extra delay is in positive. make sure its appended with a + sign
+                    # cases like `!clip 200 iq play` should not actually add 200 seconds. but `!clip +200 iq play` should
+                    if extra_delay > 0:
+                        if not c.startswith("+"):
+                            continue
+                    clip_desc = clip_desc.replace(c, "")
+                    delay += extra_delay
+                    break
+                except ValueError:
+                    pass
+    else:
+        webhook = DEFAULT_SETTINGS.webhook
+        show_link = DEFAULT_SETTINGS.show_link
+        screenshot = DEFAULT_SETTINGS.screenshot
+        private = DEFAULT_SETTINGS.private
+        webhook_url = None
+        take_delays = DEFAULT_SETTINGS.take_delays
+        force_desc = DEFAULT_SETTINGS.force_desc
+        # delay = DEFAULT_SETTINGS.delay # we don't need to set the delay. since we are not going to use it
+        delay = arguments.get("delay", channel_settings.delay)
+        if type(delay) == str:
+            try:
+                delay = int(delay)
+            except ValueError:
+                delay = channel_settings.delay
+        message_level = DEFAULT_SETTINGS.message_level
+        silent = DEFAULT_SETTINGS.silent
 
     request_time = time.time()
     h_request_time = request.headers.get("timestamp")
@@ -2825,10 +3173,8 @@ def clip(message_id, clip_desc=None):
     if not local:
         monitor.ping(state="run")
     if not message_id:
-        return "No message id provided, You have configured it wrong. please contact AG at https://discord.gg/2XVBWK99Vy"
-    
-    
-    
+        return f"No message id provided, You have configured it wrong. please contact AG at {discord_invite}"
+
     if message_id in chat_id_video:
         vid = chat_id_video[message_id]
     else:
@@ -2892,7 +3238,9 @@ def clip(message_id, clip_desc=None):
     if t_clip_desc != "None":
         message_to_return = f"{project_name} successfully clipped '{t_clip_desc}' ({clip_id}) by {user_name}"
     else:
-        message_to_return = f"{project_name} successfully clipped ({clip_id}) by {user_name}"
+        message_to_return = (
+            f"{project_name} successfully clipped ({clip_id}) by {user_name}"
+        )
     if delay:
         message_to_return += f" with a delay of {delay} seconds."
     if webhook_url:  # if webhook is not found then don't send the message
@@ -2906,10 +3254,12 @@ def clip(message_id, clip_desc=None):
         )
         response = webhook.execute()
         if not response.status_code == 200:
-            return "Error in sending message to discord. Perhaps the webhook is invalid. Please contact AG1436 at https://discord.gg/2XVBWK99Vy"
-        webhook_id = webhook.id  
-        if show_link == 1: # we don't need to get webhook details if its not needed (optimization)
-            webhook_details = GET(webhook_url).json() 
+            return f"Error in sending message to discord. Perhaps the webhook is invalid. Please contact AG1436 at {discord_invite}"
+        webhook_id = webhook.id
+        if (
+            show_link == 1
+        ):  # we don't need to get webhook details if its not needed (optimization)
+            webhook_details = GET(webhook_url).json()
             # construct the link
             ll = f"https://discord.com/channels/{webhook_details['guild_id']}/{webhook_details['channel_id']}/{webhook_id}"
             show_link_message = f" See the clip message at {ll}"
@@ -2937,7 +3287,6 @@ def clip(message_id, clip_desc=None):
         ss_id = None
         ss_link = None
         message_to_return += " Couldn't take screenshot."
-    
 
     if show_link is True:
         if request.is_secure:
@@ -2982,7 +3331,8 @@ def clip(message_id, clip_desc=None):
         return clip_id
     else:
         return " "
-    
+
+
 @app.route("/delete")
 @app.route("/delete/")
 @app.route("/delete/<clip_id>")
@@ -2992,6 +3342,9 @@ def delete(clip_id=None):
     except KeyError:
         return "Not able to auth"
     channel_id = channel.get("providerId")[0]
+    sub_detail = is_subscribed(channel_id)
+    if not sub_detail:
+        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
     if not clip_id:
         clips = get_channel_clips(channel_id)
         if not clips:
@@ -3028,6 +3381,7 @@ def delete(clip_id=None):
     else:
         return returning_str + errored_str
 
+
 @app.route("/edit/")
 @app.route("/edit")
 @app.route("/edit/<clip_id>")
@@ -3048,6 +3402,9 @@ def edit(clip_id=None):
     except ValueError:
         return "Silent level should be an integer"
     channel_id = channel.get("providerId")[0]
+    sub_detail = is_subscribed(channel_id)
+    if not sub_detail:
+        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
     clip = get_clip(clip_id.split(" ")[0], channel_id)
     if not clip:
         # we are talking about last clip that was made from this channel in this case
@@ -3102,6 +3459,7 @@ def search(clip_desc=None):
         case _:
             return clip.stream_link
 
+
 @app.route("/searchx")
 @app.route("/searchx/")
 @app.route("/searchx/<clip_desc>")
@@ -3115,6 +3473,7 @@ def searchx(clip_desc=None):
     if clip:
         return clip.json()
     return "{}"
+
 
 @app.route("/searchchannel")
 @app.route("/searchchannel/")
@@ -3132,11 +3491,17 @@ def searchchannel(query=None):
         data = cur.fetchall()
     channel_ids = [x[0] for x in data]
     for channel in channel_info:
-        if channel not in channel_ids: 
-            continue # we don't provide who don't have any clips 
-        if query.lower() in channel_info[channel]['name'].lower():
-            answer.append([channel_info[channel]['name'], url_for("channel_stats", channel_id=channel)])
+        if channel not in channel_ids:
+            continue  # we don't provide who don't have any clips
+        if query.lower() in channel_info[channel]["name"].lower():
+            answer.append(
+                [
+                    channel_info[channel]["name"],
+                    url_for("channel_stats", channel_id=channel),
+                ]
+            )
     return answer
+
 
 @app.route("/searchuser")
 @app.route("/searchuser/")
@@ -3156,16 +3521,19 @@ def searchuser(query=None):
             WHERE user_name LIKE ? 
             OR user_id LIKE ? 
             GROUP BY user_id, user_name;
-            """
-            , (f"%{query}%", f"%{query}%")
+            """,
+            (f"%{query}%", f"%{query}%"),
         )
         data = cur.fetchall()
     for user in data:
-        answer.append([f"{user[1]} ({user[2]} clips)", url_for("user_stats", channel_id=user[0])])
+        answer.append(
+            [f"{user[1]} ({user[2]} clips)", url_for("user_stats", channel_id=user[0])]
+        )
     return answer
 
+
 @app.route("/extension/request_comment/<video_id>")
-def request_comment(video_id:str=None):
+def request_comment(video_id: str = None):
     if not video_id:
         return "No video id provided"
     # if we already have comment we don't need to give it back
@@ -3174,11 +3542,15 @@ def request_comment(video_id:str=None):
         cur.execute(
             """
             SELECT comment FROM QUERIES WHERE video_id = ?
-            """, (video_id,)
+            """,
+            (video_id,),
         )
         data = cur.fetchall()
         if data:
-            return "Comment already existed. if you don't see it. then it was deleted or held in review.", 200
+            return (
+                "Comment already existed. if you don't see it. then it was deleted or held in review.",
+                200,
+            )
     clips = get_video_clips(video_id)
     if not clips:
         return "No clips found for this video", 404
@@ -3189,9 +3561,13 @@ def request_comment(video_id:str=None):
         return "Failed to post comment", 500
     with conn:
         cur = conn.cursor()
-        cur.execute("INSERT INTO COMMENTS VALUES (?, ?, ?)", (video_id, string, int(time.time())))
+        cur.execute(
+            "INSERT INTO COMMENTS VALUES (?, ?, ?)",
+            (video_id, string, int(time.time())),
+        )
         conn.commit()
     return "Comment posted, Please refresh if you don't see it.", 200
+
 
 @app.route("/extension/clips")
 @app.route("/extension/clips/")
@@ -3202,6 +3578,7 @@ def extension_clips(video_id=None):
     clips = get_video_clips(video_id)
     return jsonify([clip.json() for clip in clips])
 
+
 @app.route("/extension/channel/clips")
 @app.route("/extension/channel/clips/")
 @app.route("/extension/channel/clips/<stream_id>")
@@ -3210,6 +3587,7 @@ def extension_channel_clips(stream_id=None):
         return {}
     clips = get_video_clips(stream_id)
     return jsonify([clip.json() for clip in clips])
+
 
 @app.route("/extension/clip")
 @app.route("/extension/clip/")
@@ -3220,6 +3598,7 @@ def extension_clip(clip_id=None):
     clip = get_clip(clip_id)
     return clip.json()
 
+
 @app.route("/extension/channel")
 @app.route("/extension/channel/")
 @app.route("/extension/channel/<channel_id>")
@@ -3229,11 +3608,13 @@ def extension_channel(channel_id=None):
     clips = get_channel_clips(channel_id)
     return jsonify([clip.json() for clip in clips])
 
+
 @app.route("/loaderio-2d4d6795c8021a56f6052f095f181fe8.txt")
 @app.route("/loaderio-2d4d6795c8021a56f6052f095f181fe8.html")
 @app.route("/loaderio-2d4d6795c8021a56f6052f095f181fe8/")
 def loaderio():
     return "loaderio-2d4d6795c8021a56f6052f095f181fe8"
+
 
 @app.route("/test")
 def test():
@@ -3243,7 +3624,8 @@ def test():
     except:
         return 500, "Failed"
     else:
-        return ll['title']
+        return ll["title"]
+
 
 @app.route("/globals")
 @login_required
@@ -3251,6 +3633,7 @@ def globals_():
     if not current_user.admin:
         return "You can't do this. You are not an admin"
     return dumps(globals(), indent=4, sort_keys=True, default=str)
+
 
 @app.route("/video")
 @app.route("/video/")
@@ -3277,10 +3660,10 @@ def video(clip_id):
         if file.startswith(clip.id) and "part" not in file:
             if format:
                 if format in file:
-                    return send_from_directory("clips", file) 
+                    return send_from_directory("clips", file)
             else:
                 return send_from_directory("clips", file)
-        
+
     return "Couldn't find the file"
 
 
@@ -3289,37 +3672,37 @@ def index():
     yield "slash", {}
     channels = channel_info.values()
     # sort by channels['sub_count']
-    channels = sorted(channels, key=lambda x: x['sub_count'], reverse=True)
-    for channel in channels[:26]: # only do top 26
-        if "lofi" in channel['name'].lower():
-            continue # we have no association with lofigirl so lets not show them
-        yield "channel_stats", {"channel_id": channel['username']}
-        yield "exports", {"channel_id": channel['username']}
+    channels = sorted(channels, key=lambda x: x["sub_count"], reverse=True)
+    for channel in channels[:26]:  # only do top 26
+        if "lofi" in channel["name"].lower():
+            continue  # we have no association with lofigirl so lets not show them
+        yield "channel_stats", {"channel_id": channel["username"]}
+        yield "exports", {"channel_id": channel["username"]}
     yield "stats", {}
     yield "export", {}
 
 
 channel_info = {}
-if 'channel_cache.json' in os.listdir('./helper'):
+if "channel_cache.json" in os.listdir("./helper"):
     try:
-        with open("helper/channel_cache.json","r", encoding="utf-8") as f:
+        with open("helper/channel_cache.json", "r", encoding="utf-8") as f:
             channel_info = load(f)
     except Exception as e:
         print(e)
         # delete the file just in case this doesn't happen again
-        with open("helper/channel_cache.json","w", encoding="utf-8") as f:
+        with open("helper/channel_cache.json", "w", encoding="utf-8") as f:
             dump({}, f, indent=4)
 else:
-    with open("helper/channel_cache.json","w", encoding="utf-8") as f:
-        dump({}, f, indent=4) 
+    with open("helper/channel_cache.json", "w", encoding="utf-8") as f:
+        dump({}, f, indent=4)
 
-        
+
 def write_channel_cache(channel_info=channel_info):
-    with open("helper/channel_cache.json","w", encoding="utf-8") as f:
+    with open("helper/channel_cache.json", "w", encoding="utf-8") as f:
         dump(channel_info, f, indent=4)
     return True
 
-    
+
 with conn:
     cur = conn.cursor()
     cur.execute(f"SELECT DISTINCT channel_id FROM QUERIES ORDER BY time DESC")
@@ -3330,12 +3713,13 @@ for ch_id in data:
 
 
 # add default settings to everyone who is not in the settings table
-def add_default_settings(channel_id:str):
+def add_default_settings(channel_id: str):
     with conn:
         cur = conn.cursor()
         cur.execute(f"INSERT INTO settings(channel_id) VALUES(?)", (channel_id,))
         conn.commit()
-    return True 
+    return True
+
 
 with conn:
     cur = conn.cursor()
@@ -3343,7 +3727,7 @@ with conn:
     channels_in_settings = [x[0] for x in cur.fetchall()]
     for ch_id in data:
         if ch_id not in channels_in_settings:
-            #add_default_settings(ch_id)
+            # add_default_settings(ch_id)
             pass
 
 
@@ -3351,4 +3735,5 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
+    #is_subscribed("UCbZZmB8L3IEHutGbvpWo9Ow")
     app.run(debug=True, host="0.0.0.0", port=80)

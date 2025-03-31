@@ -12,13 +12,19 @@
 {% block content %}
 <center>
 <div class="container">
-    <div class="row">
-        <div class="col-md-12">
-            <a href = "https://youtube.com/channel/{{ current_user.id }}">
-            <img src="{{ current_user.image }}" alt="{{ current_user.username }}" class="rounded-circle" style="width: 200px; height: 200px;">
-            <h1> {{current_user.username}} </h1></a>
+    <div class="row align-items-center">
+        <div class="col-md-6 d-flex align-items-center">
+            <a href="https://youtube.com/channel/{{ current_user.id }}" class="d-flex align-items-center">
+                <img src="{{ current_user.image }}" alt="{{ current_user.username }}" class="rounded-circle" style="width: 100px; height: 100px; margin-right: 15px;">
+                <h1>{{ current_user.username }}</h1>
+            </a>
         </div>
-    </div>
+        <div class="col-md-6 d-flex flex-column align-items-end">
+            <span>Days Left: {{ membership_details.days_left }}.</span>
+            <a href="/membership"><button class="btn btn-primary w-100" type="submit">Membership</button></a>
+        </div>        
+        
+    </div>    
     <div class="row">
         <!--
         show_link
@@ -37,7 +43,7 @@
                     Show Link
                 </td>
                 <td>
-                    <select id="show_link">
+                    <select id="show_link" {%if not can_edit %} disabled {% endif %}>
                         {% if settings['show_link'] == 1 %}
                             <option value="True" selected>Yes - Will show that 'See all clips at ....' message on clipping.</option>
                             <option value="False">No - Will not show that message.</option>
@@ -53,7 +59,7 @@
                     Screenshot
                 </td>
                 <td>
-                    <select id="screenshot">
+                    <select id="screenshot" {%if not can_edit %} disabled {% endif %}>
                         {% if settings['screenshot'] == 1 %}
                             <option value="True" selected>Yes - NOT RECOMMENDED. Will post a screenshot of stream alongside the message in discord for better context. </option>
                             <option value="False">No - Will not do any screenshots to discord.</option>
@@ -78,7 +84,7 @@
                     Force Description
                 </td>
                 <td>
-                    <select id="force_desc">
+                    <select id="force_desc" {%if not can_edit %} disabled {% endif %}>
                         {% if settings['force_desc'] == 1 %}
                             <option value="True" selected>Yes - Will decline any clips made without any description.</option>
                             <option value="False">No - Will take every clip with or without description</option>
@@ -94,7 +100,7 @@
                     Silent
                 </td>
                 <td>
-                    <select id="silent">
+                    <select id="silent" {%if not can_edit %} disabled {% endif %}>
                         <!-- silent can be 0, 1, 2-->
                         {% if settings['silent'] == 0 %}
                             <option value="0" selected>0 - Will give back empty message.</option>
@@ -117,7 +123,7 @@
                     Private
                 </td>
                 <td>
-                    <select id="private">
+                    <select id="private" {%if not can_edit %} disabled {% endif %}>
                         {% if settings['private'] == 1 %}
                             <option value="True" selected>Yes - Will not show any clips on web nor impact stats. will only return 'clipped 😉'</option>
                             <option value="False">No</option>
@@ -128,7 +134,7 @@
                     </select>
                 </td>
             </tr>
-            <tr>
+            <tr style="border:2px solid white; margin-top: 20px; margin-bottom: 20px;" >
                 <td>
                     Webhook
                 </td>
@@ -138,7 +144,7 @@
                     1 - Highest -> One set up in the request argument i.e in <a href="https://github.com/SurajBhari/streamsnip?tab=readme-ov-file#optional-arguments">this.</a><br>
                     2 - Second -> One set up here.<br>
                     3 - Third -> One you gave in <a href="https://forms.gle/NgF67HBR69CxAcvJ8">this form.</a><br>
-                    <input type="text" id="webhook" class="form-control" style="width: 100%;" value="{{ settings['webhook'] }}">
+                    <input {%if not can_edit %} disabled {% endif %} type="text" id="webhook" class="form-control" style="width: 100%;" value="{{ settings['webhook'] }}">
                     </p>
                 </td>
             </tr>
@@ -147,7 +153,7 @@
                     Message Level
                 </td>
                 <td>
-                    <select id="message_level">
+                    <select id="message_level" {%if not can_edit %} disabled {% endif %}>
                         <!-- can be 0 or 1 or 2 or 3 -->
                         {%if settings['message_level'] == 0 %}
                             <option value="0" selected>0 - Default - In Discord Show clip message alongside username as webhook user </option>
@@ -178,7 +184,7 @@
                     Take Delays
                 </td>
                 <td>
-                    <select id="take_delays">
+                    <select id="take_delays" {%if not can_edit %} disabled {% endif %}>
                         {% if settings['take_delays'] == 1 %}
                             <option value="True" selected>Yes - will evaluate the first and last word of description to add/substract delay.</option>
                             <option value="False">No</option>
@@ -194,7 +200,7 @@
                     Comments | THIS IS STILL A BETA FEATURE. PLEASE TAKE THIS WITH A GRAIN OF SALT.
                 </td>
                 <td>
-                    <select id="comments">
+                    <select id="comments" {%if not can_edit %} disabled {% endif %}>
                         {% if settings['comments'] == 1 %}
                             <option value="True" selected>Yes - Will post a comment after live stream ends contaning all the clips details.</option>
                             <option value="False">No</option>
@@ -237,6 +243,13 @@
             window.location.reload();
         }, 2000);
     }
+    document.addEventListener("DOMContentLoaded", function(event) {
+        can_edit= {{ can_edit|tojson|safe }};
+
+        if (!can_edit){
+            alert("You are not allowed to edit settings. Please extend your membership.");
+        }
+    });
     function save_settings(){
         console.log("Saving settings");
         var show_link = document.getElementById("show_link").value;
