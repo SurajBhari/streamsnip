@@ -16,9 +16,10 @@ You can view additional details on [this page](https://creativecommons.org/licen
 
 The primary goal of streamsnip is to streamline the clipping process, addressing challenges faced by one of my favorite streamers. Here's how you can make the most of it:
 ## Monetization
-This program is a free for everyone as of now. But you can contribute. </br>
+This program WAS free. now it requires a membership to use. although you can try this for free for 28 days. </br>
+You can also donate if you like the code or the service. </br>
 <a href="https://surajbhari.stck.me" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a> </br>
-Most of the donations goes back to development and hosting costing. 
+Earnings goes back to development and hosting costing. 
 ## Nightbot Command:
 
 ```markdown
