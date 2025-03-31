@@ -3000,7 +3000,8 @@ def can_avail_free_trial(channel_id):
 
 def is_subscribed(channel_id):
     membership_detail = Membership.get(conn, channel_id)
-    return "pro"
+    if channel_id != "UCbZZmB8L3IEHutGbvpWo9Ow":
+        return "pro"
     if not membership_detail.in_db:
         # if the channel is not in db that means its new. give 28 days of free trial that means 199 rs
         with conn:
