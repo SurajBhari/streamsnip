@@ -195,6 +195,10 @@
                     else if(days_left < 15){
                         color = "warning"
                     }
+                    else if(days_left == 0){
+                        color = "danger";
+                        var alert = "Your free trial has ended. <a style='color:blue;' href='/membership'>Please consider renewing your membership.</a>";
+                    }
                     else{
                         if(!is_free_trial){
                             return;
