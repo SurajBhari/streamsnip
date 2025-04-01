@@ -12,7 +12,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-deferred/dist/chartjs-plugin-deferred.min.js"></script>
 
 <script>
-    var current_membership_type = "{{ membership.type }}";
     function sub(type, amount) {
         var form = document.createElement('form');
         form.method = 'POST';
@@ -43,176 +42,164 @@
         document.body.appendChild(form);
         form.submit();
     }
-
-    function updatechangebutton() {
-        var select = document.getElementById('membershipSelect');
-        var button = document.getElementById('membershipchangebutton');
-        if (select.value == "{{ membership.type }}") {
-            button.disabled = true;
-        } else {
-            button.disabled = false;
-        }
-    }
 </script>
 
 <style>
-    .card-group {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 20px;
+    .membership-container {
+        text-align: center;
+        margin: 20px auto;
+        max-width: 800px;
+    }
+    table {
+        width: 80%;
+        margin: 0 auto;
+        border-collapse: collapse;
         text-align: center;
     }
-
-    .card {
-        flex: 1;
-        max-width: 300px;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .pro-card {
-        background: #b8b8b8;
-        color: black;
-        transform: scale(1.05);
-    }
-
-    .pro-card.dark-theme {
-        background: #626262;
-        color: white;
-    }
-
-    .card-title {
-        font-size: 1.5rem;
-        font-weight: bold;
-    }
-
-    .membership-details {
-        margin-top: 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-
-    table, th, td {
+    th, td {
         border: 1px solid black;
+        padding: 5px;
     }
-
+    th {
+        background-color: #f2f2f2;
+    }
+    .transactions-container {
+        text-align: center;
+        margin-top: 20px;
+    }
     @media (max-width: 768px) {
-        .card-group {
-            flex-direction: column;
-            align-items: center;
+        body {
+            font-size: 14px;
         }
-
-        .card {
-            width: 90%;
-            max-width: none;
+        table {
+            width: 100%;
+        }
+        th, td {
+            padding: 3px;
         }
     }
-    .card-group {
-        overflow: visible; /* Allow dropdowns to show outside */
-    }
-
-
 </style>
-
 {% endblock %}
 
 {% block content %}
-
-<div class="membership-details">
+<div class="membership-container">
     <h2>Your Membership Details</h2> 
-    Your current membership:<h3>{{ membership.type }}</h3><br>
-    Days left: <h3>{{ membership.days_left }}</h3><br> 
-
+    <p><strong>Current membership:</strong> {{ membership.type }}</p>
+    <p><strong>Days left:</strong> {{ membership.days_left }}</p>
     {% if membership.free_trial %}<h2>FREE TRIAL</h2>{% endif %}
 </div>
-<br>
-<div class="card-group">
-    {% set base_prices = {'basic': 99, 'pro': 199, 'premium': 399} %}
-    {% for tier in ['basic', 'pro', 'premium'] %}
-    <div class="card {% if tier == 'pro' %}pro-card{% endif %}">
-        <h5 class="card-title">{{ tier|capitalize }} {% if tier == 'pro' %}⭐{% elif tier == 'premium' %}💗{% endif %}</h5>
-        <h6 class="card-subtitle mb-2 "><del>{{ base_prices[tier] * 2 }}₹/28 days</del></h6>
-        <h5 class="card-subtitle mb-2 ">{{ base_prices[tier] }}₹/28 days</h5>
-        <p class="card-text">
-            {% if tier == 'basic' %}
-            Enjoy essential features:
-            <ul>
-                <li>Use <code>!clip</code> with default settings</li>
-                <li>Unlimited Clips</li>
-                <li>Access <code>!edit</code> and <code>!delete</code></li>
-            </ul>
-            {% elif tier == 'pro' %}
-            Unlock advanced features:
-            <ul>
-                <li>Everything in Basic</li>
-                <li><a href="https://github.com/SurajBhari/streamsnip?tab=readme-ov-file#optional-arguments">Customize all arguments</a></li>
-                <li>Discord Integration (sending message to discord)</li>
-            </ul>
-            {% else %}
-            For those who want to support us:
-            <ul>
-                <li>Includes everything in Basic & Pro</li>
-                <li>Comments after stream ends with timestamps (BETA)</li>
-                <li>Priority Support</li>
-                <li>Your channels GLOWSSSS on home page.</li>
-            </ul>
-            {% endif %}
-        </p>
-        <div class="dropdown mb-3">
-            {% if tier in available_upgrades %}
-                <button class="btn btn-primary" onclick="upgrade('{{ tier }}')">Upgrade</button>
-            {% elif tier in available_subscribes or tier == membership.type %}
-                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    {%if tier == membership.type %}Extend{%else%}Subscribe{%endif%}
-                </button>
-                <ul class="dropdown-menu">
-                {% for months, price in subscription_model[tier].items() %}
-                    {%if tier in available_subscribes %}
-                    <li>
-                        <a class="dropdown-item" href="#" onclick="sub('{{ tier }}', {{ price }})">
-                        {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
-                        {% if months == 12 %} (2 month free){% elif months == 6 %} (1 month free){% endif %}
-                        </a>
-                    </li>
-                    {% endif %}
-                {% endfor %}
-                </ul>
 
-            {% endif %}
-
-        </div>    
-    </div>
-    {% endfor %}
-</div>
-
-<div class="membership-details">
-    {% if transactions %}
-    <h2>Previous Transactions:</h2>
-    <table id="transactions">
-        <thead>
-            <tr>
-                <th>Amount</th> 
-                <th>Date</th>
-                <th>Transaction ID</th>
-                <th>Description</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for transaction in transactions %}
-            <tr>
-                <td>{{ transaction[1] }}</td>
-                <td>{{ transaction[2] }}</td>
-                <td>{{ transaction[3] }}</td>
-                <td>{{ transaction[5] }}</td>
-            </tr>
+<table>
+    <thead>
+        <tr>
+            <th>Features</th>
+            <th>Basic (₹99/28 days)</th>
+            <th>Pro (₹199/28 days) ⭐</th>
+            <th>Premium (₹399/28 days) 💗</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Use <code>!clip</code> with default settings</td>
+            <td>✔</td>
+            <td>✔</td>
+            <td>✔</td>
+        </tr>
+        <tr>
+            <td>Unlimited Clips</td>
+            <td>✔</td>
+            <td>✔</td>
+            <td>✔</td>
+        </tr>
+        <tr>
+            <td>Access <code>!edit</code> and <code>!delete</code></td>
+            <td>✔</td>
+            <td>✔</td>
+            <td>✔</td>
+        </tr>
+        <tr>
+            <td>Customize all arguments</td>
+            <td>❌</td>
+            <td>✔</td>
+            <td>✔</td>
+        </tr>
+        <tr>
+            <td>Discord Integration</td>
+            <td>❌</td>
+            <td>✔</td>
+            <td>✔</td>
+        </tr>
+        <tr>
+            <td>Comments after stream ends with timestamps (BETA)</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✔</td>
+        </tr>
+        <tr>
+            <td>Priority Support</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✔</td>
+        </tr>
+        <tr>
+            <td>Channel Glows on Home Page</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>✔</td>
+        </tr>
+        <tr>
+            <td>Options</td>
+            {% for tier in ['basic', 'pro', 'premium'] %}
+            <td>
+                {% if tier in available_upgrades %}
+                    <button class="btn btn-primary" type="button" onclick="upgrade('{{ tier }}')">Upgrade</button>
+                {% elif tier in available_subscribes or tier == membership.type %}
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {% if tier == membership.type %}Extend{% else %}Subscribe{% endif %}
+                        </button>
+                        <ul class="dropdown-menu">
+                            {% for months, price in subscription_model[tier].items() %}
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="sub('{{ tier }}', {{ price }})">
+                                    {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
+                                    {% if months == 12 %} (2 months free){% elif months == 6 %} (1 month free){% endif %}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </td>
             {% endfor %}
-        </tbody>
-    </table>
-    {% endif %}
+        </tr>
+    </tbody>
+</table>
+
+{% if transactions %}
+<div class="transactions-container">
+    <h2>Previous Transactions:</h2>
 </div>
+<table>
+    <thead>
+        <tr>
+            <th>Amount</th>
+            <th>Date</th>
+            <th>Transaction ID</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for transaction in transactions %}
+        <tr>
+            <td>{{ transaction[1] }}</td>
+            <td>{{ transaction[2] }}</td>
+            <td>{{ transaction[3] }}</td>
+            <td>{{ transaction[5] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
 
 {% endblock %}
