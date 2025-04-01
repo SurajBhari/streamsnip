@@ -3043,7 +3043,9 @@ def clip(message_id, clip_desc=None):
     sub_detail = is_subscribed(channel_id)
     if not sub_detail:
         return f"You do not have any membership. Get the subscription at {base_domain}/membership"
+    free_trial = False
     if sub_detail == "FREE":
+        free_trial = True
         sub_detail = "pro"
 
     channel_settings = get_channel_settings(channel_id)
@@ -3235,8 +3237,11 @@ def clip(message_id, clip_desc=None):
         t_clip_desc = clip_desc[:30] + "..."
     else:
         t_clip_desc = clip_desc
+    message_to_return = ""
+    if free_trial:
+        message_to_return += "Free Trial - "
     if t_clip_desc != "None":
-        message_to_return = f"{project_name} successfully clipped '{t_clip_desc}' ({clip_id}) by {user_name}"
+        message_to_return += f"{project_name} successfully clipped '{t_clip_desc}' ({clip_id}) by {user_name}"
     else:
         message_to_return = (
             f"{project_name} successfully clipped ({clip_id}) by {user_name}"
