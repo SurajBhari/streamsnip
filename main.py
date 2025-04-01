@@ -3233,8 +3233,8 @@ def clip(message_id, clip_desc=None):
         elif user_level == "subscriber":
             webhook_name += f" {subscriber_icon}"
 
-    if len(clip_desc) > 30:
-        t_clip_desc = clip_desc[:30] + "..."
+    if len(clip_desc) > 26:
+        t_clip_desc = clip_desc[:26] + "..."
     else:
         t_clip_desc = clip_desc
     message_to_return = ""
