@@ -490,7 +490,7 @@ input[type="password"]:focus {
   width: 400px;
   background-color: #ffffff;
   box-shadow: 0 0 9px 0 rgba(0, 0, 0, 0.3);
-  margin: 100px auto;
+  margin: auto;
 }
 
 .login.dark-theme{
@@ -589,4 +589,14 @@ select.dark-theme:disabled{
   height: 300px;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+html, body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
 }

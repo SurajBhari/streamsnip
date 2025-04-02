@@ -34,7 +34,7 @@
             var a = document.getElementsByTagName("a");
             var ul = document.getElementsByTagName("ul");
             var cards = document.getElementsByClassName("card");
-            var sign_in = document.getElementById("google_sign_in");
+            var signs_in = document.getElementsByClassName("google_sign_in");
             var alerts = document.getElementsByClassName("alert");
             var theads = document.getElementsByTagName("thead");
             // append "select" objects to "a" list 
@@ -53,8 +53,15 @@
             var site_icon = document.getElementById("site_icon");
             var dropdown_items = document.getElementsByClassName("dropdown-item");
             if (isDarkTheme) {
-                if(sign_in){ 
-                    sign_in.src = "/static/sign_dark.png";
+                if(signs_in.length){ 
+                    for(var i=0; i<signs_in.length; i++){
+                        if(signs_in[i].id == "sign_in"){
+                            sign_in.src = "/static/sign_in_dark.png";
+                        }
+                        else{
+                            signs_in[i].src = "/static/sign_up_dark.png";
+                        }
+                    }
                 }
                 body.classList.add("dark-theme");
                 for (var i = 0; i < form_control.length; i++) {
@@ -80,8 +87,15 @@
                 }
             }
             else{
-                if(sign_in){ 
-                    sign_in.src = "/static/sign_light.png";
+                if(signs_in.length){ 
+                    for(var i=0; i<signs_in.length; i++){
+                        if(signs_in[i].id == "sign_in"){
+                            sign_in.src = "/static/sign_in_light.png";
+                        }
+                        else{
+                            signs_in[i].src = "/static/sign_up_light.png";
+                        }
+                    }
                 }
                 body.classList.remove("dark-theme");
                 for (var i = 0; i < form_control.length; i++) {
@@ -251,7 +265,7 @@
                         <a class="nav-link" href="https://github.com/SurajBhari/streamsnip?tab=readme-ov-file#nightbot-command"><i class="fa-solid fa-plus"></i> Get Started</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="https://forms.gle/NgF67HBR69CxAcvJ8"><i class="fa-solid fa-link"></i> Connect with Discord</a>
+                        <a class="nav-link" href="/webhook"><i class="fa-solid fa-link"></i> Connect with Discord</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="https://chromewebstore.google.com/detail/streamsnip/jpnlipcmklpfniaheflfnkomjdkhiani"><i class="fa-solid fa-puzzle-piece"></i> Chrome Extension</a>

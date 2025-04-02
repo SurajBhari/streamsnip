@@ -1,14 +1,19 @@
 {% extends 'layout.html' %}
 
-
 {% block head_content%}
-<title> StreamSnip - Login </title>
+<title>StreamSnip - Login</title>
+<style>
+    .content {
+        padding-top: 5%;
+    }
+</style>
 {% endblock %}
+
 {% block content %}
 
 <div class="login form-control">
-    <h1>Login</h1>
-    <form action="{{ url_for('login') }}{{next}}" method="post">
+    <h1>Sign In</h1>
+    <form action="{{ url_for('login') }}{{ next }}" method="post">
         <div style="display: flex;">
             <label for="username">
                 <i class="fas fa-user"></i>
@@ -20,15 +25,28 @@
         </div>
         <div class="msg" style="display: flex; text-align: center; font-size: small; margin-top: 20px;">{{ msg }}</div>
         <div style="display: flex; justify-content: center;">
-            <input type="submit" class="btn btn-secondary" style="width: 50%;" value="Login">
+            <input type="submit" class="btn btn-primary" style="width: 100%;" value="Login">
         </div>
+        <div style="display: flex; justify-content: center; align-items: center;">
+            <h5>OR</h5>
+        </div>        
+        <!-- Sign in with Google -->
+        <a href="{{ url_for('login_google') }}{{ next }}" style="display: flex; justify-content: center;">
+            <img src="/static/sign_in_dark.png" class="google_sign_in" id="sign_in" alt="Sign in with Google" style="width: 50%;">
+        </a>
     </form>
-    <a href="{{ url_for('login_google') }}{{next}}">
-        <!--center the sign in button-->
-        <div style="display: flex; justify-content: center; margin-top: 5%;">
-            <img src="/static/sign_dark.png" id="google_sign_in" alt="Sign in with Google" style="width: 50%;">
-        </div> 
-        
+</div>
+
+<!-- OR Divider -->
+<div style="display: flex; justify-content: center; align-items: center;">
+    <h2 style="font-size: 2rem; font-weight: bold;">OR</h2>
+</div>
+
+<!-- Sign Up Section -->
+<div class="login form-control" style="text-align: center;">
+    <h1>Sign Up</h1>
+    <a href="{{ url_for('login_google') }}{{ next }}" style="display: flex; justify-content: center; margin-top: 5%;">
+        <img src="/static/sign_up_dark.png" class="google_sign_in" id="sign_up" alt="Sign up with Google" style="width: 50%;">
     </a>
 </div>
 
