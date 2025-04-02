@@ -2418,6 +2418,23 @@ def stats():
         search_for="channel",
     )
 
+def get_members(tier:str=None):
+    # returns all of membership details
+    if not tier:
+        members = {k:get_members(k) for k in subscription_model.keys()}
+        members["FREE"] = get_members("FREE")
+        return members
+    with conn:
+        cur.execute("SELECT * FROM MEMBERSHIP WHERE type=?", (tier,))   
+        data = cur.fetchall()
+    if not data:
+        return []
+    members = []
+    for x in data:
+        m = Membership(x)
+        m.name = get_channel_name_image(m.channel_id)[0]
+        members.append(m)
+    return members        
 
 @app.route("/admin")
 @login_required
@@ -2445,12 +2462,15 @@ def admin():
         ] = f"{htt}{request.host}{url_for('exports', channel_id=key)}"
     users = generate_home_data()
     settings = vars(UserSettings())
+    members = get_members()
+    print(members)
     return render_template(
         "admin.html",
         ids=clip_ids,
         channel_info=channel_info_admin,
         users=users,
         settings=settings,
+        members=members,
     )
 
 

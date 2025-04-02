@@ -20,6 +20,7 @@
         <input type="submit" value="refresh cache" name="refresh">
         <input type="submit" value="refresh deleted" name="refreshdeleted"></br></br>
     </form>
+    <h1> Settings </h1>
     <form action="/update_settings" method="post" style="display: inline;">
         <div style="display: flex; justify-content: space-between; gap: 20px;">
             <!-- First scrollable list -->
@@ -50,6 +51,31 @@
             <button class="btn btn-primary" type="submit" value="Submit" name="new">Submit</button>
         </div>
     </form>    
+    <h1> Memberships </h1>
+    <div style="display: flex; justify-content: space-between; gap: 20px;">
+        <!-- First scrollable list -->
+        <!--key,value in members-->
+        {% for tier, memberss in members.items() %} 
+        <div class="scrollable_list" style="flex: 1; overflow-y: auto; max-height: 300px; border: 1px solid #ccc; padding: 10px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th colspan="2">{{tier}}</th>
+                    </tr>
+                </thead>
+                {% for m in memberss %}
+                    <tr>
+                        <td>
+                            <a href="/e/{{m.channel_id}}">
+                                {{m.name}} ({{m.days_left}} days left)
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endfor %}
+    </div>
     <h1> Channels that I have webhooks for </h1>
     <div class="container">
         <div class="row">
