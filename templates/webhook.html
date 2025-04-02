@@ -1,0 +1,80 @@
+{% extends 'layout.html' %}
+
+{% block head_content %}
+<title>Membership</title>
+<meta property="og:title" content="Webhook" />
+<meta property="og:description" content="Webhook Details" />
+<meta property="og:url" content="/webhook" />
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-wordcloud"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-autocolors"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-deferred/dist/chartjs-plugin-deferred.min.js"></script>
+
+<script>
+    var current_webhook_url = "{{ current_webhook_url }}";
+    document.addEventListener('DOMContentLoaded', function() {
+        const webhookInput = document.getElementById("webhook_url");
+        const submitButton = document.getElementById("submit-button");
+        const toggleVisibility = document.getElementById("toggle-visibility");
+        
+        webhookInput.addEventListener("input", function() {
+            const webhookUrl = this.value;
+            const webhookUrlPattern = /^https:\/\/discord\.com\/api\/webhooks\/\d+\/[-_A-Za-z0-9]+$/;
+            var isDarkTheme = localStorage.getItem("darkTheme") === "true";
+            
+            if (webhookUrlPattern.test(webhookUrl)) {
+                this.style.borderColor = "green";
+                submitButton.disabled = false;
+            } else {
+                this.style.borderColor = "red";
+                submitButton.disabled = true;
+            }
+            
+        });
+        
+        toggleVisibility.addEventListener("click", function() {
+            if (webhookInput.type === "password") {
+                webhookInput.type = "text";
+                toggleVisibility.innerHTML = '<i class="fa-solid fa-eye"></i>';
+            } else {
+                webhookInput.type = "password";
+                toggleVisibility.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+            }
+        });
+    });
+</script>
+
+<style>
+.content {
+  padding-top: 2%;
+  margin-left: 16.2%;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<img src="{{current_user.image}}" width="75px" class="rounded-circle" alt="{{current_user.name}}'s profile picture">
+<h2>{{current_user.name}}'s Webhook Settings</h2> 
+<form action="/webhook" method="post">
+    <div class="form-group">
+        <label for="webhook_url">Webhook URL:</label>
+        <div style="display: flex; align-items: center; width: 75%;">
+            <input 
+            type="password" 
+            class="form-control" 
+            id="webhook_url" 
+            name="webhook_url" 
+            size="128" 
+            value="{{ current_webhook_url }}" 
+            required 
+            style="flex: 1;">
+            <button type="button" id="toggle-visibility" class="btn btn-secondary" style="margin-left: 5px;"><i class="fa-solid fa-eye-slash"></i></button>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary" disabled id="submit-button"><i class="fa-regular fa-floppy-disk"></i></button>
+    <a href="/webhook/delete" onclick="if (confirm('Delete your current webhook?')){return true;}else{event.stopPropagation(); event.preventDefault();};" class="btn btn-danger"><i class="fa-solid fa-trash"></i></a>
+    <p>Remember: This webhook URL can also be used to log in to your account.</p>
+</form>
+
+{% endblock %}

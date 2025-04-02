@@ -143,7 +143,7 @@
                     There are 3 level of priority for webhook.<br>
                     1 - Highest -> One set up in the request argument i.e in <a href="https://github.com/SurajBhari/streamsnip?tab=readme-ov-file#optional-arguments">this.</a><br>
                     2 - Second -> One set up here.<br>
-                    3 - Third -> One you gave in <a href="https://forms.gle/NgF67HBR69CxAcvJ8">this form.</a><br>
+                    3 - Third -> One you gave in <a href="/webhook">this </a>or for older users the google form.<br>
                     <input {%if not can_edit %} disabled {% endif %} type="text" id="webhook" class="form-control" style="width: 100%;" value="{{ settings['webhook'] }}">
                     </p>
                 </td>
@@ -247,7 +247,7 @@
         can_edit= {{ can_edit|tojson|safe }};
 
         if (!can_edit){
-            alert("You are not allowed to edit settings. Please extend your membership.");
+            alert("You are not allowed to edit settings. Please upgrade your membership.");
         }
     });
     function save_settings(){

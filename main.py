@@ -1082,6 +1082,40 @@ def get_video_id(video_link):
 def get_ip():
     return request.remote_addr
 
+@app.route("/webhook/delete", methods=["GET"])
+@login_required
+def delete_webhook():
+    channel_id = current_user.id
+    if not channel_id:
+        return "Invalid request", 400
+    creds = get_creds()
+    del creds[channel_id]
+    # write creds to creds.json
+    write_creds(creds)
+    return redirect(url_for("webhook"))
+
+@app.route("/webhook", methods=["POST", "GET"])
+@login_required
+def webhook():
+    if request.method == "POST":
+        data = request.form
+        print(data)
+        if not data:
+            return "Invalid request", 400
+        channel_id = current_user.id
+        if not channel_id:
+            return "Invalid request", 400
+        if not data.get("webhook_url"):
+            return "Invalid request", 400
+        if data.get("webhook_url"):
+            creds = get_creds()
+            creds[channel_id] = data["webhook_url"]
+            # write creds to creds.json
+            write_creds(creds)
+            current_webhook_url = data["webhook_url"]
+    else:
+        current_webhook_url = get_creds().get(current_user.id, "")
+    return render_template("webhook.html", message="Set your webhook URL here", current_webhook_url=current_webhook_url)
 
 @app.route("/settings/default", methods=["POST"])
 @login_required
