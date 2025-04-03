@@ -1499,7 +1499,7 @@ def exports(channel_id=None):
         print(e)
         return redirect(url_for("slash"))
     data = get_channel_clips(channel_id)
-    sub_detail = is_subscribed(channel_id, start_free_trial=False)
+    sub_detail = is_subscribed(channel_id, free_trial=False)
     can_edit = current_user.id == channel_id or current_user.admin
     if sub_detail != "pro":
         can_edit = False
