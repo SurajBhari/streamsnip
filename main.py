@@ -3054,7 +3054,7 @@ def can_avail_free_trial(channel_id):
 
 def start_free_trial(channel_id):
     with conn:
-        end_time = int(time.time())+ 29*24*60*60 # we give 29 to include current day too
+        end_time = int(time.time())+ 28*24*60*60 # we give 28 to include current day too
         start_time = int(time.time())
         cur.execute("INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)", (channel_id, "FREE", start_time, end_time))
         cur.execute(
