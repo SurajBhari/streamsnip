@@ -763,7 +763,7 @@ def start_free_trial():
         return redirect(url_for("login"))
     if not current_user.can_avail_trial:
         return "You have already availed the free trial"
-    is_subscribed(current_user.id) # automatically starts the trial
+    start_free_trial(current_user.id) # automatically starts the trial
     return redirect(url_for("slash"))
 
 @app.route("/cache")
@@ -1133,7 +1133,7 @@ def default_settings():
 def settings():
     settings = get_channel_settings(current_user.id)
     membership_details = Membership.get(conn, current_user.id)
-    membership_details2 = is_subscribed(current_user.id)
+    membership_details2 = is_subscribed(current_user.id, start_free_trial=False)
     can_edit = membership_details2 in ["pro", "premium", "FREE"]
     if not can_edit:
         delay = settings.delay
@@ -1499,9 +1499,9 @@ def exports(channel_id=None):
         print(e)
         return redirect(url_for("slash"))
     data = get_channel_clips(channel_id)
-    sub_detail = is_subscribed(channel_id)
+    sub_detail = is_subscribed(channel_id, start_free_trial=False)
     can_edit = current_user.id == channel_id or current_user.admin
-    if sub_detail == "paused":
+    if sub_detail != "pro":
         can_edit = False
     if not sub_detail:
         can_edit = False
@@ -3052,27 +3052,34 @@ def can_avail_free_trial(channel_id):
         return False
     return False
 
-def is_subscribed(channel_id):
+def start_free_trial(channel_id):
+    with conn:
+        end_time = int(time.time())+ 29*24*60*60 # we give 29 to include current day too
+        start_time = int(time.time())
+        cur.execute("INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)", (channel_id, "FREE", start_time, end_time))
+        cur.execute(
+            "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                channel_id,
+                0,
+                int(time.time()),
+                "FREE TRIAL",
+                "FREE",
+                "Free Trial for 28 days",
+            ),
+        )
+        conn.commit()
+
+
+def is_subscribed(channel_id, start_free_trial=True):
     membership_detail = Membership.get(conn, channel_id)
     if not membership_detail.in_db:
         # if the channel is not in db that means its new. give 28 days of free trial that means 199 rs
-        with conn:
-            end_time = int(time.time())+ 29*24*60*60 # we give 29 to include current day too
-            start_time = int(time.time())
-            cur.execute("INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)", (channel_id, "FREE", start_time, end_time))
-            cur.execute(
-                "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
-                (
-                    channel_id,
-                    0,
-                    int(time.time()),
-                    "FREE TRIAL",
-                    "FREE",
-                    "Free Trial for 28 days",
-                ),
-            )
-            conn.commit()
-        return is_subscribed(channel_id)
+        if start_free_trial:
+            start_free_trial(channel_id)
+            return "FREE"
+        else:
+            return False
     if membership_detail.active:
         return membership_detail.type
     return ""  # no membership
