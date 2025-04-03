@@ -758,7 +758,7 @@ def load_user(user_id):
 login_manager.anonymous_user = AnonymousUser
 
 @app.route("/start_free_trial")
-def start_free_trial():
+def _start_free_trial():
     if not current_user.is_authenticated:
         return redirect(url_for("login"))
     if not current_user.can_avail_trial:
