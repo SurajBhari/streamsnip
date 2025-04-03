@@ -1133,7 +1133,7 @@ def default_settings():
 def settings():
     settings = get_channel_settings(current_user.id)
     membership_details = Membership.get(conn, current_user.id)
-    membership_details2 = is_subscribed(current_user.id, start_free_trial=False)
+    membership_details2 = is_subscribed(current_user.id, free_trial=False)
     can_edit = membership_details2 in ["pro", "premium", "FREE"]
     if not can_edit:
         delay = settings.delay
@@ -3071,11 +3071,11 @@ def start_free_trial(channel_id):
         conn.commit()
 
 
-def is_subscribed(channel_id, start_free_trial=True):
+def is_subscribed(channel_id, free_trial=True):
     membership_detail = Membership.get(conn, channel_id)
     if not membership_detail.in_db:
         # if the channel is not in db that means its new. give 28 days of free trial that means 199 rs
-        if start_free_trial:
+        if free_trial:
             start_free_trial(channel_id)
             return "FREE"
         else:
