@@ -37,6 +37,7 @@
             var signs_in = document.getElementsByClassName("google_sign_in");
             var alerts = document.getElementsByClassName("alert");
             var theads = document.getElementsByTagName("thead");
+            var sidebars = document.getElementsByClassName("sidebar");
             // append "select" objects to "a" list 
             var select = document.getElementsByTagName("select");
             if (!localStorage.getItem("darkTheme")) {
@@ -85,6 +86,9 @@
                 for(var i=0; i<theads.length; i++){
                     theads[i].classList.add("dark-theme");
                 }
+                for(var i=0; i<sidebars.length; i++){
+                    sidebars[i].classList.add("dark-theme");
+                }
             }
             else{
                 if(signs_in.length){ 
@@ -119,6 +123,9 @@
                 }
                 for(var i=0; i<theads.length; i++){
                     theads[i].classList.remove("dark-theme");
+                }
+                for(var i=0; i<sidebars.length; i++){
+                    sidebars[i].classList.remove("dark-theme");
                 }
             }
             if(isDarkTheme){
@@ -286,14 +293,14 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="/e/{{current_user.id}}"><i class="fa-solid fa-scissors"></i> My Clips</a></li>
-                            <li><a class="dropdown-item" href="/membership"><i class="fa-solid fa-money-bill-wave"></i> Membership</a></li>
+                            <li><a class="dropdown-item" href="/settings#membership"><i class="fa-solid fa-money-bill-wave"></i> Membership</a></li>
                             <li><a class="dropdown-item" href="/settings"><i class="fa-solid fa-gear"></i> Settings</a></li>
                             <li><a class="dropdown-item" href="/logout"><i class="fa-solid fa-sign-out"></i> Logout</a></li>
                         </ul>
                     </li>                    
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="/login"><i class="fa-solid fa-sign-in"></i></a>
+                            <a class="nav-link" href="/login">Login<i class="fa-solid fa-sign-in"></i></a>
                         </li>
                     {% endif %}
                     

@@ -1,0 +1,208 @@
+<div class="container">
+    <div class="row align-items-center">
+        <div class="col-md-6 d-flex align-items-center">
+        </div>
+        <div class="col-md-6 d-flex flex-column align-items-end">
+            <span>Days Left: {{ membership_details.days_left }}.</span>
+            <a href="/membership"><button class="btn btn-primary w-100" type="submit">Membership</button></a>
+        </div>        
+        
+    </div>    
+    <div class="row">
+        <!--
+        show_link
+        screenshot 
+        delay 
+        force_desc 
+        silent 
+        private 
+        webhook 
+        message_level 
+        take_delays -->
+        <p>These settings are number 2 in the priority list. Highest priority is of the request arg i.e in <a href="https://github.com/SurajBhari/streamsnip?tab=readme-ov-file#optional-arguments">this.</a></p>
+        <table>
+            <tr>
+                <td>
+                    Show Link
+                </td>
+                <td>
+                    <select id="show_link" {%if not can_edit %} disabled {% endif %}>
+                        {% if settings['show_link'] == 1 %}
+                            <option value="True" selected>Yes - Will show that 'See all clips at ....' message on clipping.</option>
+                            <option value="False">No - Will not show that message.</option>
+                        {% else %}
+                            <option value="True">Yes - Will show that 'See all clips at ....' message on clipping.</option>
+                            <option value="False" selected>No - Will not show that message.</option>
+                        {% endif %}
+                    </select>
+                </td>
+                </tr>
+            <tr>
+                <td>
+                    Screenshot
+                </td>
+                <td>
+                    <select id="screenshot" {%if not can_edit %} disabled {% endif %}>
+                        {% if settings['screenshot'] == 1 %}
+                            <option value="True" selected>Yes - NOT RECOMMENDED. Will post a screenshot of stream alongside the message in discord for better context. </option>
+                            <option value="False">No - Will not do any screenshots to discord.</option>
+                        {% else %}
+                            <option value="True">Yes - NOT RECOMMENDED. Will post a screenshot of stream alongside the message in discord for better context. </option>
+                            <option value="False" selected>No - Will not do any screenshots to discord.</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Delay
+                </td>
+                <td>
+                    <p>This is an artificial delay that is added to timestamp. if the !clip is called at 1:20:40 and with delay of "-40". then it is stored as 1:20:00. so that you always jump into action.</p>
+                    <input type="number" id="delay" class="form-control" style="width: 100%;" value="{{ settings['delay'] }}">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Force Description
+                </td>
+                <td>
+                    <select id="force_desc" {%if not can_edit %} disabled {% endif %}>
+                        {% if settings['force_desc'] == 1 %}
+                            <option value="True" selected>Yes - Will decline any clips made without any description.</option>
+                            <option value="False">No - Will take every clip with or without description</option>
+                        {% else %}
+                            <option value="True">Yes - Will decline any clips made without any description.</option>
+                            <option value="False" selected>No - Will take every clip with or without description</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Silent
+                </td>
+                <td>
+                    <select id="silent" {%if not can_edit %} disabled {% endif %}>
+                        <!-- silent can be 0, 1, 2-->
+                        {% if settings['silent'] == 0 %}
+                            <option value="0" selected>0 - Will give back empty message.</option>
+                            <option value="1">1 - Will give back only the Clip ID</option>
+                            <option value="2">2 - Default Will give back everything </option>
+                        {% elif settings['silent'] == 1 %}
+                            <option value="0">0 - Will give back empty message.</option>
+                            <option value="1" selected>1 - Will give back only the Clip ID</option>
+                            <option value="2">2 - Default Will give back everything </option>
+                        {% else %}
+                            <option value="0">0 - Will give back empty message.</option>
+                            <option value="1">1 - Will give back only the Clip ID</option>
+                            <option value="2" selected>2 - Default Will give back everything </option>
+                        {% endif %} 
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Private
+                </td>
+                <td>
+                    <select id="private" {%if not can_edit %} disabled {% endif %}>
+                        {% if settings['private'] == 1 %}
+                            <option value="True" selected>Yes - Will not show any clips on web nor impact stats. will only return 'clipped 😉'</option>
+                            <option value="False">No</option>
+                        {% else %}
+                            <option value="True">Yes - Will not show any clips on web nor impact stats. will only return 'clipped 😉'</option>
+                            <option value="False" selected>No</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tr style="border:2px solid white; margin-top: 20px; margin-bottom: 20px;" >
+                <td>
+                    Webhook
+                </td>
+                <td>
+                    <p>This is second in priority list. <br>
+                    There are 3 level of priority for webhook.<br>
+                    1 - Highest -> One set up in the request argument i.e in <a href="https://github.com/SurajBhari/streamsnip?tab=readme-ov-file#optional-arguments">this.</a><br>
+                    2 - Second -> One set up here.<br>
+                    3 - Third -> One you gave in <a href="/webhook">this </a>or for older users the google form.<br>
+                    <input {%if not can_edit %} disabled {% endif %} type="text" id="webhook" class="form-control" style="width: 100%;" value="{{ settings['webhook'] }}">
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Message Level
+                </td>
+                <td>
+                    <select id="message_level" {%if not can_edit %} disabled {% endif %}>
+                        <!-- can be 0 or 1 or 2 or 3 -->
+                        {%if settings['message_level'] == 0 %}
+                            <option value="0" selected>0 - Default - In Discord Show clip message alongside username as webhook user </option>
+                            <option value="1">1 - will prevent the IMAGE of the clipper from being shown, Name is still shown within the message </option>
+                            <option value="2">2 - Will not show any image/name of the user anywhere in message</option>
+                            <option value="3">3 - Will use StreamSnip Branding</option>
+                        {% elif settings['message_level'] == 1 %}
+                            <option value="0">0 - Default - In Discord Show clip message alongside username as webhook user </option>
+                            <option value="1" selected>1 - will prevent the IMAGE of the clipper from being shown, Name is still shown within the message </option>
+                            <option value="2">2 - Will not show any image/name of the user anywhere in message</option>
+                            <option value="3">3 - Will use StreamSnip Branding</option>
+                        {% elif settings['message_level'] == 2 %}
+                            <option value="0">0 - Default - In Discord Show clip message alongside username as webhook user </option>
+                            <option value="1">1 - will prevent the IMAGE of the clipper from being shown, Name is still shown within the message </option>
+                            <option value="2" selected>2 - Will not show any image/name of the user anywhere in message</option>
+                            <option value="3">3 - Will use StreamSnip Branding</option>
+                        {% else %}
+                            <option value="0">0 - Default - In Discord Show clip message alongside username as webhook user </option>
+                            <option value="1">1 - will prevent the IMAGE of the clipper from being shown, Name is still shown within the message </option>
+                            <option value="2">2 - Will not show any image/name of the user anywhere in message</option>
+                            <option value="3" selected>3 - Will use StreamSnip Branding</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Take Delays
+                </td>
+                <td>
+                    <select id="take_delays" {%if not can_edit %} disabled {% endif %}>
+                        {% if settings['take_delays'] == 1 %}
+                            <option value="True" selected>Yes - will evaluate the first and last word of description to add/substract delay.</option>
+                            <option value="False">No</option>
+                        {% else %}
+                            <option value="True">Yes - will evaluate the first and last word of description to add/substract delay.</option>
+                            <option value="False" selected>No</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Comments | THIS IS STILL A BETA FEATURE. PLEASE TAKE THIS WITH A GRAIN OF SALT.
+                </td>
+                <td>
+                    <select id="comments" {%if not can_edit %} disabled {% endif %}>
+                        {% if settings['comments'] == 1 %}
+                            <option value="True" selected>Yes - Will post a comment after live stream ends contaning all the clips details.</option>
+                            <option value="False">No</option>
+                        {% else %}
+                            <option value="True">Yes - Will post a comment after live stream ends contaning all the clips details.</option>
+                            <option value="False" selected>No</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <button type="button" class="btn btn-success" type="submit" value="Submit" name="add" id="save-button" title="Save" onclick="save_settings()"><i class="fa-regular fa-floppy-disk"></i></button>
+                    <button type="button" class="btn btn-secondary" type="reset" value="reset" name="reset" id="reset-button" title="Reset To Default" onclick="reset_settings()"><i class="fa-solid fa-arrow-rotate-left"></i></button>
+                </td>
+            </tr>
+
+        </table>
+    </div>
+</center>
+
+</div>

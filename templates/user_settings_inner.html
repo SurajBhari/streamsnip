@@ -1,0 +1,39 @@
+<div class="container">   
+    <div class="row">
+        <h1>User Info</h1>
+        <div class="col-md-6">
+            <h2>Profile Information</h2>
+            <p><strong>Username:</strong> {{ user_data.name }}</p>
+            <p><strong>Email:</strong> {{ user_data.email }}</p>
+            <img src="{{ user_data.image }}" alt="Profile Picture" class="img-fluid">
+        </div>
+        {% if login_data%}
+        <h1>Login Sessions</h1>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>IP Address</th>
+                    <th>Browser</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for login in login_data %}
+                <tr>
+                    <td>{{ login.time }}</td>
+                    <td>{{ login.ip }}</td>
+                    <td>{{ login.user_agent }}</td>
+                    <td>
+                        <a href="/delete_login/{{ login.session_token }}" class="btn btn-danger">Delete</a>
+                        {% if login.session_token == session["session_token"] %}
+                        <a href="/logout" class="btn btn-warning">Logout</a>
+                        {% endif %}
+
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+</div>

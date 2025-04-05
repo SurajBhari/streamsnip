@@ -1,0 +1,18 @@
+<div class="text-center">
+    <img src="{{ current_user.image }}" class="rounded-circle" alt="{{ current_user.name }}" width="75px">
+    <h4>{{ current_user.username }}</h4>
+</div>
+<ul class="nav flex-column mt-4" id="settings-tabs">
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#membership-tab">💲 Membership Settings</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" data-bs-toggle="tab" href="#settings-tab">⚙️ Settings</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#webhook-tab">🔗 Webhook Settings</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#user-settings-tab">⚙️ User Settings</a>
+    </li>
+</ul>

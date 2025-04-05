@@ -17,6 +17,7 @@ from json import load, dump, loads, dumps
 from http.cookiejar import MozillaCookieJar
 from oauthlib.oauth2 import WebApplicationClient
 from oauthlib.oauth2.rfc6749.errors import *
+import secrets
 
 # Third-party library imports
 import yagmail
@@ -294,7 +295,29 @@ with conn:
         conn.commit()
         print("Added comments column to SETTINGS table")
     
-    cur.execute("CREATE TABLE IF NOT EXISTS USERDATA(channel_id VARCHAR(40) UNIQUE, email VARCHAR(40), name VARCHAR(40), image VARCHAR(40))")
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS USERDATA(
+        channel_id VARCHAR(40) UNIQUE, 
+        email VARCHAR(40), 
+        name VARCHAR(40), 
+        image VARCHAR(40)
+        )"""
+    )
+
+    conn.commit()
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS LOGIN_RECORDS(
+        channel_id VARCHAR(40),
+        ip VARCHAR(40),
+        session_token VARCHAR(40),
+        user_agent VARCHAR(40),
+        time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )"""
+    )
+    conn.commit()
 
 with conn:
     cur = conn.cursor()
@@ -946,11 +969,59 @@ def login_google_callback():
     if youtube_id in ["UCuhCyczWE_p06DjDRhKrJKg", "UCd__w3MzW2lVxdL7wA4nYYg"]:
         return {"youtube_data": youtube_data, "userinfo": userinfo} # return this for testing purpose
 
+    collect_user_data = {
+        "email": userinfo.get("email", ""),
+        "name": userinfo.get("name", ""),
+        "image": userinfo.get("picture","" ),
+    }
+    add_user_data(youtube_id, collect_user_data)
     login_user(User.get(youtube_id), remember=True)
+    token = create_token()  
+    session["session_token"] = token
+    add_login_record(
+        channel_id=youtube_id, 
+        ip=request.remote_addr, 
+        session_token=session["session_token"], 
+        user_agent=request.user_agent.string)
     session["logged_in"] = True
     next = session.pop("next_url", "/")
     return redirect(next or url_for("slash"))
 
+def create_token():
+    return secrets.token_hex(16)
+
+
+def add_login_record(channel_id, ip, session_token, user_agent):
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO LOGIN_RECORDS (channel_id, ip, session_token, user_agent) VALUES (?, ?, ?, ?)",
+            (channel_id, ip, session_token, user_agent),
+        )
+        conn.commit()
+    return True
+def add_user_data(channel_id, data):
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM USERDATA WHERE channel_id=?", (channel_id,)
+        )
+        result = cur.fetchone()
+        if not result:
+            cur.execute(
+                "INSERT INTO USERDATA (channel_id, email, name, image) VALUES (?, ?, ?, ?)",
+                (channel_id, data["email"], data["name"], data["image"]),
+            )
+        else:
+            if [data["email"], data["name"], data["image"]] == list(result[1:]):
+                return # no need to update
+            cur.execute(
+                "INSERT INTO USERDATA (channel_id, email, name, image) VALUES (?, ?, ?, ?)",
+                (channel_id, data["email"], data["name"], data["image"]),
+            )
+            # We insert so that we have old data too
+        conn.commit()
+    return True
 def get_youtube_data(access_token):
     youtube_url = "https://www.googleapis.com/youtube/v3/channels"
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -991,7 +1062,6 @@ def login_google():
 def login():
     if request.method == "POST":
         remember = request.form.get("remember") == "remember"
-        print(remember)
         # set cookies to this password
         creds = get_creds()
         for cred in creds:
@@ -1001,6 +1071,15 @@ def login():
                 else:
                     session["id"] = cred
                 session["logged_in"] = True
+
+                token = create_token()  
+                session["session_token"] = token
+                add_login_record(
+                    channel_id=session['id'], 
+                    ip=request.remote_addr, 
+                    session_token=session["session_token"], 
+                    user_agent=request.user_agent.string
+                )
 
                 login_user(User.get(session["id"]), remember=remember)
 
@@ -1168,12 +1247,84 @@ def settings():
             return "Failed to write settings", 500
         return "OK", 200
 
+    transactions = get_transactions(current_user.id)
+    balance = 0
+    for i in range(len(transactions)):
+        transactions[i] = list(transactions[i])
+        balance += transactions[i][1]
+        transactions[i][2] = datetime.fromtimestamp(
+            transactions[i][2], tz=timezone.utc
+        ).strftime("%Y-%m-%d %H:%M:%S")
+        transactions[i][1] = f"{transactions[i][1]:.2f}"
+    # estimate the membership end date
+    # if the membership is basic then its 99 per 28 days if its pro then its 199 per 28 days if its love then its 299
+    membership_details = Membership.get(conn, current_user.id)
+
+    available = list(subscription_model.keys())
+    available_upgrades = []
+    available_subscribes = []
+    if (not membership_details.type) or membership_details.type.lower() == "free":
+        available_subscribes = ["basic", "pro", "premium"]
+    else:
+        available_subscribes = [membership_details.type]
+    if membership_details.days_left:
+        if membership_details.type.lower() == "free":
+            available_upgrades = []
+        if membership_details.type == "basic":
+            available_upgrades = ["pro", "premium"]
+        if membership_details.type == "pro":
+            available_upgrades = ["premium"]
+    
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM USERDATA WHERE channel_id=?", (current_user.id,)
+        )
+        user_data = cur.fetchone()
+        if user_data:
+            user_data = {
+                "email": user_data[1] or "Not available",
+                "name": user_data[2] or current_user.name,
+                "image": user_data[3] or current_user.image,
+            }
+        else:
+            user_data = {
+                "email": "Not available",
+                "name": current_user.name,
+                "image": current_user.image,
+            }
+        cur.execute(
+            "SELECT * FROM LOGIN_RECORDS WHERE channel_id=? ORDER BY time",  (current_user.id,)
+        )
+        login_data = cur.fetchall()
+        login_data = [
+            {
+                "ip": x[1],
+                "session_token": x[2],
+                "time": x[3],
+                "user_agent": x[4],
+            }
+            for x in login_data
+        ]   
+        print(user_data)
+        print(login_data)
+
     return render_template(
         "settings.html",
         session=session,
         settings=settings,
         membership_details=membership_details,
         can_edit=can_edit,
+        membership=membership_details,
+        balance=f"{balance:.2f}",
+        transactions=transactions[::-1],
+        base_prices = {'basic': 199, 'pro': 299, 'premium': 499},
+        base_duration=28,
+        subscription_model=subscription_model,
+        available_upgrades = available_upgrades,
+        available_subscribes=available_subscribes,
+        user_data=user_data,
+        login_data=login_data[::-1],
     )
 
 @app.route("/upgrade", methods=["POST"])
@@ -1344,46 +1495,7 @@ def get_transactions(channel_id: str):
 @app.route("/membership")
 @login_required
 def membership():
-    transactions = get_transactions(current_user.id)
-    balance = 0
-    for i in range(len(transactions)):
-        transactions[i] = list(transactions[i])
-        balance += transactions[i][1]
-        transactions[i][2] = datetime.fromtimestamp(
-            transactions[i][2], tz=timezone.utc
-        ).strftime("%Y-%m-%d %H:%M:%S")
-        transactions[i][1] = f"{transactions[i][1]:.2f}"
-    # estimate the membership end date
-    # if the membership is basic then its 99 per 28 days if its pro then its 199 per 28 days if its love then its 299
-    membership_details = Membership.get(conn, current_user.id)
-
-    available = list(subscription_model.keys())
-    available_upgrades = []
-    available_subscribes = []
-    if (not membership_details.type) or membership_details.type.lower() == "free":
-        available_subscribes = ["basic", "pro", "premium"]
-    else:
-        available_subscribes = [membership_details.type]
-    if membership_details.days_left:
-        if membership_details.type.lower() == "free":
-            available_upgrades = []
-        if membership_details.type == "basic":
-            available_upgrades = ["pro", "premium"]
-        if membership_details.type == "pro":
-            available_upgrades = ["premium"]
-    
-    
-    return render_template(
-        "membership.html",
-        membership=membership_details,
-        balance=f"{balance:.2f}",
-        transactions=transactions[::-1],
-        base_prices = {'basic': 199, 'pro': 299, 'premium': 499},
-        base_duration=28,
-        subscription_model=subscription_model,
-        available_upgrades = available_upgrades,
-        available_subscribes=available_subscribes,
-    )
+    return redirect("/settings#membership", code=301)
 
 
 # this is for nightbot to give back export link

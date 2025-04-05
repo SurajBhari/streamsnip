@@ -1,0 +1,22 @@
+
+<h2>Webhook Settings</h2> 
+<form action="/webhook" method="post">
+    <div class="form-group">
+        <label for="webhook_url">Webhook URL:</label>
+        <div style="display: flex; align-items: center; width: 75%;">
+            <input 
+            type="password" 
+            class="form-control" 
+            id="webhook_url" 
+            name="webhook_url" 
+            size="128" 
+            value="{{ current_webhook_url }}" 
+            required 
+            style="flex: 1;">
+            <button type="button" id="toggle-visibility" class="btn btn-secondary" style="margin-left: 5px;"><i class="fa-solid fa-eye-slash"></i></button>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary" disabled id="submit-button"><i class="fa-regular fa-floppy-disk"></i></button>
+    <a href="/webhook/delete" onclick="if (confirm('Delete your current webhook?')){return true;}else{event.stopPropagation(); event.preventDefault();};" class="btn btn-danger"><i class="fa-solid fa-trash"></i></a>
+    <p>Remember: This webhook URL can also be used to log in to your account.</p>
+</form>
