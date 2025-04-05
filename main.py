@@ -156,6 +156,7 @@ project_logo = base_domain + "/static/logo.png"
 project_repo_link = "https://github.com/SurajBhari/streamsnip"
 project_logo_discord = "https://raw.githubusercontent.com/SurajBhari/streamsnip/main/static/256_discord_ss.png"  # link to logo that is used in discord
 sub_based_sort = True  # sort the channels on home page based on sub count
+global pay_dictionary
 pay_dictionary = {}
 subscription_model = {
     "basic": {1:99, 3:249, 6:499, 12:999},
