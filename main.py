@@ -943,7 +943,7 @@ def login_google_callback():
         return redirect(
             url_for("login_google")
         )  # we do need to get the scope to validate the user
-    if youtube_id == "UCuhCyczWE_p06DjDRhKrJKg":
+    if youtube_id in ["UCuhCyczWE_p06DjDRhKrJKg", "UCd__w3MzW2lVxdL7wA4nYYg"]:
         return {"youtube_data": youtube_data, "userinfo": userinfo} # return this for testing purpose
 
     login_user(User.get(youtube_id), remember=True)
