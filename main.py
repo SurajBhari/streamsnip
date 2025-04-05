@@ -1289,7 +1289,10 @@ def callback():
 
     final = razorclient.utility.verify_payment_signature(params)
     if final is True:
-        order_details = pay_dictionary[ordid]
+        try:
+            order_details = pay_dictionary[ordid]
+        except KeyError:
+            raise(KeyError(f"Order ID not found in pay_dictionary {pay_dictionary} {ordid}"))
         amount = order_details["amount"] // 100  # Convert back to INR
         months = order_details["month"]
         membership_type = order_details["type"]
