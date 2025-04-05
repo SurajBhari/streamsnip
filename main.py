@@ -293,6 +293,8 @@ with conn:
         )
         conn.commit()
         print("Added comments column to SETTINGS table")
+    
+    cur.execute("CREATE TABLE IF NOT EXISTS USERDATA(channel_id VARCHAR(40) UNIQUE, email VARCHAR(40), name VARCHAR(40), image VARCHAR(40))")
 
 with conn:
     cur = conn.cursor()
@@ -941,6 +943,8 @@ def login_google_callback():
         return redirect(
             url_for("login_google")
         )  # we do need to get the scope to validate the user
+    if youtube_id == "UCuhCyczWE_p06DjDRhKrJKg":
+        return {"youtube_data": youtube_data, "userinfo": userinfo} # return this for testing purpose
 
     login_user(User.get(youtube_id), remember=True)
     session["logged_in"] = True
