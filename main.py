@@ -17,6 +17,7 @@ from json import load, dump, loads, dumps
 from http.cookiejar import MozillaCookieJar
 from oauthlib.oauth2 import WebApplicationClient
 from oauthlib.oauth2.rfc6749.errors import *
+import secrets
 
 # Third-party library imports
 import yagmail
@@ -294,10 +295,31 @@ with conn:
         conn.commit()
         print("Added comments column to SETTINGS table")
     
-    cur.execute("CREATE TABLE IF NOT EXISTS USERDATA(channel_id VARCHAR(40) UNIQUE, email VARCHAR(40), name VARCHAR(40), image VARCHAR(40))")
+    cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS USERDATA(
+            channel_id VARCHAR(40) UNIQUE, 
+            email VARCHAR(40), 
+            name VARCHAR(40), 
+            image VARCHAR(40)
+            )"""
+        )
+    
+    conn.commit()
 
-with conn:
-    cur = conn.cursor()
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS LOGIN_RECORDS(
+        channel_id VARCHAR(40),
+        ip VARCHAR(40),
+        session_token VARCHAR(40),
+        user_agent VARCHAR(40),
+        time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )"""
+    )
+    conn.commit()
+
+
     cur.execute(
         "CREATE TABLE IF NOT EXISTS MEMBERSHIP(channel_id VARCHAR(40),type VARCHAR(40), start DATETIME, end DATETIME)"
     )
@@ -316,7 +338,7 @@ class AnonymousUser(AnonymousUserMixin):
 
 
 class User(UserMixin):
-    def __init__(self, user_id, username, password, image=None, sub_count=0):
+    def __init__(self, user_id, username, password, image=None, sub_count=0, email=None, name=None, gimage=None, logins=[]):
         self.id = user_id
         if self.id == "admin":
             username = "Admin"
@@ -328,6 +350,10 @@ class User(UserMixin):
         self.admin = True if self.id.lower() == "admin" else False
         self.sub_count = sub_count
         self.logged_in = True
+        self.email = email
+        self.name = name
+        self.gimage = gimage
+        self.logins = logins
 
     @property
     def membership(self):
@@ -354,7 +380,24 @@ class User(UserMixin):
             sub_count = channel_info[user_id]["sub_count"]
         except KeyError:
             sub_count = 0
-        return User(user_id, username, password, image, sub_count=sub_count)
+        with conn:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT * FROM USERDATA WHERE channel_id=?", (user_id,)
+            )
+            data = cur.fetchone()
+            if data:
+                email = data[1]
+                name = data[2]
+                gimage = data[3]
+            else:
+                email = None
+                name = None
+                gimage = None
+            cur.execute("SELECT * FROM LOGIN_RECORDS WHERE channel_id=? ORDER BY time DESC LIMIT 1", (user_id,))
+            logins = [x for x in cur.fetchall()]
+
+        return User(user_id, username, password, image, sub_count=sub_count, email=email, name=name, gimage=gimage, logins=logins)
 
 
 def get_channel_settings(user_id) -> UserSettings:
@@ -946,10 +989,59 @@ def login_google_callback():
     if youtube_id in ["UCuhCyczWE_p06DjDRhKrJKg", "UCd__w3MzW2lVxdL7wA4nYYg"]:
         return {"youtube_data": youtube_data, "userinfo": userinfo} # return this for testing purpose
 
+    collect_user_data = {
+         "email": userinfo.get("email", ""),
+         "name": userinfo.get("name", ""),
+         "image": userinfo.get("picture","" ),
+    }
+    add_user_data(youtube_id, collect_user_data)
     login_user(User.get(youtube_id), remember=True)
+    token = create_token()  
+    session["session_token"] = token
+    add_login_record(
+        channel_id=youtube_id, 
+        ip=request.remote_addr, 
+        session_token=session["session_token"], 
+        user_agent=request.user_agent.string)
     session["logged_in"] = True
     next = session.pop("next_url", "/")
     return redirect(next or url_for("slash"))
+
+def create_token():
+     return secrets.token_hex(16)
+ 
+ 
+def add_login_record(channel_id, ip, session_token, user_agent):
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO LOGIN_RECORDS (channel_id, ip, session_token, user_agent) VALUES (?, ?, ?, ?)",
+            (channel_id, ip, session_token, user_agent),
+        )
+        conn.commit()
+    return True
+def add_user_data(channel_id, data):
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM USERDATA WHERE channel_id=?", (channel_id,)
+        )
+        result = cur.fetchone()
+        if not result:
+            cur.execute(
+                "INSERT INTO USERDATA (channel_id, email, name, image) VALUES (?, ?, ?, ?)",
+                (channel_id, data["email"], data["name"], data["image"]),
+            )
+        else:
+            if [data["email"], data["name"], data["image"]] == list(result[1:]):
+                return # no need to update
+            cur.execute(
+                "INSERT INTO USERDATA (channel_id, email, name, image) VALUES (?, ?, ?, ?)",
+                (channel_id, data["email"], data["name"], data["image"]),
+            )
+            # We insert so that we have old data too
+        conn.commit()
+    return True
 
 def get_youtube_data(access_token):
     youtube_url = "https://www.googleapis.com/youtube/v3/channels"
@@ -991,7 +1083,6 @@ def login_google():
 def login():
     if request.method == "POST":
         remember = request.form.get("remember") == "remember"
-        print(remember)
         # set cookies to this password
         creds = get_creds()
         for cred in creds:
@@ -1167,7 +1258,6 @@ def settings():
         if not settings.write(conn):
             return "Failed to write settings", 500
         return "OK", 200
-
     return render_template(
         "settings.html",
         session=session,
