@@ -85,8 +85,10 @@ if not local:
 
 try:
     config = load(open("config.json", "r"))
+    admin_password = config["password"]
 except FileNotFoundError:
     print("Config file not found")
+    admin_password = secrets.token_urlsafe(16)
     exit(1)
 
 try:
@@ -191,31 +193,6 @@ def is_it_expired(
         return True
     return False
 
-
-def get_creds():
-    try:
-        with open("config.json", "r", encoding="utf-8") as f:
-            jcreds = load(f)
-            creds = jcreds["creds"]
-            creds["password"] = jcreds["password"]
-            creds["admin"] = jcreds[
-                "password"
-            ]  # for admin password relation. make it easy to work with
-    except (FileNotFoundError, KeyError):
-        creds = {}
-    return creds
-
-
-def write_creds(new_creds: dict):
-    if not new_creds:
-        return
-    # load the config as whole and then update the creds
-    with open("config.json", "r", encoding="utf-8") as f:
-        config = load(f)
-    config["creds"] = new_creds
-    with open("config.json", "w", encoding="utf-8") as f:
-        dump(config, f, indent=4)
-    return True
 
 
 if not project_logo_discord:
@@ -1078,21 +1055,40 @@ def login_google():
     )
     return redirect(request_uri)
 
-
 @app.route("/login", methods=["POST", "GET"])
 def login():
     if request.method == "POST":
         remember = request.form.get("remember") == "remember"
         # set cookies to this password
         creds = get_creds()
+        entered_password = request.form["password"]
+        session_token = create_token()
+        if entered_password == admin_password:
+            session["id"] = "admin"
+            session["logged_in"] = True
+            session["session_token"] = session_token
+            add_login_record(
+                channel_id="admin", 
+                ip=request.remote_addr, 
+                session_token=session["session_token"], 
+                user_agent=request.user_agent.string
+            )
+            login_user(User.get(session["id"]), remember=remember)
+            next = request.args.get("next")
+            return redirect(next or url_for("slash"))
+        
         for cred in creds:
             if creds[cred][-88:] == request.form["password"][-88:]:
-                if cred == "password":
-                    session["id"] = "admin"
-                else:
-                    session["id"] = cred
+                session["id"] = cred
                 session["logged_in"] = True
-
+                session["session_token"] = session_token
+                add_login_record(
+                    channel_id=cred, 
+                    ip=request.remote_addr, 
+                    session_token=session["session_token"], 
+                    user_agent=request.user_agent.string
+                )
+                
                 login_user(User.get(session["id"]), remember=remember)
 
                 next = request.args.get("next")
@@ -1136,7 +1132,8 @@ def webedit():
     if not current_user.admin:
         if clip.channel != current_user.id:
             return "You can't do this. You are not the owner of this channel"
-    clip.edit(new_message, conn)
+    webhook_url = get_channel_settings(current_user.id).webhook
+    clip.edit(new_message, conn, webhook_url=webhook_url)
 
     return clip.desc, 200
 
@@ -1158,7 +1155,8 @@ def webdelete():
     if not current_user.admin:
         if clip.channel != current_user.id:
             return "You can't do this. You are not the owner of this channel"
-    clip.delete(conn)
+    webhook_url = get_channel_settings(current_user.id).webhook
+    clip.delete(conn, webhook_url=webhook_url)
     return "Deleted", 200
 
 
@@ -1178,40 +1176,6 @@ def get_video_id(video_link):
 def get_ip():
     return request.remote_addr
 
-@app.route("/webhook/delete", methods=["GET"])
-@login_required
-def delete_webhook():
-    channel_id = current_user.id
-    if not channel_id:
-        return "Invalid request", 400
-    creds = get_creds()
-    del creds[channel_id]
-    # write creds to creds.json
-    write_creds(creds)
-    return redirect(url_for("webhook"))
-
-@app.route("/webhook", methods=["POST", "GET"])
-@login_required
-def webhook():
-    if request.method == "POST":
-        data = request.form
-        print(data)
-        if not data:
-            return "Invalid request", 400
-        channel_id = current_user.id
-        if not channel_id:
-            return "Invalid request", 400
-        if not data.get("webhook_url"):
-            return "Invalid request", 400
-        if data.get("webhook_url"):
-            creds = get_creds()
-            creds[channel_id] = data["webhook_url"]
-            # write creds to creds.json
-            write_creds(creds)
-            current_webhook_url = data["webhook_url"]
-    else:
-        current_webhook_url = get_creds().get(current_user.id, "")
-    return render_template("webhook.html", message="Set your webhook URL here", current_webhook_url=current_webhook_url)
 
 @app.route("/settings/default", methods=["POST"])
 @login_required
@@ -2568,6 +2532,19 @@ def get_members(tier:str=None):
         members.append(m)
     return members        
 
+def get_creds():
+    with conn:
+        cur = conn.cursor()
+        cur.execute("SELECT channel_id, webhook FROM SETTINGS")
+        data = cur.fetchall()
+    creds = {}
+    for x in data:
+        if not x[1]:
+            continue # skip if no webhook
+        creds[x[0]] = x[1]
+    return creds
+
+
 @app.route("/admin")
 @login_required
 def admin():
@@ -2645,6 +2622,7 @@ def get_channel_id(path):
 @app.route("/autoapprove")
 def autoapprove():
     # verify if the entry is eligible to be autoapproved i.e there have been no previous creds.
+    return "Disabled. "  # this is in format of https://streamsnip.com/autoapprove?key=https://www.youtube.com/channel/UC5IRLz3Q-SADL71-sW-Z16Q&value=https://discord.com/api/webhooks/51313123122515125/sadfasdasd12rasfafase-VOkUSVo4clrbXSh6Mpa
     key = request.args.get("key")
     value = request.args.get("value")
     if not any([key, value]):
@@ -2696,6 +2674,7 @@ def autoapprove():
 
 @app.route("/approve")
 def approve():
+    return "Disabled. "
     # this is in format of https://streamsnip.com/approve?pass=somepassword&key=https://www.youtube.com/channel/UC5IRLz3Q-SADL71-sW-Z16Q&value=https://discord.com/api/webhooks/51313123122515125/sadfasdasd12rasfafase-VOkUSVo4clrbXSh6Mpa
     password = request.args.get("pass")
     key = request.args.get("key")
@@ -2797,7 +2776,8 @@ def edit_delete():
             return "No new name provided"
         new_name = request.form.get("new_name").strip()
         clip = get_clip(clip_id)
-        clip.edit(new_name, conn)
+        webhook_url = get_channel_settings(clip.channel_id).webhook
+        clip.edit(new_name, conn, webhook_url=webhook_url)
         return "Edited"
 
     elif request.form.get("delete") == "Delete":
@@ -2807,7 +2787,8 @@ def edit_delete():
         clip = get_clip(clip_id)
         if not clip:
             return "Clip not found"
-        clip.delete(conn)
+        webhook_url = get_channel_settings(clip.channel_id).webhook
+        clip.delete(conn, webhook_url=webhook_url)
         return "Deleted"
 
     elif request.form.get("new") == "Submit":
@@ -2820,8 +2801,6 @@ def edit_delete():
 
         creds = get_creds()
         creds[key] = value
-        write_creds(creds)
-
         channel_name, channel_image = get_channel_name_image(key)
         if value.startswith("https://discord"):
             webhook = DiscordWebhook(
@@ -2892,6 +2871,7 @@ def get_latest_live(channel_id):
 @app.route("/add", methods=["POST", "GET"])
 @login_required
 def add():
+    return "disabled for now"
     if request.method == "GET":
         return render_template(
             "add.html", link="enter stream link", desc="!clip", first_render=True
@@ -3220,7 +3200,7 @@ def clip(message_id, clip_desc=None):
         webhook = arguments.get("webhook", channel_settings.webhook)
         if webhook and not webhook.startswith("https://discord.com/api/webhooks/"):
             webhook = f"https://discord.com/api/webhooks/{webhook}"
-        webhook_url = get_webhook_url(channel_id) if not webhook else webhook
+        webhook_url = webhook
 
         take_delays = arguments.get("take_delays", channel_settings.take_delays)
         force_desc = arguments.get("force_desc", channel_settings.force_desc)
@@ -3334,7 +3314,7 @@ def clip(message_id, clip_desc=None):
     if not local:
         monitor.ping(state="run")
     if not message_id:
-        return f"No message id provided, You have configured it wrong. please contact AG at {discord_invite}"
+        return f"No message id provided, You have configured it wrong. Please check your webhook at {base_domain}/settings"
 
     if message_id in chat_id_video:
         vid = chat_id_video[message_id]
@@ -3530,7 +3510,8 @@ def delete(clip_id=None):
         if not clip:
             errored_str += f" {c}"
             continue
-        if clip.delete(conn):
+        webhook_url = get_channel_settings(clip.channel_id).webhook 
+        if clip.delete(conn, webhook_url=webhook_url):
             returning_str += f" {c}"
         else:
             errored_str += f" {c}"
@@ -3579,7 +3560,8 @@ def edit(clip_id=None):
         new_desc = clip_id
         clip_id = clip.id
     old_desc = clip.desc
-    edited = clip.edit(new_desc, conn)
+    webhook_url = get_channel_settings(clip.channel_id).webhook
+    edited = clip.edit(new_desc, conn, webhook_url=webhook_url)
     if not edited:
         return "Couldn't edit the clip"
     if silent == 0:
