@@ -123,7 +123,7 @@ class Clip:
         x["channel"] = self.channel
         return x
 
-    def edit(self, new_desc: str, conn: sqlite3.Connection):
+    def edit(self, new_desc: str, conn: sqlite3.Connection, webhook_url: str = None):
         with conn:
             cur = conn.cursor()
             cur.execute(
@@ -137,7 +137,6 @@ class Clip:
                 ),
             )
         conn.commit()
-        webhook_url = get_webhook_url(self.channel)
         if webhook_url and self.webhook:
             hms = self.hms
             is_privated_str = "(P) " if self.private else ""
@@ -160,7 +159,7 @@ class Clip:
         self.desc = new_desc
         return True
 
-    def delete(self, conn: sqlite3.Connection):
+    def delete(self, conn: sqlite3.Connection, webhook_url: str = None):
         with conn:
             cur = conn.cursor()
             cur.execute(
@@ -173,7 +172,6 @@ class Clip:
                 ),
             )
             conn.commit()
-        webhook_url = get_webhook_url(self.channel)
         if webhook_url and self.webhook:
             webhook = DiscordWebhook(
                 url=webhook_url,
