@@ -3576,7 +3576,7 @@ def edit(clip_id=None):
         return clip_id.split(" ")[0]
     else:
         return (
-            f"Edited clip {clip_id.split(" ")[0]} from title '{old_desc}' to '{new_desc}'"
+            f"Edited clip {clip_id.split(' ')[0]} from title '{old_desc}' to '{new_desc}'"
         )
 
 
