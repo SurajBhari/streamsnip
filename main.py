@@ -1088,7 +1088,7 @@ def login():
                     session_token=session["session_token"], 
                     user_agent=request.user_agent.string
                 )
-                
+
                 login_user(User.get(session["id"]), remember=remember)
 
                 next = request.args.get("next")
@@ -1563,9 +1563,7 @@ def exports(channel_id=None):
     data = get_channel_clips(channel_id)
     sub_detail = is_subscribed(channel_id, free_trial=False)
     can_edit = current_user.id == channel_id or current_user.admin
-    if sub_detail != "pro":
-        can_edit = False
-    if not sub_detail:
+    if sub_detail not in ["pro", "premium", "FREE"]:
         can_edit = False
     if current_user.admin:  # no data should be hidden from admin
         data = [x.json() for x in data]
