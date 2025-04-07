@@ -1120,7 +1120,10 @@ def webedit():
         clip_id = request.json["clip_id"]
     except KeyError:
         return "Invalid request", 400
-    clip = get_clip(clip_id=clip_id)
+    if not current_user.admin:
+        clip = get_clip(clip_id=clip_id, channel=current_user.id)
+    else:
+        clip = get_clip(clip_id=clip_id)
 
     if not clip:
         return "Clip not found", 404
@@ -1131,6 +1134,7 @@ def webedit():
 
     if not current_user.admin:
         if clip.channel != current_user.id:
+            print(clip.channel, current_user.id)
             return "You can't do this. You are not the owner of this channel"
     webhook_url = get_channel_settings(current_user.id).webhook
     clip.edit(new_message, conn, webhook_url=webhook_url)
@@ -1145,7 +1149,11 @@ def webdelete():
         clip_id = request.json["clip_id"]
     except KeyError:
         return "Invalid request", 400
-    clip = get_clip(clip_id=clip_id)
+    if not current_user.admin:
+        clip = get_clip(clip_id=clip_id, channel=current_user.id)
+    else:
+        clip = get_clip(clip_id=clip_id)
+
     if not clip:
         return "Clip not found", 404
     channel_id = clip.channel
@@ -2774,7 +2782,7 @@ def edit_delete():
             return "No new name provided"
         new_name = request.form.get("new_name").strip()
         clip = get_clip(clip_id)
-        webhook_url = get_channel_settings(clip.channel_id).webhook
+        webhook_url = get_channel_settings(clip.channel).webhook
         clip.edit(new_name, conn, webhook_url=webhook_url)
         return "Edited"
 
@@ -2785,7 +2793,7 @@ def edit_delete():
         clip = get_clip(clip_id)
         if not clip:
             return "Clip not found"
-        webhook_url = get_channel_settings(clip.channel_id).webhook
+        webhook_url = get_channel_settings(clip.channel).webhook
         clip.delete(conn, webhook_url=webhook_url)
         return "Deleted"
 
@@ -3508,7 +3516,7 @@ def delete(clip_id=None):
         if not clip:
             errored_str += f" {c}"
             continue
-        webhook_url = get_channel_settings(clip.channel_id).webhook 
+        webhook_url = get_channel_settings(clip.channel).webhook 
         if clip.delete(conn, webhook_url=webhook_url):
             returning_str += f" {c}"
         else:
@@ -3558,7 +3566,7 @@ def edit(clip_id=None):
         new_desc = clip_id
         clip_id = clip.id
     old_desc = clip.desc
-    webhook_url = get_channel_settings(clip.channel_id).webhook
+    webhook_url = get_channel_settings(clip.channel).webhook
     edited = clip.edit(new_desc, conn, webhook_url=webhook_url)
     if not edited:
         return "Couldn't edit the clip"
