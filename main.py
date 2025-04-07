@@ -3573,14 +3573,10 @@ def edit(clip_id=None):
     if silent == 0:
         return " "
     elif silent == 1:
-        return clip_id
+        return clip_id.split(" ")[0]
     else:
         return (
-            f"Edited clip {clip_id} from title '"
-            + old_desc
-            + "' to '"
-            + new_desc
-            + "'."
+            f"Edited clip {clip_id.split(" ")[0]} from title '{old_desc}' to '{new_desc}'"
         )
 
 
