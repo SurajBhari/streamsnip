@@ -214,10 +214,63 @@
 
         </table>
     </div>
+    <!-- a horizontal line -->
+    <hr>
+    {% if current_user.logins|length > 0 %}
+    <div class="row">
+        <h2>Previous Logins</h2>
+        <h3>Current Session token: {{session["session_token"]}}</h3>
+        <table>
+            <tr>
+                <th>Login Time</th>
+                <th>Login ID</th>
+                <th>IP Address</th>
+                <th>User Agent</th>
+                <th>Actions</th>
+            </tr>
+            {% for login in current_user.logins %}
+            <tr>
+                <td>{{ login[4] }}</td>
+                <td>{{ login[2] }}</td>
+                <td>{{ login[1] }}</td>
+                <td>{{ login[3] }}</td>
+                <td><button class="btn btn-danger" type="button" id="delete-{{login[2]}}" onclick="delete_login('{{ login[2] }}')">Delete</button></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% else %}
+    <div class="row">
+        <h2>No Previous Logins</h2>
+        <p>You have not logged in from any other device.</p>
+    </div>
+    {% endif %}
+        
 </center>
 
 </div>
 <script>
+    function delete_login(session_token){
+        console.log("Deleting login: " + session_token);
+        response = fetch("/settings/delete_login", {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                session_token: session_token
+            })
+        });
+        // replace the delete button with a loading gif 
+        var delete_button = document.getElementById("delete-" + session_token)
+        delete_button.innerHTML = "<img src='https://media.tenor.com/wpSo-8CrXqUAAAAi/loading-loading-forever.gif' alt='loader' style='width: 20px; height: 20px;'>";
+
+        // wait for 1 second
+        setTimeout(function(){
+            delete_button.innerHTML = "<i class='fa-solid fa-check'></i>";
+            window.location.reload();
+        }, 1000);
+    }
     function reset_settings(){
         response = fetch("/settings/default", {
             method: "POST",

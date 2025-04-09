@@ -128,12 +128,20 @@ ext = Sitemap(app=app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
-
 global download_lock
 download_lock = True
 global DEFAULT_SETTINGS
 DEFAULT_SETTINGS = UserSettings()
+
+global known_session_tokens
+known_session_tokens = set()
 conn = sqlite3.connect("queries.db", check_same_thread=False)
+with conn:
+    cur = conn.cursor()
+    cur.execute("SELECT session_token FROM LOGIN_RECORDS")
+    data = cur.fetchall()
+    known_session_tokens = {x[0] for x in data}
+    # this is a set of all the session tokens that are already in the database. we will use this to check if the session token is already used or not
 # cur = db.cursor() # this is not thread safe. we will create a new cursor for each thread
 owner_icon = "👑"
 mod_icon = "🔧"
@@ -371,7 +379,7 @@ class User(UserMixin):
                 email = None
                 name = None
                 gimage = None
-            cur.execute("SELECT * FROM LOGIN_RECORDS WHERE channel_id=? ORDER BY time DESC LIMIT 1", (user_id,))
+            cur.execute("SELECT * FROM LOGIN_RECORDS WHERE channel_id=? ORDER BY time DESC", (user_id,))
             logins = [x for x in cur.fetchall()]
 
         return User(user_id, username, password, image, sub_count=sub_count, email=email, name=name, gimage=gimage, logins=logins)
@@ -770,7 +778,15 @@ def before_request():
             # print(f"Request from {ip} is allowed")
             allowed_ip.append(ip)
     else:
-        pass
+        if current_user.logged_in:
+            # check if the session token is already used or not
+            if session["session_token"] in known_session_tokens:
+                # this is a valid session token. we can continue
+                pass
+            else:
+                # this is not a valid session token. we need to log out the user
+                logout_user()
+                return redirect(url_for("login"))
 
 
 @login_manager.user_loader
@@ -996,6 +1012,7 @@ def add_login_record(channel_id, ip, session_token, user_agent):
             (channel_id, ip, session_token, user_agent),
         )
         conn.commit()
+    known_session_tokens.add(session_token) # add to the set of known session tokens
     return True
 def add_user_data(channel_id, data):
     with conn:
@@ -1109,6 +1126,16 @@ def login():
 def logout():
     session.clear()
     logout_user()
+    # remove the token from database and also from known tokens
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM LOGIN_RECORDS WHERE session_token=?", (session["session_token"],)
+        )
+        conn.commit()
+    # remove the token from known session tokens
+    if session["session_token"] in known_session_tokens:
+        known_session_tokens.remove(session["session_token"])
     return redirect(url_for("slash"))
 
 
@@ -1184,6 +1211,28 @@ def get_video_id(video_link):
 def get_ip():
     return request.remote_addr
 
+@app.route("/settings/delete_login", methods=["POST"])
+def delete_login():
+    session_token = request.json.get("session_token")
+    print(session_token)
+    if session_token not in known_session_tokens:
+        return "Invalid session token", 400
+    with conn:
+        # confirm that this channel_id is the same channel_id the session token is associated with it 
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM LOGIN_RECORDS WHERE session_token=? AND channel_id=?", (session_token,current_user.id,)
+        )
+        data = cur.fetchone()
+        if not current_user.admin:
+            if data[0] != current_user.id:
+                return "You can't do this. You are not the owner of this channel"
+        cur.execute(
+            "DELETE FROM LOGIN_RECORDS WHERE session_token=?", (session_token,)
+        )
+        conn.commit()
+
+    known_session_tokens.remove(session_token)
 
 @app.route("/settings/default", methods=["POST"])
 @login_required

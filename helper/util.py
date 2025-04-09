@@ -30,15 +30,6 @@ def time_to_hms(seconds: int):
     return hour_minute_second
 
 
-def get_webhook_url(channel_id) -> Optional[str]:
-    with open("config.json", "r") as f:
-        creds = load(f)["creds"]
-
-    try:
-        webhook_url = creds[channel_id]
-    except KeyError:
-        return None
-    return webhook_url
 
 
 def get_json_from_html(html: str, key: str, num_chars: int = 2, stop: str = '"') -> str:
