@@ -170,9 +170,9 @@ sub_based_sort = True  # sort the channels on home page based on sub count
 global pay_dictionary
 pay_dictionary = {}
 subscription_model = {
-    "basic": {1:99, 3:249, 6:499, 12:999},
-    "pro": {1:199, 3:499, 6:999, 12:1999},
-    "premium": {1:399, 3:999, 6:1999, 12:3999},
+    "basic": {1: 99, 3: 249, 6: 499, 12: 999},
+    "pro": {1: 199, 3: 499, 6: 999, 12: 1999},
+    "premium": {1: 399, 3: 999, 6: 1999, 12: 3999},
 }
 discord_invite = "https://discord.gg/2XVBWK99Vy"
 
@@ -200,7 +200,6 @@ def is_it_expired(
     if t < last_time:
         return True
     return False
-
 
 
 if not project_logo_discord:
@@ -279,17 +278,17 @@ with conn:
         )
         conn.commit()
         print("Added comments column to SETTINGS table")
-    
+
     cur.execute(
-            """
+        """
             CREATE TABLE IF NOT EXISTS USERDATA(
             channel_id VARCHAR(40) UNIQUE, 
             email VARCHAR(40), 
             name VARCHAR(40), 
             image VARCHAR(40)
             )"""
-        )
-    
+    )
+
     conn.commit()
 
     cur.execute(
@@ -304,7 +303,6 @@ with conn:
     )
     conn.commit()
 
-
     cur.execute(
         "CREATE TABLE IF NOT EXISTS MEMBERSHIP(channel_id VARCHAR(40),type VARCHAR(40), start DATETIME, end DATETIME)"
     )
@@ -313,6 +311,7 @@ with conn:
         "CREATE TABLE IF NOT EXISTS TRANSACTIONS(channel_id VARCHAR(40), amount INT, time INT, transaction_id VARCHAR(40), membership_type VARCHAR(40), description VARCHAR(40))"
     )
     conn.commit()
+
 
 class AnonymousUser(AnonymousUserMixin):
     def __init__(self):
@@ -323,7 +322,18 @@ class AnonymousUser(AnonymousUserMixin):
 
 
 class User(UserMixin):
-    def __init__(self, user_id, username, password, image=None, sub_count=0, email=None, name=None, gimage=None, logins=[]):
+    def __init__(
+        self,
+        user_id,
+        username,
+        password,
+        image=None,
+        sub_count=0,
+        email=None,
+        name=None,
+        gimage=None,
+        logins=[],
+    ):
         self.id = user_id
         if self.id == "admin":
             username = "Admin"
@@ -367,9 +377,7 @@ class User(UserMixin):
             sub_count = 0
         with conn:
             cur = conn.cursor()
-            cur.execute(
-                "SELECT * FROM USERDATA WHERE channel_id=?", (user_id,)
-            )
+            cur.execute("SELECT * FROM USERDATA WHERE channel_id=?", (user_id,))
             data = cur.fetchone()
             if data:
                 email = data[1]
@@ -379,10 +387,23 @@ class User(UserMixin):
                 email = None
                 name = None
                 gimage = None
-            cur.execute("SELECT * FROM LOGIN_RECORDS WHERE channel_id=? ORDER BY time DESC", (user_id,))
+            cur.execute(
+                "SELECT * FROM LOGIN_RECORDS WHERE channel_id=? ORDER BY time DESC",
+                (user_id,),
+            )
             logins = [x for x in cur.fetchall()]
 
-        return User(user_id, username, password, image, sub_count=sub_count, email=email, name=name, gimage=gimage, logins=logins)
+        return User(
+            user_id,
+            username,
+            password,
+            image,
+            sub_count=sub_count,
+            email=email,
+            name=name,
+            gimage=gimage,
+            logins=logins,
+        )
 
 
 def get_channel_settings(user_id) -> UserSettings:
@@ -796,14 +817,16 @@ def load_user(user_id):
 
 login_manager.anonymous_user = AnonymousUser
 
+
 @app.route("/start_free_trial")
 def _start_free_trial():
     if not current_user.is_authenticated:
         return redirect(url_for("login"))
     if not current_user.can_avail_trial:
         return "You have already availed the free trial"
-    start_free_trial(current_user.id) # automatically starts the trial
+    start_free_trial(current_user.id)  # automatically starts the trial
     return redirect(url_for("slash"))
+
 
 @app.route("/cache")
 def cache():
@@ -887,7 +910,10 @@ def slash():
     pinned = config.get("pinned_channels", [])
     with conn:
         cur = conn.cursor()
-        cur.execute("SELECT channel_id FROM MEMBERSHIP WHERE type='premium' AND end > ?", (int(time.time()),))
+        cur.execute(
+            "SELECT channel_id FROM MEMBERSHIP WHERE type='premium' AND end > ?",
+            (int(time.time()),),
+        )
         data = cur.fetchall()
     premium_members = [x[0] for x in data]
     return render_template(
@@ -980,30 +1006,35 @@ def login_google_callback():
             url_for("login_google")
         )  # we do need to get the scope to validate the user
     if youtube_id in ["UCuhCyczWE_p06DjDRhKrJKg", "UCd__w3MzW2lVxdL7wA4nYYg"]:
-        return {"youtube_data": youtube_data, "userinfo": userinfo} # return this for testing purpose
+        return {
+            "youtube_data": youtube_data,
+            "userinfo": userinfo,
+        }  # return this for testing purpose
 
     collect_user_data = {
-         "email": userinfo.get("email", ""),
-         "name": userinfo.get("name", ""),
-         "image": userinfo.get("picture","" ),
+        "email": userinfo.get("email", ""),
+        "name": userinfo.get("name", ""),
+        "image": userinfo.get("picture", ""),
     }
     add_user_data(youtube_id, collect_user_data)
     login_user(User.get(youtube_id), remember=True)
-    token = create_token()  
+    token = create_token()
     session["session_token"] = token
     add_login_record(
-        channel_id=youtube_id, 
-        ip=request.remote_addr, 
-        session_token=session["session_token"], 
-        user_agent=request.user_agent.string)
+        channel_id=youtube_id,
+        ip=request.remote_addr,
+        session_token=session["session_token"],
+        user_agent=request.user_agent.string,
+    )
     session["logged_in"] = True
     next = session.pop("next_url", "/")
     return redirect(next or url_for("slash"))
 
+
 def create_token():
-     return secrets.token_hex(16)
- 
- 
+    return secrets.token_hex(16)
+
+
 def add_login_record(channel_id, ip, session_token, user_agent):
     with conn:
         cur = conn.cursor()
@@ -1012,14 +1043,14 @@ def add_login_record(channel_id, ip, session_token, user_agent):
             (channel_id, ip, session_token, user_agent),
         )
         conn.commit()
-    known_session_tokens.add(session_token) # add to the set of known session tokens
+    known_session_tokens.add(session_token)  # add to the set of known session tokens
     return True
+
+
 def add_user_data(channel_id, data):
     with conn:
         cur = conn.cursor()
-        cur.execute(
-            "SELECT * FROM USERDATA WHERE channel_id=?", (channel_id,)
-        )
+        cur.execute("SELECT * FROM USERDATA WHERE channel_id=?", (channel_id,))
         result = cur.fetchone()
         if not result:
             cur.execute(
@@ -1028,7 +1059,7 @@ def add_user_data(channel_id, data):
             )
         else:
             if [data["email"], data["name"], data["image"]] == list(result[1:]):
-                return # no need to update
+                return  # no need to update
             cur.execute(
                 "INSERT INTO USERDATA (channel_id, email, name, image) VALUES (?, ?, ?, ?)",
                 (channel_id, data["email"], data["name"], data["image"]),
@@ -1036,6 +1067,7 @@ def add_user_data(channel_id, data):
             # We insert so that we have old data too
         conn.commit()
     return True
+
 
 def get_youtube_data(access_token):
     youtube_url = "https://www.googleapis.com/youtube/v3/channels"
@@ -1054,9 +1086,9 @@ def get_youtube_data(access_token):
 @app.route("/login/google")
 def login_google():
     next = request.args.get("next")
-    redirect_uri=request.base_url + "/callback"
+    redirect_uri = request.base_url + "/callback"
     if next:
-        session["next_url"] = next # google doesn't allow query params in redirect_uri
+        session["next_url"] = next  # google doesn't allow query params in redirect_uri
     print(redirect_uri)
     google_provider_cfg = get_google_provider_cfg()
     authorization_endpoint = google_provider_cfg["authorization_endpoint"]
@@ -1072,6 +1104,7 @@ def login_google():
     )
     return redirect(request_uri)
 
+
 @app.route("/login", methods=["POST", "GET"])
 def login():
     if request.method == "POST":
@@ -1085,25 +1118,25 @@ def login():
             session["logged_in"] = True
             session["session_token"] = session_token
             add_login_record(
-                channel_id="admin", 
-                ip=request.remote_addr, 
-                session_token=session["session_token"], 
-                user_agent=request.user_agent.string
+                channel_id="admin",
+                ip=request.remote_addr,
+                session_token=session["session_token"],
+                user_agent=request.user_agent.string,
             )
             login_user(User.get(session["id"]), remember=remember)
             next = request.args.get("next")
             return redirect(next or url_for("slash"))
-        
+
         for cred in creds:
             if creds[cred][-88:] == request.form["password"][-88:]:
                 session["id"] = cred
                 session["logged_in"] = True
                 session["session_token"] = session_token
                 add_login_record(
-                    channel_id=cred, 
-                    ip=request.remote_addr, 
-                    session_token=session["session_token"], 
-                    user_agent=request.user_agent.string
+                    channel_id=cred,
+                    ip=request.remote_addr,
+                    session_token=session["session_token"],
+                    user_agent=request.user_agent.string,
                 )
 
                 login_user(User.get(session["id"]), remember=remember)
@@ -1130,7 +1163,8 @@ def logout():
     with conn:
         cur = conn.cursor()
         cur.execute(
-            "DELETE FROM LOGIN_RECORDS WHERE session_token=?", (session["session_token"],)
+            "DELETE FROM LOGIN_RECORDS WHERE session_token=?",
+            (session["session_token"],),
         )
         conn.commit()
     # remove the token from known session tokens
@@ -1211,6 +1245,7 @@ def get_video_id(video_link):
 def get_ip():
     return request.remote_addr
 
+
 @app.route("/settings/delete_login", methods=["POST"])
 def delete_login():
     session_token = request.json.get("session_token")
@@ -1218,21 +1253,24 @@ def delete_login():
     if session_token not in known_session_tokens:
         return "Invalid session token", 400
     with conn:
-        # confirm that this channel_id is the same channel_id the session token is associated with it 
+        # confirm that this channel_id is the same channel_id the session token is associated with it
         cur = conn.cursor()
         cur.execute(
-            "SELECT * FROM LOGIN_RECORDS WHERE session_token=? AND channel_id=?", (session_token,current_user.id,)
+            "SELECT * FROM LOGIN_RECORDS WHERE session_token=? AND channel_id=?",
+            (
+                session_token,
+                current_user.id,
+            ),
         )
         data = cur.fetchone()
         if not current_user.admin:
             if data[0] != current_user.id:
                 return "You can't do this. You are not the owner of this channel"
-        cur.execute(
-            "DELETE FROM LOGIN_RECORDS WHERE session_token=?", (session_token,)
-        )
+        cur.execute("DELETE FROM LOGIN_RECORDS WHERE session_token=?", (session_token,))
         conn.commit()
 
     known_session_tokens.remove(session_token)
+
 
 @app.route("/settings/default", methods=["POST"])
 @login_required
@@ -1287,6 +1325,7 @@ def settings():
         can_edit=can_edit,
     )
 
+
 @app.route("/upgrade", methods=["POST"])
 @login_required
 def upgrade():
@@ -1295,21 +1334,20 @@ def upgrade():
         return "Invalid request", 400
 
     membership_details = Membership.get(conn, current_user.id)
-    
+
     if membership_details.type.lower() == "free":
-        return "You are on free trial. No upgrade available. Only Subscribe is avaialable.", 400
-    
+        return (
+            "You are on free trial. No upgrade available. Only Subscribe is avaialable.",
+            400,
+        )
+
     if membership_details.type == switch_to:
         return "You are already on this membership.", 400
 
     if not membership_details.days_left:
         return "You can't upgrade from expired membership.", 400
 
-    allowed_upgrades = {
-        "basic": ["pro", "premium"],
-        "pro": ["premium"],
-        "premium": []
-    }
+    allowed_upgrades = {"basic": ["pro", "premium"], "pro": ["premium"], "premium": []}
 
     current_type = membership_details.type
     if switch_to not in allowed_upgrades.get(current_type, []):
@@ -1328,7 +1366,7 @@ def upgrade():
     amount = int(round(amount)) * 100  # Convert to paise
 
     recepipt = f"{current_user.id}_{int(time.time())}"
-    data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers":[]}
+    data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers": []}
     payment = razorclient.order.create(data=data)
 
     callback = "/pay/callback"
@@ -1343,6 +1381,7 @@ def upgrade():
         amount=amount,
         name=name,
     )
+
 
 @app.route("/pay", methods=["GET", "POST"])
 @login_required
@@ -1363,7 +1402,7 @@ def pay():
     if not amount:
         return "Invalid request: Amount missing.", 400
     amount = int(amount)
-    if amount not in list(subscription_model[membership_type].values()):    
+    if amount not in list(subscription_model[membership_type].values()):
         return "Invalid request: Invalid amount.", 400
 
     # Find months
@@ -1378,7 +1417,11 @@ def pay():
     payment = razorclient.order.create(data=data)
     callback = "/pay/callback"
     name = channel_info[current_user.id]["name"]
-    pay_dictionary[payment["id"]] = {"amount": amount, "type": membership_type, "month": months}
+    pay_dictionary[payment["id"]] = {
+        "amount": amount,
+        "type": membership_type,
+        "month": months,
+    }
 
     return render_template(
         "pay.html",
@@ -1408,7 +1451,11 @@ def callback():
         try:
             order_details = pay_dictionary[ordid]
         except KeyError:
-            raise(KeyError(f"Order ID not found in pay_dictionary {pay_dictionary} {ordid}"))
+            raise (
+                KeyError(
+                    f"Order ID not found in pay_dictionary {pay_dictionary} {ordid}"
+                )
+            )
         amount = order_details["amount"] // 100  # Convert back to INR
         months = order_details["month"]
         membership_type = order_details["type"]
@@ -1429,19 +1476,30 @@ def callback():
         cur.execute("DELETE FROM MEMBERSHIP WHERE channel_id=?", (current_user.id,))
         cur.execute(
             "INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)",
-            (current_user.id, membership_type, int(start_time.timestamp()), int(end_time.timestamp()))
+            (
+                current_user.id,
+                membership_type,
+                int(start_time.timestamp()),
+                int(end_time.timestamp()),
+            ),
         )
 
         description = f"Membership {membership_type} extended for {months} month{'s' if months != 1 else ''}"
         cur.execute(
             "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
-            (current_user.id, amount, int(time.time()), ordid, membership_type, description)
+            (
+                current_user.id,
+                amount,
+                int(time.time()),
+                ordid,
+                membership_type,
+                description,
+            ),
         )
         conn.commit()
         return redirect("/membership", code=301)
 
     return "Something went wrong, please try again."
-
 
 
 def get_transactions(channel_id: str):
@@ -1482,17 +1540,16 @@ def membership():
             available_upgrades = ["pro", "premium"]
         if membership_details.type == "pro":
             available_upgrades = ["premium"]
-    
-    
+
     return render_template(
         "membership.html",
         membership=membership_details,
         balance=f"{balance:.2f}",
         transactions=transactions[::-1],
-        base_prices = {'basic': 199, 'pro': 299, 'premium': 499},
+        base_prices={"basic": 199, "pro": 299, "premium": 499},
         base_duration=28,
         subscription_model=subscription_model,
-        available_upgrades = available_upgrades,
+        available_upgrades=available_upgrades,
         available_subscribes=available_subscribes,
     )
 
@@ -2569,14 +2626,15 @@ def stats():
         search_for="channel",
     )
 
-def get_members(tier:str=None):
+
+def get_members(tier: str = None):
     # returns all of membership details
     if not tier:
-        members = {k:get_members(k) for k in subscription_model.keys()}
+        members = {k: get_members(k) for k in subscription_model.keys()}
         members["FREE"] = get_members("FREE")
         return members
     with conn:
-        cur.execute("SELECT * FROM MEMBERSHIP WHERE type=?", (tier,))   
+        cur.execute("SELECT * FROM MEMBERSHIP WHERE type=?", (tier,))
         data = cur.fetchall()
     if not data:
         return []
@@ -2585,7 +2643,8 @@ def get_members(tier:str=None):
         m = Membership(x)
         m.name = get_channel_name_image(m.channel_id)[0]
         members.append(m)
-    return members        
+    return members
+
 
 def get_creds():
     with conn:
@@ -2595,7 +2654,7 @@ def get_creds():
     creds = {}
     for x in data:
         if not x[1]:
-            continue # skip if no webhook
+            continue  # skip if no webhook
         creds[x[0]] = x[1]
     return creds
 
@@ -3177,6 +3236,7 @@ def get_transactions(channel_id):
     cur.execute("SELECT * FROM TRANSACTIONS WHERE channel_id=?", (channel_id,))
     return cur.fetchall()
 
+
 def can_avail_free_trial(channel_id):
     membership_details = Membership.get(conn, channel_id)
     if not membership_details.in_db:
@@ -3185,11 +3245,17 @@ def can_avail_free_trial(channel_id):
         return False
     return False
 
+
 def start_free_trial(channel_id):
     with conn:
-        end_time = int(time.time())+ 28*24*60*60 # we give 28 to include current day too
+        end_time = (
+            int(time.time()) + 28 * 24 * 60 * 60
+        )  # we give 28 to include current day too
         start_time = int(time.time())
-        cur.execute("INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)", (channel_id, "FREE", start_time, end_time))
+        cur.execute(
+            "INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)",
+            (channel_id, "FREE", start_time, end_time),
+        )
         cur.execute(
             "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
             (
@@ -3565,7 +3631,7 @@ def delete(clip_id=None):
         if not clip:
             errored_str += f" {c}"
             continue
-        webhook_url = get_channel_settings(clip.channel).webhook 
+        webhook_url = get_channel_settings(clip.channel).webhook
         if clip.delete(conn, webhook_url=webhook_url):
             returning_str += f" {c}"
         else:
@@ -3624,9 +3690,7 @@ def edit(clip_id=None):
     elif silent == 1:
         return clip_id.split(" ")[0]
     else:
-        return (
-            f"Edited clip {clip_id.split(' ')[0]} from title '{old_desc}' to '{new_desc}'"
-        )
+        return f"Edited clip {clip_id.split(' ')[0]} from title '{old_desc}' to '{new_desc}'"
 
 
 @app.route("/search/<clip_desc>")
@@ -3932,5 +3996,5 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    #is_subscribed("UCbZZmB8L3IEHutGbvpWo9Ow")
+    # is_subscribed("UCbZZmB8L3IEHutGbvpWo9Ow")
     app.run(debug=True, host="0.0.0.0", port=80)
