@@ -801,6 +801,17 @@ def before_request():
     else:
         if current_user.logged_in:
             # check if the session token is already used or not
+            try:
+                session["session_token"]
+            except KeyError:
+                # session token is not set. we need to set it
+                session["session_token"] = create_token()
+                add_login_record(
+                    channel_id=current_user.id,
+                    ip=request.remote_addr,
+                    session_token=session["session_token"],
+                    user_agent=request.user_agent.string,
+                ) # attach a session token to the user
             if session["session_token"] in known_session_tokens:
                 # this is a valid session token. we can continue
                 pass
