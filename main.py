@@ -1288,6 +1288,7 @@ def delete_login():
         conn.commit()
 
     known_session_tokens.remove(session_token)
+    return "OK", 200
 
 
 @app.route("/settings/default", methods=["POST"])
