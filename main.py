@@ -348,7 +348,19 @@ class User(UserMixin):
         self.email = email
         self.name = name
         self.gimage = gimage
-        self.logins = logins
+
+    @property
+    def logins(self):
+        with conn:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT * FROM LOGIN_RECORDS WHERE channel_id=? ORDER BY time DESC",
+                (self.id,),
+            )
+            data = cur.fetchall()
+        if not data:
+            return []
+        return data
 
     @property
     def membership(self):
@@ -387,12 +399,6 @@ class User(UserMixin):
                 email = None
                 name = None
                 gimage = None
-            cur.execute(
-                "SELECT * FROM LOGIN_RECORDS WHERE channel_id=? ORDER BY time DESC",
-                (user_id,),
-            )
-            logins = [x for x in cur.fetchall()]
-
         return User(
             user_id,
             username,
@@ -402,7 +408,6 @@ class User(UserMixin):
             email=email,
             name=name,
             gimage=gimage,
-            logins=logins,
         )
 
 
