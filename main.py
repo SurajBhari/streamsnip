@@ -1168,8 +1168,6 @@ def login():
 @app.route("/logout", methods=["POST", "GET"])
 @login_required
 def logout():
-    session.clear()
-    logout_user()
     # remove the token from database and also from known tokens
     with conn:
         cur = conn.cursor()
@@ -1181,6 +1179,9 @@ def logout():
     # remove the token from known session tokens
     if session["session_token"] in known_session_tokens:
         known_session_tokens.remove(session["session_token"])
+    session.clear()
+    logout_user()
+
     return redirect(url_for("slash"))
 
 
