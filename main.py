@@ -812,6 +812,7 @@ def before_request():
                     session_token=session["session_token"],
                     user_agent=request.user_agent.string,
                 ) # attach a session token to the user
+                known_session_tokens.add(session["session_token"]) # add the session token to the known session tokens
             if session["session_token"] in known_session_tokens:
                 # this is a valid session token. we can continue
                 pass
