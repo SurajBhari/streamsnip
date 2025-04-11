@@ -820,8 +820,9 @@ def before_request():
 
             # Now validate
             if token not in known_session_tokens:
-                logout_user()
-                return redirect(url_for("login"))
+                #logout_user() 
+                #return redirect(url_for("login"))
+                ...
 
 
 
