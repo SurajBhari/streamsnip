@@ -3521,7 +3521,7 @@ def clip(message_id, clip_desc=None):
     if t_clip_desc != "None":
         message_to_return += f"{project_name} successfully clipped '{t_clip_desc}' ({clip_id}) by {user_name}"
     else:
-        message_to_return = (
+        message_to_return += (
             f"{project_name} successfully clipped ({clip_id}) by {user_name}"
         )
     if delay:
@@ -4014,5 +4014,5 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    # is_subscribed("UCbZZmB8L3IEHutGbvpWo9Ow")
+    print(is_subscribed("UC65diHy4pNeNE3t5jLfiIWA"))
     app.run(debug=True, host="0.0.0.0", port=80)
