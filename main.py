@@ -805,26 +805,24 @@ def before_request():
             allowed_ip.append(ip)
     else:
         if current_user.logged_in:
-            # check if the session token is already used or not
-            try:
-                session["session_token"]
-            except KeyError:
-                # session token is not set. we need to set it
-                session["session_token"] = create_token()
+            token = session.get("session_token")
+            if not token:
+                # Create and register session token
+                token = create_token()
+                session["session_token"] = token
                 add_login_record(
                     channel_id=current_user.id,
                     ip=request.remote_addr,
-                    session_token=session["session_token"],
+                    session_token=token,
                     user_agent=request.user_agent.string,
-                ) # attach a session token to the user
-                known_session_tokens.add(session["session_token"]) # add the session token to the known session tokens
-            if session["session_token"] in known_session_tokens:
-                # this is a valid session token. we can continue
-                pass
-            else:
-                # this is not a valid session token. we need to log out the user
+                )
+                known_session_tokens.add(token)
+
+            # Now validate
+            if token not in known_session_tokens:
                 logout_user()
                 return redirect(url_for("login"))
+
 
 
 @login_manager.user_loader
