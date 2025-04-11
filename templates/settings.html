@@ -216,7 +216,7 @@
     </div>
     <!-- a horizontal line -->
     <hr>
-    {% if current_user.logins|length > 0 %}
+    {% if current_user.logins|length > 0 and current_user.logins|length < 10 %}
     <div class="row">
         <h2>Previous Logins</h2>
         <h3>Current Session token: {{session["session_token"]}}</h3>
@@ -226,7 +226,6 @@
                 <th>Login ID</th>
                 <th>IP Address</th>
                 <th>User Agent</th>
-                <th>Actions</th>
             </tr>
             {% for login in current_user.logins %}
             <tr>
@@ -234,7 +233,6 @@
                 <td>{{ login[2] }}</td>
                 <td>{{ login[1] }}</td>
                 <td>{{ login[3] }}</td>
-                <td><button class="btn btn-danger" type="button" id="delete-{{login[2]}}" onclick="delete_login('{{ login[2] }}')">Delete</button></td>
             </tr>
             {% endfor %}
         </table>
