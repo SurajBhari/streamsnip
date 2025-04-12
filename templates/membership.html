@@ -86,7 +86,7 @@
     <h2>Your Membership Details</h2> 
     <p><strong>Current membership:</strong> {{ membership.type }}</p>
     <p><strong>Days left:</strong> {{ membership.days_left }}</p>
-    {% if membership.free_trial %}<h2>FREE TRIAL</h2>{% endif %}
+    {% if membership.free_trial %}<h2>FREE TRIAL</h2>Extending within free trial period will add the days to your free trial days.{% endif %}
 </div>
 
 <table>
@@ -162,8 +162,8 @@
                             {% for months, price in subscription_model[tier].items() %}
                             <li>
                                 <a class="dropdown-item" href="#" onclick="sub('{{ tier }}', {{ price }})">
-                                    {{ months }} Month{% if months != 1 %}s{% endif %} ({{ price }}₹)
-                                    {% if months == 12 %} (2 months free){% elif months == 6 %} (1 month free){% endif %}
+                                    {{ months*28 }} Days ({{ price }}₹)
+                                    {% if months == 12 %} ({{28*2}} days free){% elif months == 6 %} ({{28}} days free){% endif %}
                                 </a>
                             </li>
                             {% endfor %}
