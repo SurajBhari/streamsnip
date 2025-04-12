@@ -41,6 +41,7 @@ from flask import (
     session,
     jsonify,
     send_from_directory,
+    flash
 )
 from flask_cors import CORS
 from flask_login import (
@@ -932,6 +933,7 @@ def slash():
         )
         data = cur.fetchall()
     premium_members = [x[0] for x in data]
+    #flash("hello world")
     return render_template(
         "home.html",
         data=returning,
@@ -950,7 +952,8 @@ def privacy():
 @app.route("/data")
 def data():
     if not current_user.admin:
-        return "Disabled"
+        flash("Disabled", "info")
+        return redirect(url_for("slash"))
     clips = get_channel_clips()
     clips = [x.json() for x in clips]
     return clips
@@ -1159,13 +1162,13 @@ def login():
 
                 next = request.args.get("next")
                 return redirect(next or url_for("slash"))
-        return render_template("login.html", msg="INVALID PASSWORD")
+        flash("Invalid password", "warning")
+        return render_template("login.html")
     next = request.args.get("next", "")
     if next:
         next = f"?next={next}"
     return render_template(
         "login.html",
-        msg="Password is the webhook URL that you are using for your channel.",
         next=next,
     )
 
@@ -1212,8 +1215,8 @@ def webedit():
 
     if not current_user.admin:
         if clip.channel != current_user.id:
-            print(clip.channel, current_user.id)
-            return "You can't do this. You are not the owner of this channel"
+            flash("You can't do this. You are not the owner of this channel", "danger")
+            return redirect("/e/" + clip.channel)
     webhook_url = get_channel_settings(current_user.id).webhook
     clip.edit(new_message, conn, webhook_url=webhook_url)
 
@@ -1240,7 +1243,8 @@ def webdelete():
         return f"You do not have any membership. Get the subscription at {base_domain}/membership"
     if not current_user.admin:
         if clip.channel != current_user.id:
-            return "You can't do this. You are not the owner of this channel"
+            flash("You can't do this. You are not the owner of this channel", "danger")
+            return redirect("/e/" + clip.channel)
     webhook_url = get_channel_settings(current_user.id).webhook
     clip.delete(conn, webhook_url=webhook_url)
     return "Deleted", 200
@@ -1282,7 +1286,8 @@ def delete_login():
         data = cur.fetchone()
         if not current_user.admin:
             if data[0] != current_user.id:
-                return "You can't do this. You are not the owner of this channel"
+                flash("You can't do this. You are not the owner of this channel", "danger")
+                return redirect("/settings")
         cur.execute("DELETE FROM LOGIN_RECORDS WHERE session_token=?", (session_token,))
         conn.commit()
 
@@ -1327,6 +1332,8 @@ def settings():
             settings.message_level = request.json.get("message_level")
             settings.take_delays = request.json.get("take_delays")
             settings.comments = request.json.get("comments")
+            # test the settings.webhook if its valid then also send welcome to streamsnip thing
+
 
         settings.delay = request.json.get(
             "delay"
@@ -1596,7 +1603,8 @@ def clips():
     data = get_channel_clips()
     if len(data) > 50000:
         if not current_user.admin:
-            return "Disabled"
+            flash("DISABLED", "info")
+            return redirect("/")
     data = [x.json() for x in data if not x.private]
     for clip in data:
         """
@@ -2681,7 +2689,8 @@ def get_creds():
 @login_required
 def admin():
     if not current_user.admin:
-        return "You are not an admin"
+        flash("You are not an admin", "danger")
+        return redirect(url_for("slash"))
     clips = get_channel_clips()
     t = time.time()
     clip_ids = [x.id for x in clips]
@@ -2718,7 +2727,8 @@ def admin():
 @app.route("/update_settings", methods=["POST"])
 def update_settings():
     if not current_user.admin:
-        return "You are not an admin"
+        flash("You are not an admin", "danger")
+        return redirect(url_for("slash"))
     settings = UserSettings()
     user_ids = []
     settings = {}
@@ -2754,7 +2764,9 @@ def get_channel_id(path):
 @app.route("/autoapprove")
 def autoapprove():
     # verify if the entry is eligible to be autoapproved i.e there have been no previous creds.
-    return "Disabled. "  # this is in format of https://streamsnip.com/autoapprove?key=https://www.youtube.com/channel/UC5IRLz3Q-SADL71-sW-Z16Q&value=https://discord.com/api/webhooks/51313123122515125/sadfasdasd12rasfafase-VOkUSVo4clrbXSh6Mpa
+    flash("Disabled. ", "info")  
+    return redirect("/")
+    # this is in format of https://streamsnip.com/autoapprove?key=https://www.youtube.com/channel/UC5IRLz3Q-SADL71-sW-Z16Q&value=https://discord.com/api/webhooks/51313123122515125/sadfasdasd12rasfafase-VOkUSVo4clrbXSh6Mpa
     key = request.args.get("key")
     value = request.args.get("value")
     if not any([key, value]):
@@ -2806,7 +2818,8 @@ def autoapprove():
 
 @app.route("/approve")
 def approve():
-    return "Disabled. "
+    flash("Disabled. ", "info")  
+    return redirect("/")
     # this is in format of https://streamsnip.com/approve?pass=somepassword&key=https://www.youtube.com/channel/UC5IRLz3Q-SADL71-sW-Z16Q&value=https://discord.com/api/webhooks/51313123122515125/sadfasdasd12rasfafase-VOkUSVo4clrbXSh6Mpa
     password = request.args.get("pass")
     key = request.args.get("key")
@@ -2896,7 +2909,8 @@ def send_email(email=None, message="New webhook added"):
 @login_required
 def edit_delete():
     if not current_user.admin:
-        return "You are not an admin"
+        flash("You are not an admin", "danger")
+        return redirect(url_for("slash"))
     # get the clip id
     clip_id = request.form.get("clip")
     # get the action
@@ -3003,7 +3017,8 @@ def get_latest_live(channel_id):
 @app.route("/add", methods=["POST", "GET"])
 @login_required
 def add():
-    return "disabled for now"
+    flash("Disabled. ", "info")  
+    return redirect("/")
     if request.method == "GET":
         return render_template(
             "add.html", link="enter stream link", desc="!clip", first_render=True
@@ -3910,7 +3925,8 @@ def test():
 @login_required
 def globals_():
     if not current_user.admin:
-        return "You can't do this. You are not an admin"
+        flash("You are not an admin", "danger")
+        return redirect(url_for("slash"))
     return dumps(globals(), indent=4, sort_keys=True, default=str)
 
 
@@ -3927,7 +3943,8 @@ def video(clip_id):
     # check if the person is the owner of the clip
     if not current_user.admin:
         if clip.channel != current_user.id:
-            return "You can't do this. You are not the owner of this channel"
+            flash("You are not owner of this clip.", "warning")
+            return redirect(f"/e/{clip.channel}")
     format = request.args.get("format", None)
     clip = get_clip(clip_id)
     if not clip:
