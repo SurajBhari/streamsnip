@@ -1333,38 +1333,39 @@ def settings():
             settings.take_delays = request.json.get("take_delays")
             settings.comments = request.json.get("comments")
             # test the settings.webhook if its valid then also send welcome to streamsnip thing
-            webhook = DiscordWebhook(url=settings.webhook)
-            embed = DiscordEmbed(
-                title=f"Welcome to {project_name}!",
-                description=f"I will send clips for {current_user.name} here",
-            )
-            embed.add_embed_field(
-                name="Add Nightbot command",
-                value=f"If you haven't already. add Nightbot commands from [github]({project_repo_link}) .",
-            )
-            embed.set_thumbnail(url=project_logo_discord)
-            embed.set_color(0xEBF0F7)
-            webhook.add_embed(embed)
-            response = webhook.execute()
-            if response.status_code != 200:
-                flash("Invalid webhook URL", "danger")
-                return url_for("settings")
-            # else welcome the channel
-            if "update_webhook" in config:
-                webhook = DiscordWebhook(
-                    url=config["update_webhook"],
-                    username=project_name,
-                    avatar_url=project_logo_discord,
-                )
+            if settings.webhook:
+                webhook = DiscordWebhook(url=settings.webhook)
                 embed = DiscordEmbed(
-                    title=f"New webhook added",
-                    description=f"New webhook added for {current_user.name}",
+                    title=f"Welcome to {project_name}!",
+                    description=f"I will send clips for {current_user.name} here",
                 )
-                embed.set_thumbnail(url=current_user.image)
+                embed.add_embed_field(
+                    name="Add Nightbot command",
+                    value=f"If you haven't already. add Nightbot commands from [github]({project_repo_link}) .",
+                )
+                embed.set_thumbnail(url=project_logo_discord)
                 embed.set_color(0xEBF0F7)
                 webhook.add_embed(embed)
-                webhook.execute()
-            
+                response = webhook.execute()
+                if response.status_code != 200:
+                    flash("Invalid webhook URL", "danger")
+                    return url_for("settings")
+                # else welcome the channel
+                if "update_webhook" in config:
+                    webhook = DiscordWebhook(
+                        url=config["update_webhook"],
+                        username=project_name,
+                        avatar_url=project_logo_discord,
+                    )
+                    embed = DiscordEmbed(
+                        title=f"New webhook added",
+                        description=f"New webhook added for {current_user.name}",
+                    )
+                    embed.set_thumbnail(url=current_user.image)
+                    embed.set_color(0xEBF0F7)
+                    webhook.add_embed(embed)
+                    webhook.execute()
+                
 
         settings.delay = request.json.get(
             "delay"
