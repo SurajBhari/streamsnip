@@ -2478,6 +2478,8 @@ def stats():
     today = datetime.today()
     today = today.replace(hour=0, minute=0, second=0, microsecond=0)
     three_months_ago = (today - timedelta(days=28)).timestamp()
+    if current_user.admin:
+        three_months_ago = 0
     for x in data:
         c = Clip(x)
         clips.append(c)
@@ -2673,21 +2675,29 @@ def stats():
         cur.execute(
             f"SELECT * FROM QUERIES WHERE PRIVATE IS NOT '1' AND time GROUP BY channel_id ORDER BY time DESC"
         )
-    first_clip_sql = cur.fetchall()[::-1]
-    first_day = this_month.date()
-    last_day = Clip(first_clip_sql[-1]).time.date()
-    # map first_clip_d to 0 for every day in between
+    first_clip_sql = cur.fetchall()[::-1]  # reverse so earliest clip is at the end
+    first_day = this_month.date()  # default starting point
+
+    if current_user.admin:
+        first_day = Clip(first_clip_sql[-1]).time.date()  # start from earliest clip
+
+    last_day = Clip(first_clip_sql[0]).time.date()  # latest clip
+
+    # Generate date range from first_day to last_day
     date_generated = [
-        first_day + timedelta(days=x) for x in range(0, (last_day - first_day).days)
+        first_day + timedelta(days=x) for x in range(0, (last_day - first_day).days + 1)
     ]
+
+    # Initialize the dictionary
     for single_date in date_generated:
         first_clip_d[single_date.strftime("%Y-%m-%d")] = 0
-    for clip in first_clip_sql:  # reverse so that we get the first clip first
+
+    # Fill the dictionary with actual clip data
+    for clip in first_clip_sql:
         clip = Clip(clip)
-        if clip.time < this_month:
+        if not current_user.admin and clip.time < this_month:
             continue
-        time = clip.time
-        date = time.strftime("%Y-%m-%d")
+        date = clip.time.strftime("%Y-%m-%d")
         try:
             first_clip_d[date] += 1
         except KeyError:
