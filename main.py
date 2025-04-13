@@ -1894,6 +1894,13 @@ def channel_stats(channel_id=None):
         else:
             best_days[day] += 1
     time_trend = new_dict
+    day_counter = 0 
+    clips_couter = 0
+    average = {}
+    for k, v in time_trend.items():
+        day_counter += 1
+        clips_couter += v
+        average[k] = int(clips_couter/day_counter)
     best_days = {
         k: v
         for k, v in sorted(best_days.items(), key=lambda item: item[1], reverse=True)
@@ -1989,6 +1996,7 @@ def channel_stats(channel_id=None):
         first_clip_d={},
         search_route="/searchchannel",
         search_for="channel",
+        average=average,
     )
 
 
@@ -2121,6 +2129,13 @@ def time_stats(start=None, end=None):
 
     # sort the new_dict
     time_trend = new_dict
+    day_counter = 0 
+    clips_couter = 0
+    average = {}
+    for k, v in time_trend.items():
+        day_counter += 1
+        clips_couter += v
+        average[k] = int(clips_couter/day_counter)
 
     streamer_trend_data = {}
     # streamer: {day: no_of_clips}
@@ -2227,6 +2242,7 @@ def time_stats(start=None, end=None):
         first_clip_d={},
         search_route=None,
         search_for=None,
+        average=average
     )
 
 
@@ -2341,6 +2357,13 @@ def user_stats(channel_id=None):
         else:
             best_days[day] += 1
     time_trend = new_dict
+    day_counter = 0 
+    clips_couter = 0
+    average = {}
+    for k, v in time_trend.items():
+        day_counter += 1
+        clips_couter += v
+        average[k] = int(clips_couter/day_counter)
     best_days = {
         k: v
         for k, v in sorted(best_days.items(), key=lambda item: item[1], reverse=True)
@@ -2437,6 +2460,7 @@ def user_stats(channel_id=None):
         first_clip_d={},
         search_route="/searchuser",
         search_for="user",
+        average=average
     )
 
 
@@ -2542,6 +2566,14 @@ def stats():
             new_dict[day] = 0
         new_dict[day] += 1
     time_trend = new_dict
+    day_counter = 0 
+    clips_couter = 0
+    average = {}
+    for k, v in time_trend.items():
+        day_counter += 1
+        clips_couter += v
+        average[k] = int(clips_couter/day_counter)
+
     best_days = {}
     for clip in clips:
         day = (clip.time + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d")
@@ -2682,6 +2714,7 @@ def stats():
         best_days=best_days,
         search_route="/searchchannel",
         search_for="channel",
+        average=average
     )
 
 

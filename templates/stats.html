@@ -149,7 +149,6 @@
             .then(response => response.json())
             .then(data => {
                 // data is array of array in format of [['option', 'link'], ['option', 'link']....]
-                console.log(data.length);
                 // create a dropdown
                 let div = document.createElement("div");
                 div.setAttribute("id", "search-dropdown");
@@ -196,7 +195,6 @@
             wordcloud_data = {"": 0};
         }
         // make sure max is not more than 200 if it is then divide all by max
-        console.log(wordcloud_data)
         const values = Object.values(wordcloud_data);
         const currentMin = Math.min(...values);
         const currentMax = Math.max(...values);
@@ -216,7 +214,6 @@
             normalizedWordcloudData[key] = normalizeValue(wordcloud_data[key]);
         }
         wordcloud_data = normalizedWordcloudData;
-        console.log(wordcloud_data);
         var wordcloud = new Chart(ctx, {
             type: "wordCloud",
             data: {
@@ -242,6 +239,7 @@
         var ctx = document.getElementById('myChart').getContext('2d');
         var times = {{times|safe}};
         var counts = {{counts|safe}};
+        var average = {{average|safe}};
         var lineChart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -252,6 +250,13 @@
                     borderWidth: 3,
                     fill: true,
                     backgroundColor: randomColor(), 
+                    borderColor: randomColor(), 
+                },
+                {
+                    label: 'Average',
+                    data: Object.values(average),
+                    borderWidth: 3,
+                    fill: false,
                     borderColor: randomColor(), 
                 }]
             },
