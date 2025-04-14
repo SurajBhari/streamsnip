@@ -168,8 +168,6 @@ project_logo = base_domain + "/static/logo.png"
 project_repo_link = "https://github.com/SurajBhari/streamsnip"
 project_logo_discord = "https://raw.githubusercontent.com/SurajBhari/streamsnip/main/static/256_discord_ss.png"  # link to logo that is used in discord
 sub_based_sort = True  # sort the channels on home page based on sub count
-global pay_dictionary
-pay_dictionary = {}
 subscription_model = {
     "basic": {1: 99, 3: 249, 6: 499, 12: 999},
     "pro": {1: 199, 3: 499, 6: 999, 12: 1999},
@@ -1428,7 +1426,6 @@ def upgrade():
 
     callback = "/pay/callback"
     name = channel_info[current_user.id]["name"]
-    pay_dictionary[payment["id"]] = {"amount": amount, "type": switch_to, "month": 0}
 
     return render_template(
         "pay.html",
@@ -1474,11 +1471,6 @@ def pay():
     payment = razorclient.order.create(data=data)
     callback = "/pay/callback"
     name = channel_info[current_user.id]["name"]
-    pay_dictionary[payment["id"]] = {
-        "amount": amount,
-        "type": membership_type,
-        "month": months,
-    }
 
     return render_template(
         "pay.html",
@@ -1502,20 +1494,24 @@ def callback():
         "razorpay_payment_id": pid,
         "razorpay_signature": sign,
     }
+    order = razorclient.order.fetch(ordid)
 
     final = razorclient.utility.verify_payment_signature(params)
     if final is True:
-        try:
-            order_details = pay_dictionary[ordid]
-        except KeyError:
-            raise (
-                KeyError(
-                    f"Order ID not found in pay_dictionary {pay_dictionary} {ordid}"
-                )
-            )
-        amount = order_details["amount"] // 100  # Convert back to INR
-        months = order_details["month"]
-        membership_type = order_details["type"]
+        amount = int(order["amount"] // 100)
+        b_outer_loop = False
+        for mtype in subscription_model:
+            if b_outer_loop:
+                break
+            for month in subscription_model[mtype]:
+                am = subscription_model[mtype][month]
+                if am == amount:
+                    b_outer_loop = True
+                    break
+
+
+        membership_type = mtype
+        months = month
 
         # Fetch old membership details
         old_membership_details = Membership.get(conn, current_user.id)
