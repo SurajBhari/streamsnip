@@ -1459,12 +1459,7 @@ def pay():
     if amount not in list(subscription_model[membership_type].values()):
         return "Invalid request: Invalid amount.", 400
 
-    # Find months
-    for m, a in subscription_model[membership_type].items():
-        if a == amount:
-            months = m
-            break
-
+    
     amount = amount * 100  # Convert to paise
     recepipt = f"{current_user.id}_{int(time.time())}"
     data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers": []}
@@ -1481,6 +1476,14 @@ def pay():
         name=name,
     )
 
+def get_membership_from_amount(amount:int):
+    for mtype in subscription_model:
+        for month in subscription_model[mtype]:
+            am = subscription_model[mtype][month]
+            if am == amount:
+                return mtype, month
+    return None, None
+    
 
 @app.route("/pay/callback", methods=["POST"])
 def callback():
@@ -1504,15 +1507,11 @@ def callback():
     if final is True:
         amount = int(order["amount"] // 100)
         b_outer_loop = False
-        for mtype in subscription_model:
-            if b_outer_loop:
-                break
-            for month in subscription_model[mtype]:
-                am = subscription_model[mtype][month]
-                if am == amount:
-                    b_outer_loop = True
-                    break
-
+        mtype, month = get_membership_from_amount(int(amount))
+        if mtype is None:
+            # this is not a subscription. we are not able to find the membership type
+            # so we will not be able to process the payment
+            return "Invalid payment", 400
 
         membership_type = mtype
         months = month
