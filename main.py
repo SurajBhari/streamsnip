@@ -1557,6 +1557,15 @@ def callback():
 
     return "Something went wrong, please try again."
 
+def terminate_current_membership(channel_id: str):
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM MEMBERSHIP WHERE channel_id=?",
+            (channel_id,),
+        )
+        conn.commit()
+        
 def get_transactions_all():
     with conn:
         cur = conn.cursor()
