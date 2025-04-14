@@ -1495,6 +1495,10 @@ def callback():
         "razorpay_signature": sign,
     }
     order = razorclient.order.fetch(ordid)
+    old_ids = get_transactions_all()
+    old_ids = [x[3] for x in old_ids]
+    if ordid in old_ids:
+        return "Already paid", 400
 
     final = razorclient.utility.verify_payment_signature(params)
     if final is True:
@@ -1554,8 +1558,15 @@ def callback():
 
     return "Something went wrong, please try again."
 
+def get_transactions_all():
+    with conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM TRANSACTIONS")
+        data = cur.fetchall()
+    return data
 
-def get_transactions(channel_id: str):
+
+def get_transactions(channel_id: str = None):
     with conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM TRANSACTIONS WHERE channel_id=?", (channel_id,))
