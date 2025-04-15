@@ -301,7 +301,7 @@
                     </li>                    
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="/login">Login <i class="fa-solid fa-sign-in"></i></a>
+                            <a class="nav-link" href="/login?next={{request.path}}">Login <i class="fa-solid fa-sign-in"></i></a>
                         </li>
                     {% endif %}
                     
