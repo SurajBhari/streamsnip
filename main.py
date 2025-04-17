@@ -1077,10 +1077,12 @@ def add_user_data(channel_id, data):
         else:
             if [data["email"], data["name"], data["image"]] == list(result[1:]):
                 return  # no need to update
+            # in this case we update the data   
             cur.execute(
-                "INSERT INTO USERDATA (channel_id, email, name, image) VALUES (?, ?, ?, ?)",
-                (channel_id, data["email"], data["name"], data["image"]),
+                "UPDATE USERDATA SET email=?, name=?, image=? WHERE channel_id=?",
+                (data["email"], data["name"], data["image"], channel_id),
             )
+            
             # We insert so that we have old data too
         conn.commit()
     return True
