@@ -1194,6 +1194,10 @@ def logout():
     return redirect(url_for("slash"))
 
 
+@app.route("/webhook")
+def ___webhook():
+    return redirect("/settings#webhook")
+
 @app.route("/webedit", methods=["POST"])
 @login_required
 def webedit():
