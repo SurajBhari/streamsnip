@@ -129,6 +129,7 @@ ext = Sitemap(app=app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
+login_manager.login_message_category = "info"
 global download_lock
 download_lock = True
 global DEFAULT_SETTINGS
