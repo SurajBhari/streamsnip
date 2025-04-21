@@ -85,7 +85,7 @@
 <div class="membership-container">
     <h2>Your Membership Details</h2> 
     <p><strong>Current membership:</strong> {{ membership.type }}</p>
-    <p><strong>Days left:</strong> {{ membership.days_left }}</p>
+    <p><strong>Days left:</strong> {{ membership.time_left.days }}d {{membership.time_left.seconds // 3600}}h</p>
     {% if membership.free_trial %}<h2>FREE TRIAL</h2>Extending within free trial period will add the days to your free trial days.{% endif %}
 </div>
 
