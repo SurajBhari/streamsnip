@@ -67,7 +67,7 @@
                     <tr>
                         <td>
                             <a href="/e/{{m.channel_id}}">
-                                {{m.name}} ({{m.days_left}} days left)
+                                {{m.name}} ({{ membership.time_left.days }}d {{membership.time_left.seconds // 3600}}h left)
                             </a>
                         </td>
                     </tr>
