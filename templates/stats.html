@@ -124,12 +124,24 @@
     Chart.defaults.plugins.deferred.delay = 250;
     Chart.defaults.plugins.deferred.xOffset = 150;
     Chart.defaults.plugins.deferred.yOffset = 150;
-    function randomColor(){
-        var r = Math.floor(Math.random()*255);
-        var g = Math.floor(Math.random()*255);
-        var b = Math.floor(Math.random()*255);
-        var a = 0.5;
-        return "rgba("+r+","+g+","+b+" ,"+a+")";
+    function randomColor() {
+        var isDarkTheme = localStorage.getItem("darkTheme") === "true";
+
+        let r, g, b, a = 0.5;
+
+        if (isDarkTheme) {
+            // Bright colors for dark background
+            r = Math.floor(150 + Math.random() * 105); // 150-255
+            g = Math.floor(150 + Math.random() * 105);
+            b = Math.floor(150 + Math.random() * 105);
+        } else {
+            // Muted/pastel colors for light background
+            r = Math.floor(50 + Math.random() * 100); // 50-150
+            g = Math.floor(50 + Math.random() * 100);
+            b = Math.floor(50 + Math.random() * 100);
+        }
+
+        return `rgba(${r}, ${g}, ${b}, ${a})`;
     }
     if(search_route){
         document.getElementById("search").addEventListener("keyup", function () {
