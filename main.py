@@ -1773,7 +1773,7 @@ def exports(channel_id=None):
                     f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
                 )
             else:
-                webhook_url = creds.get(clip["channel"])
+                webhook_url = get_channel_settings(clip["channel"]).webhook
                 if not webhook_url:
                     continue
                 response = get(webhook_url)
