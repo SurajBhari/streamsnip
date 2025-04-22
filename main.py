@@ -1351,7 +1351,12 @@ def settings():
                 embed.set_thumbnail(url=project_logo_discord)
                 embed.set_color(0xEBF0F7)
                 webhook.add_embed(embed)
-                response = webhook.execute()
+                try:
+                    response = webhook.execute()
+                except Exception as e:
+                    print(e)
+                    flash("Invalid webhook URL, If you don't want it. leave it blank.", "danger")
+                    return url_for("settings")
                 if response.status_code != 200:
                     flash("Invalid webhook URL", "danger")
                     return url_for("settings")
