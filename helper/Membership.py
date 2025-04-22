@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from json import load,loads,dump,dumps
 
 
@@ -15,6 +15,7 @@ class Membership:
         self.end = self.start
         self.days_left = 0
         self.free_trial = False
+        self.time_left = timedelta(0)
         if not data:
             return
         self.channel_id = data[0]
