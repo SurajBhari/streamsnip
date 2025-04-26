@@ -3374,7 +3374,9 @@ def get_transactions(channel_id):
 
 def can_avail_free_trial(channel_id):
     membership_details = Membership.get(conn, channel_id)
-    if not membership_details.in_db:
+    old_transactions = get_transactions(channel_id) 
+    used_free_trial = True if any(["free" in x[3].lower() for x in old_transactions]) else False
+    if not membership_details.in_db and not used_free_trial:
         return True
     if membership_details.type == "FREE":
         return False
