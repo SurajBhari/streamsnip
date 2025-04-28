@@ -1396,6 +1396,7 @@ def settings():
 @app.route("/upgrade", methods=["POST"])
 @login_required
 def upgrade():
+    print(request.form)
     switch_to = request.form.get("type")
     if not switch_to:
         return "Invalid request", 400
@@ -1436,7 +1437,7 @@ def upgrade():
     data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers": []}
     payment = razorclient.order.create(data=data)
 
-    callback = "/pay/callback"
+    callback = "/pay/callback-upgrade/" + switch_to
     name = channel_info[current_user.id]["name"]
 
     return render_template(
@@ -1561,6 +1562,75 @@ def callback():
                 int(time.time()),
                 ordid,
                 membership_type,
+                description,
+            ),
+        )
+        conn.commit()
+        return redirect("/membership", code=301)
+
+    return "Something went wrong, please try again."
+
+
+@app.route("/pay/callback-upgrade/<new_type>", methods=["POST"])
+def callback_upgrade(new_type:str):
+    pid = request.form.get("razorpay_payment_id")
+    ordid = request.form.get("razorpay_order_id")
+    sign = request.form.get("razorpay_signature")
+    allowed_upgrades = {"basic": ["pro", "premium"], "pro": ["premium"], "premium": []}
+
+    membership_details = Membership.get(conn, current_user.id)
+    current_type = membership_details.type
+    if new_type not in allowed_upgrades.get(current_type, []):
+        return "Upgrade not allowed from your current membership.", 400
+
+    # Per day prices
+    per_day_current = subscription_model[current_type][1] / 28
+    per_day_new = subscription_model[new_type][1] / 28
+
+    # Calculate amount
+    days_left = membership_details.days_left
+    should_be_paid_amount = (per_day_new - per_day_current) * days_left
+    should_be_paid_amount = int(round(should_be_paid_amount)) 
+
+    params = {
+        "razorpay_order_id": ordid,
+        "razorpay_payment_id": pid,
+        "razorpay_signature": sign,
+    }
+    order = razorclient.order.fetch(ordid)
+    print(order)
+    old_ids = get_transactions_all()
+    old_ids = [x[3] for x in old_ids]
+    if ordid in old_ids:
+        return "Already paid", 400
+
+    final = razorclient.utility.verify_payment_signature(params)
+    if final is True:
+        amount = int(order["amount"] // 100)
+        if int(should_be_paid_amount) != int(amount):
+            print(int(amount), should_be_paid_amount)
+            # this is not a subscription. we are not able to find the membership type
+            # so we will not be able to process the payment
+            return f"Invalid payment please contact admin at discord ({discord_invite}) if you think this is a mistake.", 400
+
+        # Update database
+        cur.execute(
+            "UPDATE membership SET type = ? WHERE channel_id = ?",
+            (
+                new_type,
+                current_user.id,
+            ),
+        )
+
+        description = f"Membership upgraded from {current_type} to {new_type}"
+        cur.execute(
+            "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                current_user.id,
+                amount,
+                int(time.time()),
+                ordid,
+                new_type,
                 description,
             ),
         )
