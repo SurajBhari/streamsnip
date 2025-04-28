@@ -171,8 +171,8 @@ project_logo_discord = "https://raw.githubusercontent.com/SurajBhari/streamsnip/
 sub_based_sort = True  # sort the channels on home page based on sub count
 subscription_model = {
     "basic": {1: 99, 3: 249, 6: 499, 12: 999},
-    "pro": {1: 199, 3: 499, 6: 999, 12: 1999},
-    "premium": {1: 399, 3: 999, 6: 1999, 12: 3999},
+    "pro": {1: 199, 3: 498, 6: 998, 12: 1999},
+    "premium": {1: 399, 3: 997, 6: 1998, 12: 3999},
 }
 discord_invite = "https://discord.gg/2XVBWK99Vy"
 
