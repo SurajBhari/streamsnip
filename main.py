@@ -3549,6 +3549,10 @@ def clip(message_id, clip_desc=None):
         webhook_url = None
         take_delays = DEFAULT_SETTINGS.take_delays
         force_desc = DEFAULT_SETTINGS.force_desc
+        if not clip_desc:
+            if force_desc:
+                return "Clip denied. You must give a title to the clip."
+            clip_desc = "None"
         # delay = DEFAULT_SETTINGS.delay # we don't need to set the delay. since we are not going to use it
         delay = arguments.get("delay", channel_settings.delay)
         if type(delay) == str:
@@ -3630,7 +3634,7 @@ def clip(message_id, clip_desc=None):
         elif user_level == "subscriber":
             webhook_name += f" {subscriber_icon}"
 
-    if len(clip_desc) > 26:
+    if clip_desc and len(clip_desc) > 26:
         t_clip_desc = clip_desc[:26] + "..."
     else:
         t_clip_desc = clip_desc
