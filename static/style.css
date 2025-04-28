@@ -69,16 +69,16 @@ body.container {
 
 @keyframes glowRotate {
   0% {
-      box-shadow: 0 0 10px red;
+      box-shadow: 0 0 100px red;
   }
   33% {
-      box-shadow: 0 0 10px green;
+      box-shadow: 0 0 100px green;
   }
   66% {
-      box-shadow: 0 0 10px blue;
+      box-shadow: 0 0 100px blue;
   }
   100% {
-      box-shadow: 0 0 10px red;
+      box-shadow: 0 0 100px red;
   }
 }
 
