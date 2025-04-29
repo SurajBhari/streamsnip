@@ -3504,12 +3504,13 @@ def clip(message_id, clip_desc=None):
     user_level = user.get("userLevel")[0]
     user_id = user.get("providerId")[0]
     user_name = user.get("displayName")[0]
+    channel___name, channel___image = get_channel_name_image(channel_id)
 
     arguments = {k.replace("?", ""): request.args[k] for k in request.args}
 
     sub_detail = is_subscribed(channel_id)
     if not sub_detail:
-        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
+        return f"@{channel___name} 's free trial ended ☹. Get the subscription at {base_domain}/membership"
     free_trial = False
     if sub_detail == "FREE":
         free_trial = True
@@ -3820,7 +3821,7 @@ def delete(clip_id=None):
     channel_id = channel.get("providerId")[0]
     sub_detail = is_subscribed(channel_id)
     if not sub_detail:
-        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
+        return f"Your free trial ended ☹. Get the subscription at {base_domain}/membership"
     if not clip_id:
         clips = get_channel_clips(channel_id)
         if not clips:
@@ -3881,7 +3882,7 @@ def edit(clip_id=None):
     channel_id = channel.get("providerId")[0]
     sub_detail = is_subscribed(channel_id)
     if not sub_detail:
-        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
+        return f"Your free trial ended ☹. Get the subscription at {base_domain}/membership"
     clip = get_clip(clip_id.split(" ")[0], channel_id)
     if not clip:
         # we are talking about last clip that was made from this channel in this case
