@@ -1695,7 +1695,7 @@ def membership():
             available_upgrades = ["pro", "premium"]
         if membership_details.type == "pro":
             available_upgrades = ["premium"]
-
+    flash("RAZORPAY is not available right now. StreamSnip is free till further notice.", "info")
     return render_template(
         "membership.html",
         membership=membership_details,
