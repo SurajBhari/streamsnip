@@ -1,0 +1,57 @@
+{% extends 'layout.html' %}
+
+{% block head_content %}
+<title>StreamSnip - About Us</title>
+<style>
+    #about-us {
+        margin: 0 auto;
+        width: 80%;
+        padding: 40px 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    #about-us img.site_icon {
+        display: block;
+        max-width: 180px;
+        margin: 0 auto 30px auto;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+    }
+
+    #about-us h1 {
+        font-size: 2.5em;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    #about-us p {
+        font-size: 1.1em;
+        line-height: 1.6;
+        margin-bottom: 15px;
+        text-align: justify;
+    }
+
+    @media (max-width: 768px) {
+        #about-us {
+            width: 95%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="about-us">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="StreamSnip Logo" class="site_icon">
+    <h1>About StreamSnip</h1>
+    <p><strong>StreamSnip</strong> is a powerful and intuitive clipping tool tailored for content creators and streamers. Our platform enables seamless creation of highlight clips directly from live streams using simple commands, revolutionizing how memorable moments are captured and shared.</p>
+
+    <p>StreamSnip began its journey under the name <strong>"clip_nightbot"</strong> and officially launched as a standalone service on <strong>January 24, 2023</strong>. Since then, it has grown into a full-fledged product trusted by streamers for its reliability and ease of use.</p>
+
+    <p>This project is a proud venture by <strong>MNC PROTRADE INDIA PVT LTD</strong>, with the entire development and execution single-handedly handled by <strong>Suraj Bhari</strong>.</p>
+
+    <p>To support further innovation and infrastructure, StreamSnip transitioned to a paid model starting <strong>April 1, 2025</strong>. This change ensures the sustainability of our services while continuing to deliver premium features to our growing user base.</p>
+
+    <p>Our mission is simple: empower streamers to effortlessly capture, preserve, and share their best moments — live, as they happen.</p>
+</div>
+{% endblock %}

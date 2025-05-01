@@ -941,11 +941,21 @@ def slash():
         premium_members=premium_members,
     )
 
+@app.route("/contactus")
+def contactus():
+    return render_template("contact.html", discord_invite=discord_invite)
+
+@app.route("/tnc")
+def tnc():
+    return render_template("tnc.html")
 
 @app.route("/privacy-policy")
 def privacy():
     return render_template("privacy-policy.html")
 
+@app.route("/aboutus")
+def aboutus():
+    return render_template("about.html")
 
 @app.route("/")
 @app.route("/data")
@@ -1454,6 +1464,7 @@ def upgrade():
 @login_required
 def pay():
     flash("RAZORPAY is not available for now. ")
+    
     print("Payment request")
     membership_type = request.form.get("type")
     if not membership_type:

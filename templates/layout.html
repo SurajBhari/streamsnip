@@ -51,7 +51,7 @@
             var body = document.body;
             var theme_button = document.getElementById("theme_button");
             var navbar = document.getElementsByClassName("navbar");
-            var site_icon = document.getElementById("site_icon");
+            var site_icon = document.getElementsByClassName("site_icon");
             var dropdown_items = document.getElementsByClassName("dropdown-item");
             if (isDarkTheme) {
                 if(signs_in.length){ 
@@ -133,8 +133,10 @@
                 for(let i=0; alerts.length; i++){
                     alerts[i].classList.add("dark-theme");
                 }
-
-                site_icon.src = "/static/logo.svg";
+                for(let i=0; i<site_icon.length; i++){
+                    site_icon[i].classList.add("dark-theme");
+                    site_icon[i].src = "/static/logo.svg"
+                }
             } else {
                 theme_button.innerHTML = '<i class="fa-solid fa-sun"></i>';
                 for(let i=0; i<navbar.length; i++){
@@ -146,8 +148,10 @@
                 for(let i=0; alerts.length; i++){
                     alerts[i].classList.remove("dark-theme");
                 }
-                
-                site_icon.src = "/static/logo-grey.svg";
+                for(let i=0; i<site_icon.length; i++){
+                    site_icon[i].classList.remove("dark-theme");
+                    site_icon[i].src = "/static/logo-grey.svg"
+                }
             }
         }
         document.addEventListener("DOMContentLoaded", function () {
@@ -255,7 +259,7 @@
     
     <div class="container">
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="navbar_id">
-            <a class="navbar-brand" href="/"><img src="/static/logo-grey.svg" alt="logo" width="32" height="32" class="bi me-2" id="site_icon">StreamSnip</a>
+            <a class="navbar-brand" href="/"><img src="/static/logo-grey.svg" alt="logo" width="32" height="32" class="bi me-2 site_icon" id="site_icon">StreamSnip</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -325,7 +329,7 @@
     <a href="/" class="mb-3 me-2 mb-md-0 text-muted text-decoration-none lh-1">
         <svg class="bi" width="30" height="24"><use xlink:href="#bootstrap"></use></svg>
     </a>
-    <span class="mb-3 mb-md-0 text-muted">© 2025 Suraj Bhari | <a href="https://github.com/surajbhari/streamsnip">Source Code | <a class="text" href="/privacy-policy">Privacy Policy</a></a></span>
+    <span class="mb-3 mb-md-0 text-muted">© 2025 Suraj Bhari | <a href="https://github.com/surajbhari/streamsnip">Source Code </a> | <a class="text" href="/privacy-policy">Privacy Policy</a> | <a class="text" href="/aboutus">About Us</a> | <a class="text" href="/contactus">Contact Us </a>| <a class="text" href="/tnc">Terms & Conditions</a></span>
     </div>
     <span style="color: rgba(33, 37, 41, 1);">You are weird for using light theme</span>
 </footer>

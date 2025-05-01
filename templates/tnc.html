@@ -1,0 +1,84 @@
+{% extends 'layout.html' %}
+
+{% block head_content %}
+<title>StreamSnip - Terms and Conditions</title>
+<style>
+    #terms {
+        margin: 0 auto;
+        width: 80%;
+        padding: 40px 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        font-family: Arial, sans-serif;
+    }
+
+    #terms img.logo {
+        display: block;
+        max-width: 180px;
+        margin: 0 auto 30px auto;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+    }
+
+    #terms h1 {
+        font-size: 2.2em;
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    #terms h2 {
+        font-size: 1.4em;
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+
+    #terms p, #terms li {
+        font-size: 1.05em;
+        line-height: 1.6;
+        margin-bottom: 10px;
+    }
+
+    #terms ul {
+        padding-left: 20px;
+    }
+
+    @media (max-width: 768px) {
+        #terms {
+            width: 95%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="terms">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="StreamSnip Logo" class="logo site_icon">
+    <h1>Terms and Conditions</h1>
+
+    <p>Welcome to StreamSnip, a product by <strong>MNC PROTRADE INDIA PVT LTD</strong>. By using our platform, you agree to comply with the following terms and conditions. Please read them carefully before accessing or using our services.</p>
+
+    <h2>1. Fair Use and Integrity</h2>
+    <ul>
+        <li>You must not exploit any bugs, vulnerabilities, or system flaws in StreamSnip for any purpose.</li>
+        <li>Attempting to gain unauthorized access to premium features or bypassing payment mechanisms is strictly prohibited.</li>
+        <li>Any attempt to benefit financially or gain additional services without proper authorization (apart from the official free trial) is considered a violation of our terms.</li>
+    </ul>
+
+    <h2>2. Compliance with Third-Party Policies</h2>
+    <p>StreamSnip is built to enhance YouTube live streaming experiences. As such, all users must also comply with YouTube's own <a href="https://www.youtube.com/t/terms" target="_blank">Terms of Service</a>. Any violation of YouTube’s guidelines while using our platform will result in account suspension or termination.</p>
+
+    <h2>3. Account Responsibility</h2>
+    <ul>
+        <li>You are responsible for maintaining the confidentiality of your account credentials.</li>
+        <li>Sharing your account or access tokens is not allowed unless explicitly authorized.</li>
+    </ul>
+
+    <h2>4. Service Changes</h2>
+    <p>StreamSnip reserves the right to modify or discontinue the service (or any part of it) at any time without notice. We may also update these Terms and Conditions periodically. Continued use of the service after changes implies acceptance of the updated terms.</p>
+
+    <h2>5. Termination</h2>
+    <p>We reserve the right to suspend or terminate access to StreamSnip for any user found violating these terms, without prior warning or refund.</p>
+
+    <p>If you have questions or concerns about our terms, please contact us at <a href="mailto:admin@streamsnip.com">admin@streamsnip.com</a>.</p>
+</div>
+{% endblock %}
