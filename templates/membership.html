@@ -15,7 +15,7 @@
     function sub(type, amount) {
         var form = document.createElement('form');
         form.method = 'POST';
-        form.action = '/pay';
+        form.action = '/pay/cashfree';
         var input = document.createElement('input');
         input.type = 'hidden';
         input.name = 'type';
@@ -33,7 +33,7 @@
     function upgrade(type) {
         var form = document.createElement('form');
         form.method = 'POST';
-        form.action = '/upgrade';
+        form.action = '/upgrade/cashfree';
         var input = document.createElement('input');
         input.type = 'hidden';
         input.name = 'type';
@@ -152,10 +152,10 @@
             {% for tier in ['basic', 'pro', 'premium'] %}
             <td>
                 {% if tier in available_upgrades %}
-                    <button class="btn btn-primary" type="button" disabled onclick="upgrade('{{ tier }}')">Upgrade</button>
+                    <button class="btn btn-primary" type="button" onclick="upgrade('{{ tier }}')">Upgrade</button>
                 {% elif tier in available_subscribes or tier == membership.type %}
                     <div class="dropdown">
-                        <button class="btn btn-primary dropdown-toggle" disabled type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             {% if tier == membership.type %}Extend{% else %}Subscribe{% endif %}
                         </button>
                         <ul class="dropdown-menu">

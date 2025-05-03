@@ -20,12 +20,15 @@ from oauthlib.oauth2.rfc6749.errors import *
 import secrets
 
 # Third-party library imports
+from cashfree_pg.models.create_order_request import CreateOrderRequest
+from cashfree_pg.api_client import Cashfree
+from cashfree_pg.models.customer_details import CustomerDetails
+from cashfree_pg.models.order_meta import OrderMeta
 import yagmail
 import cronitor
 import yt_dlp
 import dns.resolver
 import dns.reversename
-import razorpay
 import scrapetube
 from requests import get as GET
 from requests import get
@@ -96,15 +99,14 @@ try:
     GOOGLE_CLIENT_ID = config["google"]["client_id"]
     GOOGLE_CLIENT_SECRET = config["google"]["client_secret"]
     GOOGLE_DISCOVERY_URL = config["google"]["discovery_url"]
-    RAZORPAY_ID = config["razorpay"]["id"]
-    RAZORPAY_SECRET = config["razorpay"]["secret"]
-    razorclient = razorpay.Client(auth=(RAZORPAY_ID, RAZORPAY_SECRET))
+    Cashfree.XClientId = config["cashfree"]["id"]
+    Cashfree.XClientSecret = config["cashfree"]["secret"]
+    Cashfree.XEnvironment = Cashfree.SANDBOX
+    x_api_version = "2023-08-01"
 except KeyError:
     GOOGLE_CLIENT_ID = GOOGLE_CLIENT_SECRET = GOOGLE_DISCOVERY_URL = (
         None  # we don't have google creds
     )
-    RAZORPAY_ID = RAZORPAY_SECRET = None
-    razorclient = None
 
 oauthclient = WebApplicationClient(GOOGLE_CLIENT_ID)
 try:
@@ -162,6 +164,9 @@ requested_myself = (
 base_domain = (
     "https://streamsnip.com"  # just for the sake of it. store the base domain here
 )
+if local:
+    base_domain = "http://localhost"
+
 chat_id_video = {}  # store chat_id: vid. to optimize clip command
 downloader_base_url = "https://azure-internal-verse.glitch.me"
 project_name = "StreamSnip"
@@ -1402,11 +1407,113 @@ def settings():
         can_edit=can_edit,
     )
 
-
-@app.route("/upgrade", methods=["POST"])
+@app.route("/pay/cashfree", methods=["GET", "POST"])
 @login_required
-def upgrade():
-    print(request.form)
+def pay_cf():    
+    membership_type = request.form.get("type")
+    if not membership_type:
+        return "Invalid request: Membership type missing.", 400
+
+    membership_details = Membership.get(conn, current_user.id)
+
+    # Check if the requested membership matches the current membership
+    if membership_details.type != membership_type:
+        # in this case we are susbscribing to a new membership
+        ...
+    # Validate amount
+    amount = request.form.get("amount")
+    if not amount:
+        return "Invalid request: Amount missing.", 400
+    amount = int(amount)
+    if amount not in list(subscription_model[membership_type].values()):
+        return "Invalid request: Invalid amount.", 400
+
+    customerDetails = CustomerDetails(
+        customer_id=current_user.id, 
+        customer_name=current_user.name,
+        customer_email=current_user.email,
+        customer_phone="9999999999"
+        )
+    callback = "/pay/cashfree/callback" 
+    order_request = CreateOrderRequest(
+        order_amount=amount, order_currency="INR", 
+        customer_details=customerDetails, )
+    api_response = Cashfree().PGCreateOrder(x_api_version, order_request, None, None)
+    return render_template(
+        "pay_cf.html", 
+        paymentSessionId=api_response.data.payment_session_id, 
+        callback=callback,
+        order_id=api_response.data.order_id,)
+
+
+    
+
+@app.route("/pay/cashfree/callback", methods=["POST"])
+def callback_cf():
+    order_id = request.json.get("order_id")
+    api_response = Cashfree().PGFetchOrder(x_api_version, order_id, None)
+    if api_response.data.order_status != "PAID":
+        return "Payment not successful", 400
+    
+    old_ids = get_transactions_all()
+    old_ids = [x[3] for x in old_ids]
+    if order_id in old_ids:
+        return "Already paid", 400
+
+    amount = int(api_response.data.order_amount)
+    mtype, month = get_membership_from_amount(int(amount))
+    if mtype is None:
+        # this is not a subscription. we are not able to find the membership type
+        # so we will not be able to process the payment
+        return "Invalid payment", 400
+
+    membership_type = mtype
+    months = month
+
+    # Fetch old membership details
+    old_membership_details = Membership.get(conn, current_user.id)
+
+    # Calculate new end time
+    if old_membership_details.days_left:
+        start_time = old_membership_details.start
+        end_time = old_membership_details.end + timedelta(days=months * 28)
+    else:
+        # Should not reach here, but fallback
+        start_time = datetime.now()
+        end_time = datetime.now() + timedelta(days=months * 28)
+
+    # Update database
+    cur.execute("DELETE FROM MEMBERSHIP WHERE channel_id=?", (current_user.id,))
+    cur.execute(
+        "INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)",
+        (
+            current_user.id,
+            membership_type,
+            int(start_time.timestamp()),
+            int(end_time.timestamp()),
+        ),
+    )
+
+    description = f"Membership {membership_type} extended for {months} month{'s' if months != 1 else ''}"
+    cur.execute(
+        "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
+        (
+            current_user.id,
+            amount,
+            int(time.time()),
+            order_id,
+            membership_type,
+            description,
+        ),
+    )
+    conn.commit()
+    return "ok", 200
+
+
+
+@app.route("/upgrade/cashfree", methods=["POST"])
+@login_required
+def upgrade_cf():
     switch_to = request.form.get("type")
     if not switch_to:
         return "Invalid request", 400
@@ -1440,154 +1547,29 @@ def upgrade():
     amount = (per_day_new - per_day_current) * days_left
     if amount <= 0:
         return "Invalid upgrade request.", 400
-
-    amount = int(round(amount)) * 100  # Convert to paise
-
-    recepipt = f"{current_user.id}_{int(time.time())}"
-    data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers": []}
-    payment = razorclient.order.create(data=data)
-
-    callback = "/pay/callback-upgrade/" + switch_to
-    name = channel_info[current_user.id]["name"]
-
-    return render_template(
-        "pay.html",
-        rzp_id=RAZORPAY_ID,
-        oid=payment["id"],
-        callback=callback,
-        amount=amount,
-        name=name,
-    )
-
-
-@app.route("/pay", methods=["GET", "POST"])
-@login_required
-def pay():
-    flash("RAZORPAY is not available for now. ")
-    
-    print("Payment request")
-    membership_type = request.form.get("type")
-    if not membership_type:
-        return "Invalid request: Membership type missing.", 400
-
-    membership_details = Membership.get(conn, current_user.id)
-
-    # Check if the requested membership matches the current membership
-    if membership_details.type != membership_type:
-        # in this case we are susbscribing to a new membership
-        ...
-    # Validate amount
-    amount = request.form.get("amount")
-    if not amount:
-        return "Invalid request: Amount missing.", 400
-    amount = int(amount)
-    if amount not in list(subscription_model[membership_type].values()):
-        return "Invalid request: Invalid amount.", 400
-
-    
-    amount = amount * 100  # Convert to paise
-    recepipt = f"{current_user.id}_{int(time.time())}"
-    data = {"amount": amount, "currency": "INR", "receipt": recepipt, "offers": []}
-    payment = razorclient.order.create(data=data)
-    callback = "/pay/callback"
-    name = channel_info[current_user.id]["name"]
-
-    return render_template(
-        "pay.html",
-        rzp_id=RAZORPAY_ID,
-        oid=payment["id"],
-        callback=callback,
-        amount=amount,
-        name=name,
-    )
-
-def get_membership_from_amount(amount:int):
-    for mtype in subscription_model:
-        for month in subscription_model[mtype]:
-            am = subscription_model[mtype][month]
-            if am == amount:
-                return mtype, month
-    return None, None
-    
-
-@app.route("/pay/callback", methods=["POST"])
-def callback():
-    pid = request.form.get("razorpay_payment_id")
-    ordid = request.form.get("razorpay_order_id")
-    sign = request.form.get("razorpay_signature")
-    print(f"The payment id: {pid}, order id: {ordid}, signature: {sign}")
-
-    params = {
-        "razorpay_order_id": ordid,
-        "razorpay_payment_id": pid,
-        "razorpay_signature": sign,
-    }
-    order = razorclient.order.fetch(ordid)
-    old_ids = get_transactions_all()
-    old_ids = [x[3] for x in old_ids]
-    if ordid in old_ids:
-        return "Already paid", 400
-
-    final = razorclient.utility.verify_payment_signature(params)
-    if final is True:
-        amount = int(order["amount"] // 100)
-        b_outer_loop = False
-        mtype, month = get_membership_from_amount(int(amount))
-        if mtype is None:
-            # this is not a subscription. we are not able to find the membership type
-            # so we will not be able to process the payment
-            return "Invalid payment", 400
-
-        membership_type = mtype
-        months = month
-
-        # Fetch old membership details
-        old_membership_details = Membership.get(conn, current_user.id)
-
-        # Calculate new end time
-        if old_membership_details.days_left:
-            start_time = old_membership_details.start
-            end_time = old_membership_details.end + timedelta(days=months * 28)
-        else:
-            # Should not reach here, but fallback
-            start_time = datetime.now()
-            end_time = datetime.now() + timedelta(days=months * 28)
-
-        # Update database
-        cur.execute("DELETE FROM MEMBERSHIP WHERE channel_id=?", (current_user.id,))
-        cur.execute(
-            "INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)",
-            (
-                current_user.id,
-                membership_type,
-                int(start_time.timestamp()),
-                int(end_time.timestamp()),
-            ),
+    # round off ammount to second decimal place
+    amount = round(amount, 2)
+    customerDetails = CustomerDetails(
+        customer_id=current_user.id, 
+        customer_name=current_user.name,
+        customer_email=current_user.email,
+        customer_phone="9999999999"
         )
-
-        description = f"Membership {membership_type} extended for {months} month{'s' if months != 1 else ''}"
-        cur.execute(
-            "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
-            (
-                current_user.id,
-                amount,
-                int(time.time()),
-                ordid,
-                membership_type,
-                description,
-            ),
-        )
-        conn.commit()
-        return redirect("/membership", code=301)
-
-    return "Something went wrong, please try again."
+    callback = base_domain+"/upgrade/callback-upgrade/"+switch_to 
+    order_meta = OrderMeta(return_url=callback)
+    order_request = CreateOrderRequest(
+        order_amount=amount, order_currency="INR", 
+        customer_details=customerDetails, order_meta=order_meta)
+    api_response = Cashfree().PGCreateOrder(x_api_version, order_request, None, None)
+    return render_template(
+        "pay_cf.html", 
+        paymentSessionId=api_response.data.payment_session_id, 
+        callback=callback,
+        order_id=api_response.data.order_id,)
 
 
-@app.route("/pay/callback-upgrade/<new_type>", methods=["POST"])
-def callback_upgrade(new_type:str):
-    pid = request.form.get("razorpay_payment_id")
-    ordid = request.form.get("razorpay_order_id")
-    sign = request.form.get("razorpay_signature")
+@app.route("/upgrade/callback-upgrade/<new_type>", methods=["POST"])
+def callback_upgrade_cf(new_type:str):
     allowed_upgrades = {"basic": ["pro", "premium"], "pro": ["premium"], "premium": []}
 
     membership_details = Membership.get(conn, current_user.id)
@@ -1603,53 +1585,55 @@ def callback_upgrade(new_type:str):
     days_left = membership_details.days_left
     should_be_paid_amount = (per_day_new - per_day_current) * days_left
     should_be_paid_amount = int(round(should_be_paid_amount)) 
-
-    params = {
-        "razorpay_order_id": ordid,
-        "razorpay_payment_id": pid,
-        "razorpay_signature": sign,
-    }
-    order = razorclient.order.fetch(ordid)
-    print(order)
+    order_id = request.json.get("order_id")
+    api_response = Cashfree().PGFetchOrder(x_api_version, order_id, None)
+    if api_response.data.order_status != "PAID":
+        return "Payment not successful", 400
+    
     old_ids = get_transactions_all()
     old_ids = [x[3] for x in old_ids]
-    if ordid in old_ids:
+    if order_id in old_ids:
         return "Already paid", 400
 
-    final = razorclient.utility.verify_payment_signature(params)
-    if final is True:
-        amount = int(order["amount"] // 100)
-        if int(should_be_paid_amount) != int(amount):
-            print(int(amount), should_be_paid_amount)
-            # this is not a subscription. we are not able to find the membership type
-            # so we will not be able to process the payment
-            return f"Invalid payment please contact admin at discord ({discord_invite}) if you think this is a mistake.", 400
+    amount = api_response.data.order_amount
+    # if the deficit is more or less than 5 rs then we will not process the payment
+    if abs(int(should_be_paid_amount) - int(amount)) > 5:
+        return f"Invalid payment please contact admin at discord ({discord_invite}) if you think this is a mistake.", 400
+    
+    # Update database
+    cur.execute(
+        "UPDATE membership SET type = ? WHERE channel_id = ?",
+        (
+            new_type,
+            current_user.id,
+        ),
+    )
 
-        # Update database
-        cur.execute(
-            "UPDATE membership SET type = ? WHERE channel_id = ?",
-            (
-                new_type,
-                current_user.id,
-            ),
-        )
+    description = f"Membership upgraded from {current_type} to {new_type}"
+    cur.execute(
+        "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
+        (
+            current_user.id,
+            amount,
+            int(time.time()),
+            order_id,
+            new_type,
+            description,
+        ),
+    )
+    conn.commit()
+    return "ok", 200
 
-        description = f"Membership upgraded from {current_type} to {new_type}"
-        cur.execute(
-            "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
-            (
-                current_user.id,
-                amount,
-                int(time.time()),
-                ordid,
-                new_type,
-                description,
-            ),
-        )
-        conn.commit()
-        return redirect("/membership", code=301)
 
-    return "Something went wrong, please try again."
+
+def get_membership_from_amount(amount:int):
+    for mtype in subscription_model:
+        for month in subscription_model[mtype]:
+            am = subscription_model[mtype][month]
+            if am == amount:
+                return mtype, month
+    return None, None
+
 
 def terminate_current_membership(channel_id: str):
     with conn:
@@ -1706,7 +1690,6 @@ def membership():
             available_upgrades = ["pro", "premium"]
         if membership_details.type == "pro":
             available_upgrades = ["premium"]
-    flash("RAZORPAY is not available right now. StreamSnip is free till further notice.", "info")
     return render_template(
         "membership.html",
         membership=membership_details,
