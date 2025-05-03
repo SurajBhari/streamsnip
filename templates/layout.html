@@ -184,10 +184,10 @@
                 var last_clip = data.last_clip;
                 var last_clip_time = document.getElementById("last_clip_time");
                 if(last_clip){
-                    last_clip_time.innerHTML = `   Last Clip - ${last_clip.timesince}`;
+                    last_clip_time.innerHTML = ` Last Clip - ${last_clip.timesince}`;
                     var today_count = data.today_count;
                     var today_count_element = document.getElementById("today_count");
-                    today_count_element.innerHTML = '<i class="fa-solid fa-clipboard-list"></i>' + today_count + " Clips Today";
+                    today_count_element.innerHTML = '<i class="fa-solid fa-clipboard-list"></i> ' + today_count + " Clips Today";
                 }
                 var data = data.data;
                 if(is_home){
