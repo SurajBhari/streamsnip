@@ -19,7 +19,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/gh/xcash/bootstrap-autocomplete@v2.3.7/dist/latest/bootstrap-autocomplete.min.js"></script>
@@ -27,10 +28,18 @@
         var is_home = false; // this will be overwritten on home page only
         var is_first_load = true;
         var all = false; 
-        
+
         function update_theme(){
             var isDarkTheme = localStorage.getItem("darkTheme") === "true";
             const darkThemeMq = window.matchMedia("(prefers-color-scheme: dark)");
+            if (!localStorage.getItem("darkTheme")) {
+                if (darkThemeMq.matches) {
+                    isDarkTheme = true;
+                }
+            }
+            if (!window.matchMedia){
+                isDarkTheme = true;
+            }
             var form_control = document.getElementsByClassName("form-control");
             var a = document.getElementsByTagName("a");
             var ul = document.getElementsByTagName("ul");
@@ -38,19 +47,10 @@
             var signs_in = document.getElementsByClassName("google_sign_in");
             var alerts = document.getElementsByClassName("alert");
             var theads = document.getElementsByTagName("thead");
-            // append "select" objects to "a" list 
             var select = document.getElementsByTagName("select");
-            if (!localStorage.getItem("darkTheme")) {
-                if (darkThemeMq.matches) {
-                    isDarkTheme = true;
-                }
-            }
-            if (!window.matchMedia){ // for phone we just assume dark theme
-                isDarkTheme = true;
-            }
             var body = document.body;
             var theme_button = document.getElementById("theme_button");
-            var navbar = document.getElementsByClassName("navbar");
+            var navbar = document.getElementsByClassName("navbar");            
             var site_icon = document.getElementsByClassName("site_icon");
             var dropdown_items = document.getElementsByClassName("dropdown-item");
             if (isDarkTheme) {
@@ -127,8 +127,8 @@
                 for(let i=0; i<navbar.length; i++){
                     navbar[i].classList.add("bg-dark");
                     navbar[i].classList.remove("bg-light");
-                    navbar[i].classList.add("navbar-dark");
-                    navbar[i].classList.remove("navbar-light");
+                    navbar[i].classList.remove("navbar-light");                    
+                    navbar[i].classList.add("navbar-dark");                    
                 }
                 for(let i=0; i<alerts.length; i++){
                     alerts[i].classList.add("dark-theme");
@@ -142,8 +142,8 @@
                 for(let i=0; i<navbar.length; i++){
                     navbar[i].classList.add("bg-light");
                     navbar[i].classList.remove("bg-dark");
-                    navbar[i].classList.add("navbar-light");
                     navbar[i].classList.remove("navbar-dark");
+                    navbar[i].classList.add("navbar-light");                    
                 }
                 for(let i=0; i<alerts.length; i++){
                     alerts[i].classList.remove("dark-theme");
@@ -256,13 +256,15 @@
 </head>
 <header>
     <div id="alert"></div>
-    
-    <div class="container">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="navbar_id">
-            <a class="navbar-brand" href="/"><img src="/static/logo-grey.svg" alt="logo" width="32" height="32" class="bi me-2 site_icon" id="site_icon">StreamSnip</a>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="navbar_id">
+        <div class="container">
+            <a class="navbar-brand" href="/"><img src="/static/logo-grey.svg" alt="logo" width="32" height="32"
+                    class="bi me-2 site_icon" id="site_icon">StreamSnip</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
                 <ul class="navbar-nav mr-auto">
                     <li class="nav-item">
@@ -304,7 +306,7 @@
                             <li><a class="dropdown-item" href="/logout"><i class="fa-solid fa-sign-out"></i> Logout</a></li>
                         </ul>
                     </li>                    
-                    {% else %}
+                    {% else %}                    
                         <li class="nav-item">
                             <a class="nav-link" href="/login?next={{request.path}}">Login <i class="fa-solid fa-sign-in"></i></a>
                         </li>
@@ -312,9 +314,10 @@
                     
                 </ul>
             </div>
-        </nav>       
-    </div>
+        </div>
+    </nav>
 </header>
+
 <div id="loader-wrapper">
     <img src="/static/logo.svg" id="loader" alt="site logo">
     <div class="loader-section section-left"></div>
@@ -324,17 +327,23 @@
     {% block content %}{% endblock %}
 </div>
 
-<footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
-    <div class="col-md-4 d-flex align-items-center">
-    <a href="/" class="mb-3 me-2 mb-md-0 text-muted text-decoration-none lh-1">
-        <svg class="bi" width="30" height="24"><use xlink:href="#bootstrap"></use></svg>
-    </a>
-    <span class="mb-3 mb-md-0 text-muted">© 2025 Suraj Bhari | <a href="https://github.com/surajbhari/streamsnip">Source Code </a> | <a class="text" href="/privacy-policy">Privacy Policy</a> | <a class="text" href="/aboutus">About Us</a> | <a class="text" href="/contactus">Contact Us </a>| <a class="text" href="/tnc">Terms & Conditions</a></span>
+<footer class="bg-dark text-white">
+    <div class="container py-4">
+        <div class="row">
+            <div class="col-md-6">
+                <p>© 2025 Suraj Bhari</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <a href="https://github.com/surajbhari/streamsnip" class="text-light">Source Code</a> |
+                <a href="/privacy-policy" class="text-light">Privacy Policy</a> |
+                <a href="/aboutus" class="text-light">About Us</a> |
+                <a href="/contactus" class="text-light">Contact Us</a> |
+                <a href="/tnc" class="text-light">Terms & Conditions</a>
+            </div>
+        </div>
     </div>
-    <span style="color: rgba(33, 37, 41, 1);">You are weird for using light theme</span>
 </footer>
 <!-- Bootstrap Bundle with Popper -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
 </body>
-
 </html>
