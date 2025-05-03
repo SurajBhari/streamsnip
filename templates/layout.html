@@ -130,7 +130,9 @@
                     navbar[i].classList.add("navbar-dark");
                     navbar[i].classList.remove("navbar-light");
                 }
-                for(let i=0; alerts.length; i++){
+                console.log(alerts);
+                for(let i=0; i<alerts.length; i++){
+                    console.log(alerts[i]);
                     alerts[i].classList.add("dark-theme");
                 }
                 for(let i=0; i<site_icon.length; i++){
@@ -145,7 +147,7 @@
                     navbar[i].classList.add("navbar-light");
                     navbar[i].classList.remove("navbar-dark");
                 }
-                for(let i=0; alerts.length; i++){
+                for(let i=0; i<alerts.length; i++){
                     alerts[i].classList.remove("dark-theme");
                 }
                 for(let i=0; i<site_icon.length; i++){
