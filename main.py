@@ -101,7 +101,7 @@ try:
     GOOGLE_DISCOVERY_URL = config["google"]["discovery_url"]
     Cashfree.XClientId = config["cashfree"]["id"]
     Cashfree.XClientSecret = config["cashfree"]["secret"]
-    Cashfree.XEnvironment = Cashfree.SANDBOX
+    Cashfree.XEnvironment = Cashfree.PRODUCTION
     x_api_version = "2023-08-01"
 except KeyError:
     GOOGLE_CLIENT_ID = GOOGLE_CLIENT_SECRET = GOOGLE_DISCOVERY_URL = (
