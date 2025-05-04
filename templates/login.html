@@ -7,6 +7,14 @@
         padding-top: 5%;
     }
 </style>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        if(window.location.href.includes("http://") && !window.locahtion.href.includes("localhost") && !window.location.href.includes("127.0.0.1")) {
+            // Redirect to HTTPS
+            window.location = "https://" + window.location.href.split("http://")[1];
+        }
+    });
+</script>
 {% endblock %}
 
 {% block content %}
