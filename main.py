@@ -140,12 +140,6 @@ DEFAULT_SETTINGS = UserSettings()
 global known_session_tokens
 known_session_tokens = set()
 conn = sqlite3.connect("queries.db", check_same_thread=False)
-with conn:
-    cur = conn.cursor()
-    cur.execute("SELECT session_token FROM LOGIN_RECORDS")
-    data = cur.fetchall()
-    known_session_tokens = {x[0] for x in data}
-    # this is a set of all the session tokens that are already in the database. we will use this to check if the session token is already used or not
 # cur = db.cursor() # this is not thread safe. we will create a new cursor for each thread
 owner_icon = "👑"
 mod_icon = "🔧"
@@ -316,7 +310,13 @@ with conn:
         "CREATE TABLE IF NOT EXISTS TRANSACTIONS(channel_id VARCHAR(40), amount INT, time INT, transaction_id VARCHAR(40), membership_type VARCHAR(40), description VARCHAR(40))"
     )
     conn.commit()
-
+    
+with conn:
+    cur = conn.cursor()
+    cur.execute("SELECT session_token FROM LOGIN_RECORDS")
+    data = cur.fetchall()
+    known_session_tokens = {x[0] for x in data}
+    # this is a set of all the session tokens that are already in the database. we will use this to check if the session token is already used or not
 
 class AnonymousUser(AnonymousUserMixin):
     def __init__(self):
