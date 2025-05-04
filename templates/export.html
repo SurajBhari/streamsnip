@@ -344,30 +344,47 @@
                 delay = `${delay}`;
             }
             var cardHtml = `<div class="col-md-4 col-lg-3">
-                                <div class="card ${getBorderStyle(clip['author']['level'])}" id="${clip['id']}" style="width: 100%;">
-                                    ${download_button}
-                                    <a href="#${clip.id}" class='${a_class}' onclick='do_magic("${clip.id}");'id='${clip.id}-thumbnail'>
-                                        ${card_img}
-                                    </a>
-                                    <center><a title="More clip from this stream" href="#search" onclick="addtosearch('${clip['stream_id']}')"> <i class="fa-solid fa-plus"></i> </a>${clip['id']} <a href="#${clip['id']}"> <i class="fa-solid fa-link"></i> </a> </br>${badges}</center>
-                                    <div class="card-body">
-                                        <a href="${getUserChannelLink(clip['author']['id'])}" target="_blank" class='${a_class}'>
-                                            <h5 class="card-title"><i class="fa-solid fa-user"></i>${getAuthorTitle(clip['author']['level'])} ${escape(clip['author']['name'])}</h5>
-                                        </a>
-                                        <a href="${clip['link']}" target="_blank" class='${a_class}'>
-                                            <p lang="en" class="card-text">
-                                                <i class="fa-solid fa-clipboard-list"></i> ${add_yt_emojis(escape(clip['message']))}${edit_button}</br>
-                                                <i class="fa-solid fa-clock"></i> At ${clip['hms']} (${delay}s)</br>
-                                                <span title="${clip['time']}"> <i class="fa-solid fa-clock-rotate-left"></i> ${clip['timesince']} </span>
-                                            </p>
-                                        </a>
-                                    </div>
-                                    <div class="card-footer checkbox-wrapper-2">
-                                        <input type="checkbox" class="sc-gJwTLC ikxBAC" id=${clip['id']} value=${clip['id']} onclick='handleClick(this);' ${is_checked ? 'checked' : ''}>
-                                    ${delete_button}
-                                        </div>
-                                </div>
-                            </div>`;
+                <div class="card ${getBorderStyle(clip['author']['level'])}" id="${clip['id']}" style="width: 100%;">
+                    ${download_button}
+                    <a href="#${clip.id}" class='${a_class}' onclick='do_magic("${clip.id}");' id='${clip.id}-thumbnail'>
+                        ${card_img}
+                    </a>
+                    <center>
+                        <a title="More clip from this stream" href="#search" onclick="addtosearch('${clip['stream_id']}')">
+                            <i class="fa-solid fa-plus"></i>
+                        </a>
+                        ${clip['id']}
+                        <a href="#${clip['id']}">
+                            <i class="fa-solid fa-link"></i>
+                        </a>
+                        </br>${badges}
+                    </center>
+                    <div class="card-body">
+                        <!-- Description first -->
+                        <a href="${clip['link']}" target="_blank" class='${a_class}'>
+                            <p class="card-text">
+                                <i class="fa-solid fa-clipboard-list"></i> ${add_yt_emojis(escape(clip['message']))}${edit_button}</br>
+                            </p>
+
+                            <a href="${getUserChannelLink(clip['author']['id'])}" target="_blank" class='${a_class}'>
+                                <i class="fa-solid fa-user"></i> ${getAuthorTitle(clip['author']['level'])} ${escape(clip['author']['name'])}
+                            </a>
+                            <p lang="en" class="card-text">
+                                <i class="fa-solid fa-clock"></i> At ${clip['hms']} (${delay}s)</br>
+                                <span title="${clip['time']}">
+                                    <i class="fa-solid fa-clock-rotate-left"></i> ${clip['timesince']}
+                                </span>
+                            </p>
+                        </a>
+                    </div>
+                    <div class="card-footer checkbox-wrapper-2">
+                        <input type="checkbox" class="sc-gJwTLC ikxBAC" id=${clip['id']} value=${clip['id']} onclick='handleClick(this);' ${is_checked ? 'checked' : ''}>
+                        ${delete_button}
+                    </div>
+                </div>
+            </div>`;
+
+
             container.innerHTML += cardHtml;
             
         });
