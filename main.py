@@ -1124,7 +1124,6 @@ def login_google():
     redirect_uri = request.base_url + "/callback"
     if next:
         session["next_url"] = next  # google doesn't allow query params in redirect_uri
-    print(redirect_uri)
     google_provider_cfg = get_google_provider_cfg()
     authorization_endpoint = google_provider_cfg["authorization_endpoint"]
     request_uri = oauthclient.prepare_request_uri(
@@ -1290,7 +1289,6 @@ def get_ip():
 @app.route("/settings/delete_login", methods=["POST"])
 def delete_login():
     session_token = request.json.get("session_token")
-    print(session_token)
     if session_token not in known_session_tokens:
         return "Invalid session token", 400
     with conn:
@@ -1723,7 +1721,7 @@ def export():
 @app.route("/exports")
 @app.route("/e/")
 @app.route("/exports/")
-def clips():
+def exports_all():
     data = get_channel_clips()
     if len(data) > 50000:
         if not current_user.admin:
@@ -1812,6 +1810,85 @@ def get_channel_at(channel_id):  # returns the @username of the channel
     return channel["username"]
 
 
+def get_user_clips(user_id):
+    with conn:
+        cur = conn.cursor()
+        if user_id:
+            cur.execute(f"select * from QUERIES where user_id=?", (user_id,))
+        else:
+            cur.execute(f"select * from QUERIES ORDER BY time ASC")
+        data = cur.fetchall()
+    l = []
+    for y in data:
+        x = Clip(y)
+        l.append(x)
+    l.reverse()
+    return l
+
+@app.route("/c")
+@app.route("/clips")
+@app.route("/clips/<channel_id>")
+@app.route("/clips/<channel_id>/")
+@app.route("/c/<channel_id>/")
+@app.route("/c/<channel_id>")
+def clips(channel_id=None):
+    if not channel_id:
+        if not current_user.logged_in:
+            return redirect(url_for("slash"))
+        channel_id = current_user.id
+    channel_id = get_channel_id_any(channel_id)
+    if not channel_id:
+        return redirect(url_for("slash"))
+    data = get_user_clips(channel_id)
+    channel_name, channel_image = get_channel_name_image(channel_id)
+    can_edit = False
+    if current_user.admin:  # no data should be hidden from admin
+        data = [x.json() for x in data]
+    else:
+        data = [x.json() for x in data if not x.private]
+    data_copy = data.copy()
+    for clip in data:
+        if clip["discord"]["webhook"]:
+            if (
+                clip["channel"] in prefix_webhook
+                and prefix_webhook.get(clip["channel"]) is not None
+            ):
+                clip["discord_url"] = (
+                    f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
+                )
+            else:
+                webhook_url = get_channel_settings(clip["channel"]).webhook
+                if not webhook_url:
+                    continue
+                response = get(webhook_url)
+                if response.status_code != 200:
+                    prefix_webhook[clip["channel"]] = None
+                    continue
+                j = response.json()
+                prefix_webhook[clip["channel"]] = (
+                    f"https://discord.com/channels/{j['guild_id']}/{j['channel_id']}"
+                )
+                clip["discord_url"] = (
+                    f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
+                )
+        else:
+            clip["discord_url"] = "#"
+        clip["author"]["name"], _ = get_channel_name_image(clip["channel"])
+        clip["author"]["id"] = clip["channel"]
+    return render_template(
+        "export.html",
+        data=data,
+        clips_string=create_simplified(data_copy),
+        channel_name=channel_name,
+        channel_image=channel_image,
+        owner_icon=owner_icon,
+        mod_icon=mod_icon,
+        regular_icon=regular_icon,
+        subscriber_icon=subscriber_icon,
+        channel_id=get_channel_at(channel_id),
+        emoji_lookup_table=emoji_lookup_table,
+        can_edit=can_edit,
+    ) 
 # this is for specific channel
 @app.route("/exports/<channel_id>")
 @app.route("/e/<channel_id>")
@@ -2880,7 +2957,6 @@ def admin():
     users = generate_home_data()
     settings = vars(UserSettings())
     members = get_members()
-    print(members)
     return render_template(
         "admin.html",
         ids=clip_ids,
@@ -4205,5 +4281,4 @@ write_channel_cache(channel_info)
 prefix_webhook = {}
 
 if __name__ == "__main__":
-    print(is_subscribed("UC65diHy4pNeNE3t5jLfiIWA"))
     app.run(debug=True, host="0.0.0.0", port=80)
