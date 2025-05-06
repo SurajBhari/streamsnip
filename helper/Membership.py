@@ -42,6 +42,7 @@ class Membership:
             "end": self.end.timestamp(),
             "days_left": self.days_left,
             "free_trial": self.free_trial,
+            "time_left": self.time_left
         })
 
     @staticmethod

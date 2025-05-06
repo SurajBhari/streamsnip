@@ -24,6 +24,7 @@ from cashfree_pg.models.create_order_request import CreateOrderRequest
 from cashfree_pg.api_client import Cashfree
 from cashfree_pg.models.customer_details import CustomerDetails
 from cashfree_pg.models.order_meta import OrderMeta
+from cashfree_pg.models.create_plan_request import CreatePlanRequest
 import yagmail
 import cronitor
 import yt_dlp
@@ -119,6 +120,7 @@ if not local:
     monitor = cronitor.Monitor.put(key="Streamsnip-Clips-Performance", type="job")
 else:
     monitor = None
+    Cashfree.XEnvironment = Cashfree.SANDBOX
 
 
 app = Flask(__name__)
@@ -188,6 +190,35 @@ if "youtubeemoji.json" in os.listdir("./helper"):
 else:
     emoji_lookup_table = {}
 
+
+for tier in subscription_model:
+    for days_muliple in subscription_model[tier]:
+        # create the plan for subscription 
+        plan_name = f"{project_name}_{tier}_{days_muliple*28}_{subscription_model[tier][days_muliple]}"
+        try:
+            Cashfree().SubsFetchPlan(plan_id=plan_name, x_api_version=x_api_version)
+        except Exception as e:
+            pass
+        else:
+            print(f"Plan {plan_name} already exists. Skipping creation.")
+            continue
+        plan_request = CreatePlanRequest(
+            plan_id=plan_name,
+            plan_name=f"{tier} {days_muliple*28} days at {subscription_model[tier][days_muliple]}",
+            plan_type="PERIODIC",
+            plan_currency="INR",
+            plan_recurring_amount=subscription_model[tier][days_muliple],
+            plan_max_amount=subscription_model[tier][days_muliple]*2,
+            plan_max_cycles=0,
+            plan_intervals=4*days_muliple, # 4 weeks in 28 days
+            plan_interval_type="WEEK",
+            plan_note=f"Subscription for {project_name} - Clips"
+        )
+        try:
+            api_response = Cashfree().SubsCreatePlan(create_plan_request=plan_request, x_api_version=x_api_version)
+        except Exception as e:
+            print(f"Failed to create plan {plan_name}. Error: {e}")
+            continue
 
 def is_it_expired(
     t: int,
@@ -3583,6 +3614,8 @@ def clip(message_id, clip_desc=None):
     if not sub_detail:
         return f"@{channel___name} 's free trial ended ☹. Get the subscription at {base_domain}/membership"
     free_trial = False
+    mmmmembership = Membership.get(conn, channel_id)
+    time_left = mmmmembership.time_left
     if sub_detail == "FREE":
         free_trial = True
         sub_detail = "pro"
@@ -3782,7 +3815,13 @@ def clip(message_id, clip_desc=None):
         t_clip_desc = clip_desc
     message_to_return = ""
     if free_trial:
-        message_to_return += "Free Trial - "
+        if time_left.total_seconds() < 86400*3: # if its less than 3 days
+            if time_left.days == 0:
+                message_to_return += "Free Trial Ending Today. "
+            else:
+                message_to_return += f"Free Trial Ending in {time_left.days} days. " 
+        else:
+            message_to_return += "Free Trial - "
     if t_clip_desc != "None":
         message_to_return += f"{project_name} successfully clipped '{t_clip_desc}' ({clip_id}) by {user_name}"
     else:
@@ -3841,9 +3880,11 @@ def clip(message_id, clip_desc=None):
             htt = "https://"
         else:
             htt = "http://"
-        show_link_message = f" See all clips at {htt}{request.host}{url_for('exports', channel_id=get_channel_at(channel_id))}"
-
-    message_to_return += show_link_message
+        show_link_message = f" See at {htt}{request.host}{url_for('exports', channel_id=get_channel_at(channel_id))}"
+    if len(message_to_return) + len(show_link_message) > 200:
+        pass
+    else:
+        message_to_return += show_link_message
 
     # insert the entry to database
     with conn:
@@ -3874,7 +3915,7 @@ def clip(message_id, clip_desc=None):
     if private:
         return "clipped 😉"
     if silent == 2:
-        return message_to_return
+        return message_to_return[:200]
     elif silent == 1:
         return clip_id
     else:
