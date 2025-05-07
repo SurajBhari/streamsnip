@@ -1692,6 +1692,7 @@ def get_transactions(channel_id: str = None):
 @app.route("/membership")
 @login_required
 def membership():
+    flash("PAYMENT GATEWAY DISABLED UNTIL FURTHER NOTICE", "danger")
     transactions = get_transactions(current_user.id)
     balance = 0
     for i in range(len(transactions)):
