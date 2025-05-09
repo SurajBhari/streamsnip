@@ -366,6 +366,33 @@ input:focus {
   background: #1976D2;
 }
 
+@media (max-width: 450px) {
+  .login {
+    width: 90%;
+    margin: 20px auto;
+  }
+
+  .login form input[type="password"],
+  .login form input[type="text"],
+  .login form input[type="email"] {
+    width: 100%;
+  }
+
+  .login form {
+    padding: 10px;
+  }
+
+  .google_sign_in {
+    width: 80% !important;
+  }
+
+  .login h1 {
+    font-size: 20px;
+    padding: 15px;
+  }
+}
+
+
 /* Misc */
 .scrollable_list {
   border: 1px solid #2196F3;
