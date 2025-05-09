@@ -1,0 +1,98 @@
+{% extends 'layout.html' %}
+
+{% block head_content %}
+<title>StreamSnip - Pay</title>
+<style>
+    .content {
+        padding-top: 5%;
+    }
+    .qr-image {
+        max-width: 100%;
+        height: auto;
+    }
+</style>
+<script>
+    function handleSubmit(event) {
+        event.preventDefault();
+        const refNumber = document.getElementById('ref').value;
+        var upgrade = {{upgrade|tojson}}
+        var url;
+        if(upgrade){
+            url = "/upgrade/callback/manual"
+        }
+        else{
+            url = "/pay/manual/callback"
+        }
+        console.log("URL:", url); // Debugging line to check the URL
+        const data = {
+            ref: refNumber,
+            amount: {{ amount }},
+            memberhip: '{{ membership_type }}'
+        };
+
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.href = "/membership";
+            } else {
+                var text = response.text().then(text => {
+                    alert("Error: " + text);
+                });
+                
+            }
+        })
+        .catch(error => {
+            console.error("Fetch error:", error);
+            alert("An error occurred. Please try again.");
+        });
+    }
+</script>
+
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 mb-4 text-center">
+            <h2 class="mb-3 text-success">{{ transaction_note }}</h2>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{ upi_link_encoded }}" alt="UPI QR Code" class="qr-image mb-3">
+            <div>
+                <a href="{{ upi_link }}" target="_blank" class="btn btn-success btn-lg">
+                    Pay with UPI
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Payment Reference Submission</h4>
+                    <form onsubmit="handleSubmit(event)">
+                        <div class="mb-3">
+                            <label for="ref" class="form-label">Enter Reference Number</label>
+                            <input 
+                                type="number" 
+                                id="ref" 
+                                name="ref" 
+                                class="form-control" 
+                                placeholder="Enter reference number" 
+                                required 
+                                onkeydown="return ['Backspace','Delete','ArrowLeft','ArrowRight'].includes(event.code) ? true : !isNaN(Number(event.key)) && event.code !== 'Space'">
+                        </div>
+                        <div class="d-grid">
+                            <input type="submit" class="btn btn-primary btn-block" value="Submit">
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

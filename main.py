@@ -20,11 +20,6 @@ from oauthlib.oauth2.rfc6749.errors import *
 import secrets
 
 # Third-party library imports
-from cashfree_pg.models.create_order_request import CreateOrderRequest
-from cashfree_pg.api_client import Cashfree
-from cashfree_pg.models.customer_details import CustomerDetails
-from cashfree_pg.models.order_meta import OrderMeta
-from cashfree_pg.models.create_plan_request import CreatePlanRequest
 import yagmail
 import cronitor
 import yt_dlp
@@ -100,10 +95,6 @@ try:
     GOOGLE_CLIENT_ID = config["google"]["client_id"]
     GOOGLE_CLIENT_SECRET = config["google"]["client_secret"]
     GOOGLE_DISCOVERY_URL = config["google"]["discovery_url"]
-    Cashfree.XClientId = config["cashfree"]["id"]
-    Cashfree.XClientSecret = config["cashfree"]["secret"]
-    Cashfree.XEnvironment = Cashfree.PRODUCTION
-    x_api_version = "2023-08-01"
 except KeyError:
     GOOGLE_CLIENT_ID = GOOGLE_CLIENT_SECRET = GOOGLE_DISCOVERY_URL = (
         None  # we don't have google creds
@@ -120,7 +111,6 @@ if not local:
     monitor = cronitor.Monitor.put(key="Streamsnip-Clips-Performance", type="job")
 else:
     monitor = None
-    Cashfree.XEnvironment = Cashfree.SANDBOX
 
 
 app = Flask(__name__)
@@ -190,35 +180,6 @@ if "youtubeemoji.json" in os.listdir("./helper"):
 else:
     emoji_lookup_table = {}
 
-
-for tier in subscription_model:
-    for days_muliple in subscription_model[tier]:
-        # create the plan for subscription 
-        plan_name = f"{project_name}_{tier}_{days_muliple*28}_{subscription_model[tier][days_muliple]}"
-        try:
-            Cashfree().SubsFetchPlan(plan_id=plan_name, x_api_version=x_api_version)
-        except Exception as e:
-            pass
-        else:
-            print(f"Plan {plan_name} already exists. Skipping creation.")
-            continue
-        plan_request = CreatePlanRequest(
-            plan_id=plan_name,
-            plan_name=f"{tier} {days_muliple*28} days at {subscription_model[tier][days_muliple]}",
-            plan_type="PERIODIC",
-            plan_currency="INR",
-            plan_recurring_amount=subscription_model[tier][days_muliple],
-            plan_max_amount=subscription_model[tier][days_muliple]*2,
-            plan_max_cycles=0,
-            plan_intervals=4*days_muliple, # 4 weeks in 28 days
-            plan_interval_type="WEEK",
-            plan_note=f"Subscription for {project_name} - Clips"
-        )
-        try:
-            api_response = Cashfree().SubsCreatePlan(create_plan_request=plan_request, x_api_version=x_api_version)
-        except Exception as e:
-            print(f"Failed to create plan {plan_name}. Error: {e}")
-            continue
 
 def is_it_expired(
     t: int,
@@ -1436,70 +1397,54 @@ def settings():
         can_edit=can_edit,
     )
 
-@app.route("/pay/cashfree", methods=["GET", "POST"])
+@app.route("/pay/manual", methods=["GET", "POST"])
 @login_required
-def pay_cf():    
-    membership_type = request.form.get("type")
-    if not membership_type:
-        return "Invalid request: Membership type missing.", 400
-
-    membership_details = Membership.get(conn, current_user.id)
-
-    # Check if the requested membership matches the current membership
-    if membership_details.type != membership_type:
-        # in this case we are susbscribing to a new membership
-        ...
-    # Validate amount
+def pay_manual():    
     amount = request.form.get("amount")
     if not amount:
         return "Invalid request: Amount missing.", 400
     amount = int(amount)
-    if amount not in list(subscription_model[membership_type].values()):
-        return "Invalid request: Invalid amount.", 400
+    mtype, month = get_membership_from_amount(amount)
+    # Check if the requested membership matches the current membership
+    
+    transaction_note = "Paying Suraj Bhari Subscription for " + mtype + " membership for " + str(month*28) + " days"
 
-    customerDetails = CustomerDetails(
-        customer_id=current_user.id, 
-        customer_name=current_user.name,
-        customer_email=current_user.email,
-        customer_phone="9999999999"
-        )
-    callback = "/pay/cashfree/callback" 
-    order_request = CreateOrderRequest(
-        order_amount=amount, order_currency="INR", 
-        customer_details=customerDetails, )
-    api_response = Cashfree().PGCreateOrder(x_api_version, order_request, None, None)
+    upi_link = f"upi://pay?pa=surajbhari@upi&pn={project_name}&cu=INR&tn={transaction_note}&am={amount}"
+    upi_link_encoded = parse.quote(upi_link, safe="")
+
     return render_template(
-        "pay_cf.html", 
-        paymentSessionId=api_response.data.payment_session_id, 
-        callback=callback,
-        order_id=api_response.data.order_id,)
+        "intermediate.html", 
+        upi_link=upi_link, 
+        upi_link_encoded=upi_link_encoded,
+        transaction_note=transaction_note,
+        membership_type=mtype,
+        membership_month=month,
+        amount=amount,
+        upgrade='',
+        )
 
 
+@app.route("/pay/manual/callback", methods=["GET", "POST"])
+@login_required
+def pay_manual_callback():    
+    print(request.json)
+    reference_number = request.json.get("ref")
+    if not reference_number:
+        return "Invalid request: Reference number missing.", 400
+    amount = request.json.get("amount")
+    if not amount:
+        return "Invalid request: Amount missing.", 400
+    amount = int(amount)
+    membership_type_from_request = request.json.get("memberhip")
+    if not membership_type_from_request:
+        return "Invalid request: Membership type missing.", 400
     
-
-@app.route("/pay/cashfree/callback", methods=["POST"])
-def callback_cf():
-    order_id = request.json.get("order_id")
-    api_response = Cashfree().PGFetchOrder(x_api_version, order_id, None)
-    if api_response.data.order_status != "PAID":
-        return "Payment not successful", 400
+    mtype, months = get_membership_from_amount(amount)
+    if mtype != membership_type_from_request:
+        return "Invalid request: Membership type does not match the amount.", 400
     
-    old_ids = get_transactions_all()
-    old_ids = [x[3] for x in old_ids]
-    if order_id in old_ids:
-        return "Already paid", 400
-
-    amount = int(api_response.data.order_amount)
-    mtype, month = get_membership_from_amount(int(amount))
-    if mtype is None:
-        # this is not a subscription. we are not able to find the membership type
-        # so we will not be able to process the payment
-        return "Invalid payment", 400
-
-    membership_type = mtype
-    months = month
-
-    # Fetch old membership details
+    # Check if the requested membership matches the current membership
+    # grant the membership 
     old_membership_details = Membership.get(conn, current_user.id)
 
     # Calculate new end time
@@ -1517,32 +1462,48 @@ def callback_cf():
         "INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)",
         (
             current_user.id,
-            membership_type,
+            mtype,
             int(start_time.timestamp()),
             int(end_time.timestamp()),
         ),
     )
 
-    description = f"Membership {membership_type} extended for {months} month{'s' if months != 1 else ''}"
+    description = f"Membership {mtype} extended for {months} month{'s' if months != 1 else ''}"
     cur.execute(
         "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
         (
             current_user.id,
             amount,
             int(time.time()),
-            order_id,
-            membership_type,
+            reference_number,
+            mtype,
             description,
         ),
     )
     conn.commit()
+    # send webhook to discord 
+    if "management_webhook" in config:
+        webhook = DiscordWebhook(
+            url=config["management_webhook"],
+            username=project_name,
+            avatar_url=project_logo_discord,
+        )
+        webhook.content = f"New payment received for {current_user.name} <@408994955147870208>"
+        embed = DiscordEmbed(
+            title=f"New payment received for {membership_type_from_request} membership for {months} month{'s' if months != 1 else ''}",
+            description=f"New payment received for {current_user.name}\nAmount: {amount} INR\nReference Number: {reference_number}\nMembership Type: {membership_type_from_request}\nMembership Month: {months}",
+        )
+        embed.set_thumbnail(url=current_user.image)
+        embed.set_color(0xEBF0F7)
+        webhook.add_embed(embed)
+        webhook.execute()
+    else:
+        print("management_webhook not set in config. Not sending webhook.")
     return "ok", 200
 
-
-
-@app.route("/upgrade/cashfree", methods=["POST"])
+@app.route("/upgrade/manual", methods=["POST"])
 @login_required
-def upgrade_cf():
+def upgrade_manual():
     switch_to = request.form.get("type")
     if not switch_to:
         return "Invalid request", 400
@@ -1578,27 +1539,33 @@ def upgrade_cf():
         return "Invalid upgrade request.", 400
     # round off ammount to second decimal place
     amount = round(amount, 2)
-    customerDetails = CustomerDetails(
-        customer_id=current_user.id, 
-        customer_name=current_user.name,
-        customer_email=current_user.email,
-        customer_phone="9999999999"
-        )
-    callback = base_domain+"/upgrade/callback-upgrade/"+switch_to 
-    order_meta = OrderMeta(return_url=callback)
-    order_request = CreateOrderRequest(
-        order_amount=amount, order_currency="INR", 
-        customer_details=customerDetails, order_meta=order_meta)
-    api_response = Cashfree().PGCreateOrder(x_api_version, order_request, None, None)
+    transaction_note = f"Paying Suraj Bhari Subscription for upgrading from {membership_details.type} to {switch_to}"
+
+    upi_link = f"upi://pay?pa=surajbhari@upi&pn={project_name}&cu=INR&tn={transaction_note}&am={amount}"
+    upi_link_encoded = parse.quote(upi_link, safe="")
     return render_template(
-        "pay_cf.html", 
-        paymentSessionId=api_response.data.payment_session_id, 
-        callback=callback,
-        order_id=api_response.data.order_id,)
+        "intermediate.html", 
+        upi_link=upi_link, 
+        upi_link_encoded=upi_link_encoded,
+        transaction_note=transaction_note,
+        amount=amount,
+        upgrade=True,
+        membership_type=switch_to,
+        )
 
 
-@app.route("/upgrade/callback-upgrade/<new_type>", methods=["POST"])
-def callback_upgrade_cf(new_type:str):
+@app.route("/upgrade/callback/manual", methods=["POST"])
+def callback_upgrade_manual():
+    new_type = request.json.get("memberhip")
+    if not new_type:
+        return "Invalid request: Membership type missing.", 400
+    amount_paid = request.json.get("amount")
+    if not amount_paid:
+        return "Invalid request: Amount missing.", 400
+    amount_paid = int(amount_paid)
+    ref = request.json.get("ref")
+    if not ref:
+        return "Invalid request: Reference number missing.", 400
     allowed_upgrades = {"basic": ["pro", "premium"], "pro": ["premium"], "premium": []}
 
     membership_details = Membership.get(conn, current_user.id)
@@ -1614,22 +1581,19 @@ def callback_upgrade_cf(new_type:str):
     days_left = membership_details.days_left
     should_be_paid_amount = (per_day_new - per_day_current) * days_left
     should_be_paid_amount = int(round(should_be_paid_amount)) 
-    order_id = request.json.get("order_id")
-    api_response = Cashfree().PGFetchOrder(x_api_version, order_id, None)
-    if api_response.data.order_status != "PAID":
-        return "Payment not successful", 400
+    order_id = ref
     
     old_ids = get_transactions_all()
     old_ids = [x[3] for x in old_ids]
     if order_id in old_ids:
         return "Already paid", 400
 
-    amount = api_response.data.order_amount
-    # if the deficit is more or less than 5 rs then we will not process the payment
-    if abs(int(should_be_paid_amount) - int(amount)) > 5:
-        return f"Invalid payment please contact admin at discord ({discord_invite}) if you think this is a mistake.", 400
+    if should_be_paid_amount <= 0:
+        return "Invalid upgrade request.", 400
     
-    # Update database
+    if amount_paid != should_be_paid_amount:
+        return "Invalid amount paid", 400
+    
     cur.execute(
         "UPDATE membership SET type = ? WHERE channel_id = ?",
         (
@@ -1643,7 +1607,7 @@ def callback_upgrade_cf(new_type:str):
         "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
         (
             current_user.id,
-            amount,
+            amount_paid,
             int(time.time()),
             order_id,
             new_type,
@@ -1651,10 +1615,25 @@ def callback_upgrade_cf(new_type:str):
         ),
     )
     conn.commit()
+    if "management_webhook" in config:
+        webhook = DiscordWebhook(
+            url=config["management_webhook"],
+            username=project_name,
+            avatar_url=project_logo_discord,
+        )
+        webhook.content = f"New payment received for {current_user.name} <@408994955147870208>"
+        embed = DiscordEmbed(
+            title=f"New payment received for {new_type} membership (UPGRADE)",
+            description=f"New payment received for {current_user.name}\nAmount: {amount_paid} INR\nReference Number: {order_id}\nMembership Type: {new_type}",
+        )
+        embed.set_thumbnail(url=current_user.image)
+        embed.set_color(0xEBF0F7)
+        webhook.add_embed(embed)
+        webhook.execute()
+    else:
+        print("management_webhook not set in config. Not sending webhook.")
     return "ok", 200
-
-
-
+    
 def get_membership_from_amount(amount:int):
     for mtype in subscription_model:
         for month in subscription_model[mtype]:
@@ -1692,7 +1671,6 @@ def get_transactions(channel_id: str = None):
 @app.route("/membership")
 @login_required
 def membership():
-    flash("PAYMENT GATEWAY DISABLED UNTIL FURTHER NOTICE", "danger")
     transactions = get_transactions(current_user.id)
     balance = 0
     for i in range(len(transactions)):
