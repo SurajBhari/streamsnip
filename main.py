@@ -1503,6 +1503,7 @@ def pay_manual_callback():
         webhook.execute()
     else:
         print("management_webhook not set in config. Not sending webhook.")
+    flash("Payment successful. Membership updated.", "success")
     return "ok", 200
 
 @app.route("/upgrade/manual", methods=["POST"])
@@ -1636,6 +1637,7 @@ def callback_upgrade_manual():
         webhook.execute()
     else:
         print("management_webhook not set in config. Not sending webhook.")
+    flash("Payment successful. Membership updated.", "success")
     return "ok", 200
     
 def get_membership_from_amount(amount:int):
