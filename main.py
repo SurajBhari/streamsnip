@@ -1431,6 +1431,10 @@ def pay_manual_callback():
     reference_number = request.json.get("ref")
     if not reference_number:
         return "Invalid request: Reference number missing.", 400
+    old_transactions = get_transactions_all()
+    for transaction in old_transactions:
+        if str(transaction[3]) == str(reference_number):
+            return "Transaction already exists Please go to membership page. if you still think its an issue. please contact us from contact us page.", 400
     amount = request.json.get("amount")
     if not amount:
         return "Invalid request: Amount missing.", 400
@@ -1586,7 +1590,7 @@ def callback_upgrade_manual():
     old_ids = get_transactions_all()
     old_ids = [x[3] for x in old_ids]
     if order_id in old_ids:
-        return "Already paid", 400
+        return "Transaction already exists Please go to membership page. if you still think its an issue. please contact us from contact us page.", 400
 
     if should_be_paid_amount <= 0:
         return "Invalid upgrade request.", 400
