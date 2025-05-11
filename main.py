@@ -40,7 +40,7 @@ from flask import (
     session,
     jsonify,
     send_from_directory,
-    flash
+    flash,
 )
 from flask_cors import CORS
 from flask_login import (
@@ -56,6 +56,8 @@ from flask_sitemap import Sitemap
 from discord_webhook import DiscordWebhook, DiscordEmbed
 from chat_downloader.sites import YouTubeChatDownloader
 from chat_downloader import ChatDownloader
+from werkzeug.utils import secure_filename
+
 
 # Local imports
 from helper.util import *
@@ -1426,41 +1428,41 @@ def pay_manual():
 
 @app.route("/pay/manual/callback", methods=["GET", "POST"])
 @login_required
-def pay_manual_callback():    
-    print(request.json)
-    reference_number = request.json.get("ref")
-    if not reference_number:
-        return "Invalid request: Reference number missing.", 400
-    old_transactions = get_transactions_all()
-    for transaction in old_transactions:
-        if str(transaction[3]) == str(reference_number):
-            return "Transaction already exists Please go to membership page. if you still think its an issue. please contact us from contact us page.", 400
-    amount = request.json.get("amount")
+def pay_manual_callback():
+    if 'screenshot' not in request.files:
+        return "Invalid request: Screenshot missing.", 400
+
+    screenshot = request.files['screenshot']
+    if screenshot.filename == '':
+        return "No selected file.", 400
+
+    # Save screenshot temporarily
+    filename = f"{current_user.id}_{int(time.time())}_{secure_filename(screenshot.filename)}"
+    filepath = os.path.join("static/", filename)
+    screenshot.save(filepath)
+
+    amount = request.form.get("amount")
+    membership_type_from_request = request.form.get("membership")
+
     if not amount:
         return "Invalid request: Amount missing.", 400
-    amount = int(amount)
-    membership_type_from_request = request.json.get("memberhip")
     if not membership_type_from_request:
         return "Invalid request: Membership type missing.", 400
-    
+
+    amount = int(amount)
     mtype, months = get_membership_from_amount(amount)
     if mtype != membership_type_from_request:
         return "Invalid request: Membership type does not match the amount.", 400
-    
-    # Check if the requested membership matches the current membership
-    # grant the membership 
-    old_membership_details = Membership.get(conn, current_user.id)
 
-    # Calculate new end time
+    # Process membership update
+    old_membership_details = Membership.get(conn, current_user.id)
     if old_membership_details.days_left:
         start_time = old_membership_details.start
         end_time = old_membership_details.end + timedelta(days=months * 28)
     else:
-        # Should not reach here, but fallback
         start_time = datetime.now()
         end_time = datetime.now() + timedelta(days=months * 28)
 
-    # Update database
     cur.execute("DELETE FROM MEMBERSHIP WHERE channel_id=?", (current_user.id,))
     cur.execute(
         "INSERT INTO MEMBERSHIP VALUES (?, ?, ?, ?)",
@@ -1472,6 +1474,7 @@ def pay_manual_callback():
         ),
     )
 
+    reference_number = f"screenshot_{filename}"
     description = f"Membership {mtype} extended for {months} month{'s' if months != 1 else ''}"
     cur.execute(
         "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
@@ -1479,30 +1482,38 @@ def pay_manual_callback():
             current_user.id,
             amount,
             int(time.time()),
-            reference_number,
+            int(time.time()),
             mtype,
             description,
         ),
     )
     conn.commit()
-    # send webhook to discord 
+
+    # Send webhook
     if "management_webhook" in config:
         webhook = DiscordWebhook(
             url=config["management_webhook"],
             username=project_name,
             avatar_url=project_logo_discord,
         )
-        webhook.content = f"New payment received for {current_user.name} <@408994955147870208>"
+        webhook.content = f"New payment screenshot uploaded by {current_user.name} <@408994955147870208>"
         embed = DiscordEmbed(
-            title=f"New payment received for {membership_type_from_request} membership for {months} month{'s' if months != 1 else ''}",
-            description=f"New payment received for {current_user.name}\nAmount: {amount} INR\nReference Number: {reference_number}\nMembership Type: {membership_type_from_request}\nMembership Month: {months}",
+            title=f"Manual Payment for {membership_type_from_request} Membership",
+            description=f"User: {current_user.name}\nAmount: {amount} INR\nMembership: {membership_type_from_request} ({months} month{'s' if months != 1 else ''})",
         )
         embed.set_thumbnail(url=current_user.image)
         embed.set_color(0xEBF0F7)
+        with open(filepath, "rb") as f:
+            file_data = f.read()
+
+        webhook.add_file(file=file_data, filename=filename)
+
         webhook.add_embed(embed)
         webhook.execute()
+        os.remove(filepath)
     else:
         print("management_webhook not set in config. Not sending webhook.")
+
     flash("Payment successful. Membership updated.", "success")
     return "ok", 200
 
@@ -1561,16 +1572,27 @@ def upgrade_manual():
 
 @app.route("/upgrade/callback/manual", methods=["POST"])
 def callback_upgrade_manual():
-    new_type = request.json.get("memberhip")
+    if 'screenshot' not in request.files:
+        return "Invalid request: Screenshot missing.", 400
+
+    screenshot = request.files['screenshot']
+    if screenshot.filename == '':
+        return "No selected file.", 400
+
+    # Save screenshot temporarily
+    filename = f"{current_user.id}_{int(time.time())}_{secure_filename(screenshot.filename)}"
+    filepath = os.path.join("static/", filename)
+    screenshot.save(filepath)
+    new_type = request.form.get("membership")
+    amount_paid = request.form.get("amount")
     if not new_type:
         return "Invalid request: Membership type missing.", 400
-    amount_paid = request.json.get("amount")
     if not amount_paid:
         return "Invalid request: Amount missing.", 400
-    amount_paid = int(amount_paid)
-    ref = request.json.get("ref")
-    if not ref:
-        return "Invalid request: Reference number missing.", 400
+
+    amount_paid = float(amount_paid)
+    order_id = f"screenshot_{filename}"
+
     allowed_upgrades = {"basic": ["pro", "premium"], "pro": ["premium"], "premium": []}
 
     membership_details = Membership.get(conn, current_user.id)
@@ -1582,12 +1604,10 @@ def callback_upgrade_manual():
     per_day_current = subscription_model[current_type][1] / 28
     per_day_new = subscription_model[new_type][1] / 28
 
-    # Calculate amount
     days_left = membership_details.days_left
     should_be_paid_amount = (per_day_new - per_day_current) * days_left
-    should_be_paid_amount = int(round(should_be_paid_amount)) 
-    order_id = ref
-    
+    should_be_paid_amount = int(round(should_be_paid_amount))
+
     old_ids = get_transactions_all()
     old_ids = [x[3] for x in old_ids]
     if order_id in old_ids:
@@ -1595,10 +1615,11 @@ def callback_upgrade_manual():
 
     if should_be_paid_amount <= 0:
         return "Invalid upgrade request.", 400
-    
-    if amount_paid != should_be_paid_amount:
-        return "Invalid amount paid", 400
-    
+
+    # if the difference is not more than 2 rs then its ok 
+    if abs(should_be_paid_amount - amount_paid) > 2:
+        return "Invalid amount paid. Please check the amount.", 400
+
     cur.execute(
         "UPDATE membership SET type = ? WHERE channel_id = ?",
         (
@@ -1614,29 +1635,36 @@ def callback_upgrade_manual():
             current_user.id,
             amount_paid,
             int(time.time()),
-            order_id,
+            int(time.time()),
             new_type,
             description,
         ),
     )
     conn.commit()
+
     if "management_webhook" in config:
         webhook = DiscordWebhook(
             url=config["management_webhook"],
             username=project_name,
             avatar_url=project_logo_discord,
         )
-        webhook.content = f"New payment received for {current_user.name} <@408994955147870208>"
+        webhook.content = f"New upgrade screenshot uploaded by {current_user.name} <@408994955147870208>"
         embed = DiscordEmbed(
-            title=f"New payment received for {new_type} membership (UPGRADE)",
-            description=f"New payment received for {current_user.name}\nAmount: {amount_paid} INR\nReference Number: {order_id}\nMembership Type: {new_type}",
+            title=f"Manual Upgrade to {new_type} Membership",
+            description=f"User: {current_user.name}\nAmount: {amount_paid} INR\nMembership upgraded from {current_type} to {new_type}"
         )
         embed.set_thumbnail(url=current_user.image)
         embed.set_color(0xEBF0F7)
+        with open(filepath, "rb") as f:
+            file_data = f.read()
+        webhook.add_file(file=file_data, filename=filename)
         webhook.add_embed(embed)
         webhook.execute()
+        # delete the file 
+        os.remove(filepath)
     else:
         print("management_webhook not set in config. Not sending webhook.")
+
     flash("Payment successful. Membership updated.", "success")
     return "ok", 200
     

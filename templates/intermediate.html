@@ -10,54 +10,63 @@
         max-width: 100%;
         height: auto;
     }
+    .custom-file-upload {
+        display: inline-block;
+        padding: 10px 20px;
+        cursor: pointer;
+        background-color: #0d6efd;
+        color: white;
+        border-radius: 5px;
+        text-align: center;
+        transition: background-color 0.3s ease;
+    }
+    .custom-file-upload:hover {
+        background-color: #0b5ed7;
+    }
+    #file-input {
+        display: none;
+    }
 </style>
 <script>
     function handleSubmit(event) {
         event.preventDefault();
-        const refNumber = document.getElementById('ref').value;
-        if (!refNumber) {
-            alert("Please enter a reference number.");
+        const fileInput = document.getElementById('file-input');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            alert("Please upload a payment screenshot.");
             return;
         }
-        if (isNaN(refNumber)) {
-            alert("Reference number must be a number.");
+        // if file is more than 6 mb then error out 
+        if (file.size > 6 * 1024 * 1024) {
+            alert("File size exceeds 6 MB. Please upload a smaller file.");
+            // clear the input
+            fileInput.value = "";
             return;
         }
-        if (refNumber.length < 10) {
-            alert("Invalid reference number. Please check your payment app.");
-            return;
-        }
-        var upgrade = {{upgrade|tojson}}
-        var url;
-        if(upgrade){
-            url = "/upgrade/callback/manual"
-        }
-        else{
-            url = "/pay/manual/callback"
-        }
-        console.log("URL:", url); // Debugging line to check the URL
-        const data = {
-            ref: refNumber,
-            amount: {{ amount }},
-            memberhip: '{{ membership_type }}'
-        };
+
+        const formData = new FormData();
+        formData.append('screenshot', file);
+        formData.append('amount', {{ amount }});
+        formData.append('membership', '{{ membership_type }}');
+
+        var upgrade = {{ upgrade|tojson }};
+        var url = upgrade ? "/upgrade/callback/manual" : "/pay/manual/callback";
 
         fetch(url, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
                 "X-CSRFToken": "{{ csrf_token }}"
             },
-            body: JSON.stringify(data)
+            body: formData
         })
         .then(response => {
             if (response.ok) {
                 window.location.href = "/membership";
             } else {
-                var text = response.text().then(text => {
+                response.text().then(text => {
                     alert("Error: " + text);
                 });
-                
             }
         })
         .catch(error => {
@@ -66,7 +75,6 @@
         });
     }
 </script>
-
 {% endblock %}
 
 {% block content %}
@@ -85,18 +93,13 @@
         <div class="col-lg-6">
             <div class="card shadow">
                 <div class="card-body">
-                    <h4 class="card-title mb-4">Payment Reference Submission</h4>
+                    <h4 class="card-title mb-4">Upload Payment Screenshot</h4>
                     <form onsubmit="handleSubmit(event)">
-                        <div class="mb-3">
-                            <label for="ref" class="form-label">Enter Reference Number</label>
-                            <input 
-                                type="number" 
-                                id="ref" 
-                                name="ref" 
-                                class="form-control" 
-                                placeholder="Enter reference number" 
-                                required 
-                                onkeydown="return ['Backspace','Delete','ArrowLeft','ArrowRight'].includes(event.code) ? true : !isNaN(Number(event.key)) && event.code !== 'Space'">
+                        <div class="mb-3 text-center">
+                            <label for="file-input" class="custom-file-upload">
+                                <i class="fa-solid fa-upload"></i>
+                            </label>
+                            <input type="file" id="file-input" name="screenshot" accept="image/*" required>
                         </div>
                         <div class="d-grid">
                             <input type="submit" class="btn btn-primary btn-block" value="Submit">
