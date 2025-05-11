@@ -2969,7 +2969,8 @@ def delete_membership():
         flash("You are not an admin", "danger")
         return redirect(url_for("slash"))
     channel_id = request.json.get("channel_id")
-    terminate_current_membership(channel_id, conn=conn)
+    terminate_current_membership(channel_id)
+    return "ok", 200
 
 
 @app.route("/update_transaction", methods=["POST"])
