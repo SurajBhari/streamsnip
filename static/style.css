@@ -619,6 +619,20 @@ body.container {
 .table.dark-theme tbody tr:hover {
   background-color: #3a3f44;
 }
+@media (max-width: 768px) {
+  .table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .table th,
+  .table td {
+    padding: 10px;
+    font-size: 14px;
+  }
+}
+
 
 /* Alert Styles */
 .alert.dark-theme {
