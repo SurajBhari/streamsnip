@@ -2962,7 +2962,7 @@ def admin():
         tiers=[x for x in members.keys()],
     )
 
-@app.route("/delete_membership", methods=["POST"])
+@app.route("/del_membership", methods=["POST"])
 @login_required
 def delete_membership():
     if not current_user.admin:
@@ -3012,7 +3012,7 @@ def update_transaction():
     conn.commit()
     return "ok", 200
 
-@app.route("/delete_transaction", methods=["POST"])
+@app.route("/del_transaction", methods=["POST"])
 @login_required
 def delete_transaction():
     if not current_user.admin:

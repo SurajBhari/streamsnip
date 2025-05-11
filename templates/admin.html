@@ -198,7 +198,7 @@
     }
     function delete_membership(){
         var user_id = document.getElementById("imember_select").value;
-        fetch("/delete_membership", {
+        fetch("/del_membership", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -281,7 +281,7 @@
     }
 
     function delete_transaction(user_id, transaction_id){
-        fetch("/delete_transaction", {
+        fetch("/del_transaction", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
