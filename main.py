@@ -2951,32 +2951,11 @@ def admin():
     if not current_user.admin:
         flash("You are not an admin", "danger")
         return redirect(url_for("slash"))
-    clips = get_channel_clips()
-    t = time.time()
-    clip_ids = [x.id for x in clips]
-    t = time.time()
-    creds = get_creds()
-    channel_info_admin = {}
-    for key, value in creds.items():
-        get_channel_name_image(key)
-        try:
-            channel_info_admin[key] = channel_info[key]
-        except KeyError:
-            continue
-        if request.is_secure:
-            htt = "https://"
-        else:
-            htt = "http://"
-        channel_info_admin[key][
-            "link"
-        ] = f"{htt}{request.host}{url_for('exports', channel_id=key)}"
     users = generate_home_data()
     settings = vars(UserSettings())
     members = get_members()
     return render_template(
         "admin.html",
-        ids=clip_ids,
-        channel_info=channel_info_admin,
         users=users,
         settings=settings,
         members=members,
