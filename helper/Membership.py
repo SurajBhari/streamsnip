@@ -11,7 +11,7 @@ class Membership:
         self.type = None
         self.active = False
         self.in_db = False
-        self.start = datetime.fromtimestamp(0)
+        self.start = datetime.fromtimestamp(943920000) # 1 jan 2000
         self.end = self.start
         self.days_left = 0
         self.free_trial = False
@@ -33,7 +33,7 @@ class Membership:
             self.type = None
 
     def json(self):
-        return dumps({
+        return {
             "channel_id": self.channel_id,
             "active": self.active,
             "type": self.type,
@@ -42,8 +42,8 @@ class Membership:
             "end": self.end.timestamp(),
             "days_left": self.days_left,
             "free_trial": self.free_trial,
-            "time_left": self.time_left
-        })
+            "time_left": self.time_left.total_seconds()
+        }
 
     @staticmethod
     def get(conn: sqlite3.Connection, channel_id: str):
