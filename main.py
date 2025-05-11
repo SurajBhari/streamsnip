@@ -2959,9 +2959,161 @@ def admin():
         users=users,
         settings=settings,
         members=members,
+        tiers=[x for x in members.keys()],
     )
 
+@app.route("/delete_membership", methods=["POST"])
+@login_required
+def delete_membership():
+    if not current_user.admin:
+        flash("You are not an admin", "danger")
+        return redirect(url_for("slash"))
+    channel_id = request.json.get("channel_id")
+    terminate_current_membership(channel_id, conn=conn)
 
+
+@app.route("/update_transaction", methods=["POST"])
+@login_required
+def update_transaction():
+    if not current_user.admin:
+        flash("You are not an admin", "danger")
+        return redirect(url_for("slash"))
+    print(request.json)
+
+    channel_id = request.json.get("channel_id")
+    transaction_id = request.json.get("transaction_id")
+    amount = request.json.get("amount")
+    time = request.json.get("time")
+    tier = request.json.get("tier")
+    description = request.json.get("description")
+    if not channel_id or not transaction_id:
+        return "Invalid channel id or transaction id", 400
+    if not amount or not time or not tier:
+        return "Invalid amount, time, tier", 400
+    if tier not in subscription_model.keys():
+        return "Invalid tier", 400
+    
+    if not transaction_id or not channel_id:
+        return "Invalid transaction id or channel id", 400
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM TRANSACTIONS WHERE transaction_id=? AND channel_id=? LIMIT 1",
+            (transaction_id, channel_id),
+        )
+        data = cur.fetchall()
+        if not data:
+            return "Transaction ID is invalid", 400
+        cur.execute(
+            "UPDATE TRANSACTIONS SET amount=?, time=?, membership_type=?, description=? WHERE transaction_id=? AND channel_id=?",
+            (amount, time, tier, description, transaction_id, channel_id),
+        )
+    conn.commit()
+    return "ok", 200
+
+@app.route("/delete_transaction", methods=["POST"])
+@login_required
+def delete_transaction():
+    if not current_user.admin:
+        flash("You are not an admin", "danger")
+        return redirect(url_for("slash"))
+    transaction_id = request.json.get("transaction_id")
+    channel_id = request.json.get("channel_id")
+    if not transaction_id or not channel_id:
+        return "Invalid transaction id or channel id", 400
+    with conn:
+        cur = conn.cursor()
+        # use the workaround DELETE FROM table WHERE rowid = (SELECT rowid FROM table WHERE condition LIMIT 1 ) 
+        cur.execute("DELETE FROM TRANSACTIONS WHERE rowid = (SELECT rowid FROM TRANSACTIONS WHERE transaction_id=? AND channel_id=? LIMIT 1 )", (transaction_id, channel_id))
+    conn.commit()
+    return "ok", 200    
+
+@app.route("/add_new_transaction", methods=["POST"])
+@login_required
+def add_new_transaction():  
+    if not current_user.admin:
+        flash("You are not an admin", "danger")
+        return redirect(url_for("slash"))
+    channel_id = request.json.get("channel_id")
+    transaction_id = request.json.get("transaction_id")
+    if not transaction_id or not channel_id:
+        return "Invalid transaction id or channel id", 400
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM TRANSACTIONS WHERE transaction_id=? AND channel_id=? LIMIT 1",
+            (transaction_id, channel_id),
+        )
+        data = cur.fetchall()
+        if data:
+            return "Transaction already exists", 400
+        cur.execute(
+            "INSERT INTO TRANSACTIONS (transaction_id, channel_id) VALUES (?, ?)",
+            (transaction_id, channel_id),
+        )
+    conn.commit()
+    return "ok", 200
+
+@app.route("/update_membership", methods=["POST"])
+@login_required
+def update_membership():
+
+    if not current_user.admin:
+        flash("You are not an admin", "danger")
+        return redirect(url_for("slash"))
+    channel_id = request.json.get("channel_id")
+    tier = request.json.get("tier")
+    start = request.json.get("start")
+    end = request.json.get("end")
+
+    if tier not in subscription_model.keys():
+        flash("Invalid tier", "danger")
+        return redirect(url_for("slash"))
+    if not channel_id.startswith("UC"):
+        flash("Invalid channel id", "danger")
+        return redirect(url_for("slash"))
+    if not start or not end:
+        flash("Invalid dates", "danger")
+        return redirect(url_for("slash"))
+    start = int(start)
+    end = int(end)
+    with conn:
+        cur = conn.cursor()
+        print(channel_id)
+        cur.execute(
+            "SELECT * FROM MEMBERSHIP WHERE channel_id=?",
+            (channel_id,),
+        )
+        data = cur.fetchall()
+        if data:
+            cur.execute(
+                "UPDATE MEMBERSHIP SET start=?, end=?, type=? WHERE channel_id=?",
+                (start, end, tier, channel_id,),
+            )
+        else:
+            cur.execute(
+                "INSERT INTO MEMBERSHIP (channel_id, type, start, end) VALUES (?, ?, ?, ?)",
+                (channel_id, tier, start, end,),
+            )
+    conn.commit()
+    return "ok", 200
+
+
+@app.route("/get_individual_membership/<channel_id>")
+@login_required
+def get_individual_membership(channel_id):
+    if not current_user.admin:
+        flash("You are not an admin", "danger")
+        return redirect(url_for("slash"))
+    membership_info = Membership.get(channel_id=channel_id, conn=conn)
+    transactions = get_transactions(channel_id)
+    if not transactions:
+        transactions = []
+    return jsonify({   
+        "membership": membership_info.json(),
+        "transactions": transactions,
+        }
+    )
 @app.route("/update_settings", methods=["POST"])
 def update_settings():
     if not current_user.admin:

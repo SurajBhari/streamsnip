@@ -76,9 +76,258 @@
         </div>
         {% endfor %}
     </div>
+    <h1> Individual Membership </h1>
+    <select id="imember_select" onchange="show_individual_membership()">
+        <option value="">Select a user</option>
+        {% for user in users %}
+            <option value="{{user.id}}">{{user.name}}</option>
+        {% endfor %}
+    </select>
+    <div id="membership_table" style="display: none;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="membership_body">
+                <!-- Membership data will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    <div id="transactions" style="display: none;">
+        <h1> Transactions </h1>
+        <table>
+            <thead>
+                <tr>                    <th>Amount</th>
+                    <th>Time</th>
+                    <th>Transaction ID</th>
+                    <th>Mmebership Type</th>
+                    <th>Description</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="transactions_body">
+                <!-- Transaction data will be populated here -->
+            </tbody>
+        </table>
+    </div>
 </center>
 <script>
     var settings = {{settings|tojson}}
+    var tiers = {{tiers|tojson}}
+    function show_individual_membership(){
+        var user_id = document.getElementById("imember_select").value;
+        var membership_table = document.getElementById("membership_table");
+        var transactions = document.getElementById("transactions");
+        fetch("/get_individual_membership/"+user_id)
+        .then(response => response.json())
+        .then(data => {
+            var membership_body = document.getElementById("membership_body");
+            var transactions_body = document.getElementById("transactions_body");
+            membership_body.innerHTML = "";
+            transactions_body.innerHTML = "";
+            if(data.membership.length == 0){
+                membership_table.style.display = "none";
+                transactions.style.display = "none";
+                return;
+            }
+            membership_table.style.display = "block";
+            transactions.style.display = "block";
+            console.log(data);
+            var options = "";
+            for(let i=0;i<tiers.length;i++){
+                if(data.membership.type == tiers[i]){
+                    options += `<option value="${tiers[i]}" selected>${tiers[i]}</option>`;
+                }
+                else{
+                    options += `<option value="${tiers[i]}">${tiers[i]}</option>`;
+                }
+            }
+            var select = `<select id="membership_tier_select">${options}</select>`;
+            var row = `<tr>
+                <td>${select}</td>
+                <td><input type="number" id="membership_start" value=${data.membership.start}></td>
+                <td><input type="number" id="membership_end" value=${data.membership.end}></td>
+                <td>
+                    <button class="btn btn-primary" onclick="update_membership()"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="btn btn-danger" onclick="delete_membership()">Delete</button>
+                    ${data.membership.time_left} seconds left
+                    </td>
+            </tr>`;
+            membership_body.innerHTML = row;
+            data.transactions.forEach(t => {
+                // make every them of a input on change call the function update_transaction
+                // and pass the value of the input to the function
+                
+                // make a select option of the tiers. select the current tier
+                var options = "";
+                for(let i=0;i<tiers.length;i++){
+                    if(t[4] == tiers[i]){
+                        options += `<option value="${tiers[i]}" selected>${tiers[i]}</option>`;
+                    }
+                    else{
+                        options += `<option value="${tiers[i]}">${tiers[i]}</option>`;
+                    }
+                }
+                // make a select option of the tiers. select the current tier
+                var select = `<select id="${t[3]}_tier">${options}</select>`;
+                var row = `<tr>
+                    <td><input type="number" id="${t[3]}_amount" value="${t[1]}"></td>
+                    <td><input type="number" id="${t[3]}_time" value="${t[2]}"></td>
+                    <td>${t[3]}</td>
+                    <td>${select}</td>
+                    <td><input type="text" id="${t[3]}_description" value="${t[5]}"></td>
+                    <td><button class="btn btn-primary" onclick="update_transaction('${t[3]}')"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button class="btn btn-danger" onclick="delete_transaction('${user_id}','${t[3]}')"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>`;
+                transactions_body.innerHTML += row;
+                
+            });
+            var new_row = `<tr>
+                    <td><button class="btn btn-primary" onclick="add_new_row()">+</button></td>
+                    <td><input type="text" id="new_transaction_id" placeholder="transaction_id" value=""></td>
+                </tr>`;
+            transactions_body.innerHTML += new_row;
+        });
+        
+    }
+    function delete_membership(){
+        var user_id = document.getElementById("imember_select").value;
+        fetch("/delete_membership", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                channel_id: user_id
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("Membership deleted successfully");
+                show_individual_membership();
+            } else {
+                alert("Error deleting membership");
+            }
+        });
+    }
+
+    function update_transaction(transaction_id){
+        var user_id = document.getElementById("imember_select").value;
+        var amount = document.getElementById(transaction_id+"_amount").value;
+        var time = document.getElementById(transaction_id+"_time").value;
+        var tier = document.getElementById(transaction_id+"_tier").value;
+        var description = document.getElementById(transaction_id+"_description").value;
+        fetch("/update_transaction", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                channel_id: user_id,
+                transaction_id: transaction_id,
+                amount: amount,
+                time: time,
+                tier: tier,
+                description: description
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("Transaction updated successfully");
+                show_individual_membership();
+            } else {
+                alert("Error updating transaction");
+            }
+        });
+    }
+
+    function add_new_row() {
+        var user_id = document.getElementById("imember_select").value;
+        var transaction_id = document.getElementById("new_transaction_id").value;
+
+        if (transaction_id == "") {
+            alert("Please enter a transaction id");
+            return;
+        }
+
+        fetch("/add_new_transaction", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                channel_id: user_id,
+                transaction_id: transaction_id
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("Transaction added successfully");
+                show_individual_membership();
+            } else {
+                alert("Error adding transaction");
+            }
+        })
+        .catch(error => {
+            console.error("Fetch error:", error);
+            alert("An error occurred while adding the transaction.");
+        });
+    }
+
+    function delete_transaction(user_id, transaction_id){
+        fetch("/delete_transaction", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                channel_id: user_id,
+                transaction_id: transaction_id
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("Transaction deleted successfully");
+                show_individual_membership();
+            } else {
+                alert("Error deleting transaction");
+            }
+        });
+    }
+    function update_membership(){
+        var user_id = document.getElementById("imember_select").value;
+        var start = document.getElementById("membership_start").value;
+        var end = document.getElementById("membership_end").value;
+        var tier = document.getElementById("membership_tier_select").value;
+        fetch("/update_membership", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                channel_id: user_id,
+                start: start,
+                end: end,
+                tier: tier
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("Membership updated successfully");
+                show_individual_membership();
+            } else {
+                alert("Error updating membership");
+            }
+        });
+
+    }
+    
     function add_new_settings(){
         var settings_to_effect = document.getElementById("settings_to_effect");
         var new_sett = document.createElement("tr");
