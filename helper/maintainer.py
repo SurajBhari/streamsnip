@@ -111,6 +111,13 @@ def comment_task() -> str:
             except Exception as e:
                 COMMENTS += f"\nFailed to post comment for {clip.stream_id} {e}"
                 failed_ids.append(clip.stream_id)
+                # send a message to the management webhook
+                management_webhook = DiscordWebhook(
+                    url=management_webhook_url,
+                    content=f"Failed to post comment for {clip.stream_id} {e} <@408994955147870208>",
+                )
+                management_webhook.execute()
+                print(f"Failed to post comment for {clip.stream_id} {e}")
                 print(e)
                 continue  # go to next stream. we will try again later
             cur.execute(
