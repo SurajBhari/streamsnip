@@ -55,7 +55,7 @@ def comment_task() -> str:
             "CREATE TABLE IF NOT EXISTS COMMENTS (video_id TEXT, comment TEXT, time INTEGER)"
         )
         conn.commit()
-        two_days_ago = int(time.time()) - 2 * 24 * 60 * 60
+        two_days_ago = int(time.time()) - 10 * 24 * 60 * 60 # in reality this is 10 days
         cur.execute(
             f"SELECT * FROM queries WHERE time > {two_days_ago} GROUP BY message_id"
         )  # grouping will make sure we get 1 clip from each streams
