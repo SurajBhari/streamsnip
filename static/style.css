@@ -959,8 +959,26 @@ p {
 
 }
 
+.hide-on-pc {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hide-on-pc {
+    display: block;
+  }
+}
+
 @media (max-width: 768px) {
   .hide-on-mobile {
     display: none;
   }
+}
+
+body .poster{
+  filter: invert(100%);
+}
+
+body.dark-theme .poster{
+  filter: invert(0%);
 }
