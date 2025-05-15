@@ -1397,6 +1397,7 @@ def settings():
         settings=settings,
         membership_details=membership_details,
         can_edit=can_edit,
+        can_turn_on_comments=membership_details.type == "premium",
     )
 
 @app.route("/pay/manual", methods=["GET", "POST"])
@@ -4448,7 +4449,7 @@ for ch_id in data:
 def add_default_settings(channel_id: str):
     with conn:
         cur = conn.cursor()
-        cur.execute(f"INSERT INTO settings(channel_id) VALUES(?)", (channel_id,))
+        cur.execute(f"INSERT INTO settings(channel_id, webhook) VALUES(?, '')", (channel_id,))
         conn.commit()
     return True
 

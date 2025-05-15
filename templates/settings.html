@@ -43,7 +43,7 @@
                     Show Link
                 </td>
                 <td>
-                    <select id="show_link" {%if not can_edit %} disabled {% endif %}>
+                    <select id="show_link" onchange="calculatepreview()" {%if not can_edit %} disabled {% endif %}>
                         {% if settings['show_link'] == 1 %}
                             <option value="True" selected>Yes - Will show that 'See all clips at ....' message on clipping.</option>
                             <option value="False">No - Will not show that message.</option>
@@ -59,7 +59,7 @@
                     Screenshot
                 </td>
                 <td>
-                    <select id="screenshot" {%if not can_edit %} disabled {% endif %}>
+                    <select id="screenshot" onchange="calculatepreview()" {%if not can_edit %} disabled {% endif %}>
                         {% if settings['screenshot'] == 1 %}
                             <option value="True" selected>Yes - NOT RECOMMENDED. Will post a screenshot of stream alongside the message in discord for better context. </option>
                             <option value="False">No - Will not do any screenshots to discord.</option>
@@ -84,7 +84,7 @@
                     Force Description
                 </td>
                 <td>
-                    <select id="force_desc" {%if not can_edit %} disabled {% endif %}>
+                    <select id="force_desc" onchange="calculatepreview()" {%if not can_edit %} disabled {% endif %}>
                         {% if settings['force_desc'] == 1 %}
                             <option value="True" selected>Yes - Will decline any clips made without any description.</option>
                             <option value="False">No - Will take every clip with or without description</option>
@@ -100,7 +100,7 @@
                     Silent
                 </td>
                 <td>
-                    <select id="silent" {%if not can_edit %} disabled {% endif %}>
+                    <select id="silent" onchange="calculatepreview()" {%if not can_edit %} disabled {% endif %}>
                         <!-- silent can be 0, 1, 2-->
                         {% if settings['silent'] == 0 %}
                             <option value="0" selected>0 - Will give back empty message.</option>
@@ -123,7 +123,7 @@
                     Private
                 </td>
                 <td>
-                    <select id="private" {%if not can_edit %} disabled {% endif %}>
+                    <select id="private" onchange="calculatepreview()"{%if not can_edit %} disabled {% endif %}>
                         {% if settings['private'] == 1 %}
                             <option value="True" selected>Yes - Will not show any clips on web nor impact stats. will only return 'clipped 😉'</option>
                             <option value="False">No</option>
@@ -136,10 +136,10 @@
             </tr>
             <tr id="#webhook">
                 <td>
-                    Webhook (this can also be used as password to login here.)
+                    Discord Webhook URL (this can also be used as password to login here.)
                 </td>
                 <td>
-                    <input {%if not can_edit %} disabled {% endif %} type="text" id="webhook" class="form-control" style="width: 100%;" value="{{ settings['webhook'] }}">
+                    <input onchange="calculatepreview()" {%if not can_edit %} disabled {% endif %} type="text" id="webhook" class="form-control" style="width: 100%;" value="{{ settings['webhook'] }}">
                 </td>
             </tr>
             <tr>
@@ -147,7 +147,7 @@
                     Message Level
                 </td>
                 <td>
-                    <select id="message_level" {%if not can_edit %} disabled {% endif %}>
+                    <select id="message_level" onchange="calculatepreview()" {%if not can_edit %} disabled {% endif %}>
                         <!-- can be 0 or 1 or 2 or 3 -->
                         {%if settings['message_level'] == 0 %}
                             <option value="0" selected>0 - Default - In Discord Show clip message alongside username as webhook user </option>
@@ -194,7 +194,7 @@
                     Comments | THIS IS STILL A BETA FEATURE. PLEASE TAKE THIS WITH A GRAIN OF SALT.
                 </td>
                 <td>
-                    <select id="comments" {%if not can_edit %} disabled {% endif %}>
+                    <select id="comments" {%if not can_turn_on_comments %} disabled title="Only Premium Members can use comments." {% endif %}>
                         {% if settings['comments'] == 1 %}
                             <option value="True" selected>Yes - Will post a comment after live stream ends contaning all the clips details.</option>
                             <option value="False">No</option>
@@ -203,6 +203,26 @@
                             <option value="False" selected>No</option>
                         {% endif %}
                     </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h4>Nightbot Response</h4>
+                    <div>
+                        <img src="" alt="Nightbot Response"  id="nighbot-response-trial1">
+                    </div>
+                    <div>
+                        <img src="" alt="Nightbot Response" id="nighbot-response-trial2">
+                    </div>
+                </td>
+                <td>
+                    <h4>Discord Response</h4>
+                    <div>
+                        <img src="" width="425px" alt="Discord Response"  id="discord-response-trial1">  
+                    </div>
+                    <div>
+                        <img src="" alt="Discord Response" id="discord-response-trial2">  
+                    </div>
                 </td>
             </tr>
             <tr>
@@ -243,6 +263,92 @@
 
 </div>
 <script>
+    function calculatepreview(){
+        calculatediscordpreview();
+        calculatenightbotpreview();
+    }
+    function calculatenightbotpreview(){
+        var show_link = document.getElementById("show_link").value == "True";
+        var force_desc = document.getElementById("force_desc").value == "True";
+        var silent = document.getElementById("silent").value;
+        var private = document.getElementById("private").value == "True";
+        var answer1 = document.getElementById("nighbot-response-trial1");
+        var answer2 = document.getElementById("nighbot-response-trial2");
+        if(force_desc){
+            answer1.src = "/static/nb_clip_denied.png";
+        }
+        else{
+            answer1.src = "/static/blank.png";
+        }
+
+        if(private){
+            answer2.src = "/static/nb_private.png";    
+            return;
+        }
+
+        if(silent == 0){
+            answer2.src = "/static/nb_silent_0.png";
+        }
+        else if(silent == 1){
+            answer2.src = "/static/nb_silent_1.png";
+        }
+        else{
+            answer2.src = "/static/nb_silent_2.png";
+        }
+        if(!show_link && silent == 2){
+            answer2.src= "/static/nb_show_link.png";
+        }
+        return;
+    }
+
+    function calculatediscordpreview(){
+        var private = document.getElementById("private").value == "True";
+        var screenshot = document.getElementById("screenshot").value == "True";
+        var message_level = document.getElementById("message_level").value;
+        var webhook = document.getElementById("webhook").value;
+        var answer1 = document.getElementById("discord-response-trial1");
+        var answer2 = document.getElementById("discord-response-trial2");
+        if(!webhook || webhook == "None" || webhook == "null" || webhook == "False" || webhook == "False" || webhook == "0" || webhook == 0){
+            answer1.src = "/static/discord_no.jpg";
+            answer2.src = "/static/blank.png";
+            return;
+        }
+        if(screenshot){
+            answer2.src = "/static/discord_screenshot.jpg";
+        }
+        else{
+            answer2.src = "/static/blank.png";
+        }
+        if(private){
+            if(message_level == 0){
+                answer1.src = "/static/discord_private_0.png";
+            }
+            else if(message_level == 1){
+                answer1.src = "/static/discord_private_1.png";
+            }
+            else if(message_level == 2){
+                answer1.src = "/static/discord_private_2.png";
+            }
+            else{
+                answer1.src = "/static/discord_private_3.png";
+            }
+            return;
+        }
+        if(message_level == 0){
+            answer1.src = "/static/discord_0.png";
+        }
+        else if(message_level == 1){
+            answer1.src = "/static/discord_1.png";
+        }
+        else if(message_level == 2){
+            answer1.src = "/static/discord_2.png";
+        }
+        else{
+            answer1.src = "/static/discord_3.png";
+        }
+        return;
+
+    }
     function delete_login(session_token){
         console.log("Deleting login: " + session_token);
         response = fetch("/settings/delete_login", {
@@ -289,6 +395,7 @@
         if (!can_edit){
             alert("You are not allowed to edit settings. Please upgrade your membership.");
         }
+        calculatepreview();
     });
     function save_settings(){
         console.log("Saving settings");
