@@ -30,6 +30,16 @@ body.dark-theme {
   color: white;
 }
 
+body.dark-theme footer{
+  background-color: rgba(33, 37, 41, 1);
+  color: white;
+}
+
+body footer {
+  background-color: white;
+  color: black;
+}
+
 /* Card Styling */
 .card {
   --bs-card-bg: rgba(255, 255, 255, 1);

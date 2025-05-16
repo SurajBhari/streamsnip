@@ -53,6 +53,7 @@
             var navbar = document.getElementsByClassName("navbar");
             var site_icon = document.getElementsByClassName("site_icon");
             var dropdown_items = document.getElementsByClassName("dropdown-item");
+            var footer = document.getElementsByTagName("footer");
             if (isDarkTheme) {
                 if(signs_in.length){ 
                     for(var i=0; i<signs_in.length; i++){
@@ -62,6 +63,11 @@
                         else{
                             signs_in[i].src = "/static/sign_up_dark.png";
                         }
+                    }
+                }
+                if(footer.length){
+                    for(var i=0; i<footer.length; i++){
+                        footer[i].classList.add("dark-theme");
                     }
                 }
                 body.classList.add("dark-theme");
@@ -99,6 +105,11 @@
                     }
                 }
                 body.classList.remove("dark-theme");
+                if(footer.length){
+                    for(var i=0; i<footer.length; i++){
+                        footer[i].classList.remove("dark-theme");
+                    }
+                }
                 for (var i = 0; i < form_control.length; i++) {
                     form_control[i].classList.remove("dark-theme");
                 }
@@ -325,18 +336,18 @@
     {% block content %}{% endblock %}
 </div>
 
-<footer class="bg-dark text-white">
+<footer>
     <div class="container py-4">
         <div class="row">
             <div class="col-md-6">
                 <p>© 2025 Suraj Bhari</p>
             </div>
             <div class="col-md-6 text-end">
-                <a href="https://github.com/surajbhari/streamsnip" class="text-light">Source Code</a> |
-                <a href="/privacy-policy" class="text-light">Privacy Policy</a> |
-                <a href="/aboutus" class="text-light">About Us</a> |
-                <a href="/contactus" class="text-light">Contact Us</a> |
-                <a href="/tnc" class="text-light">Terms & Conditions</a>
+                <a href="https://github.com/surajbhari/streamsnip">Source Code</a> |
+                <a href="/privacy-policy">Privacy Policy</a> |
+                <a href="/aboutus">About Us</a> |
+                <a href="/contactus">Contact Us</a> |
+                <a href="/tnc">Terms & Conditions</a>
             </div>
         </div>
     </div>
