@@ -137,18 +137,13 @@
         <div class="col-lg-6">
             <div class="card shadow">
                 <div class="card-body">
-                    <h4 class="card-title mb-4">Upload Payment Screenshot</h4>
-                    <form onsubmit="handleSubmit(event)">
-                        <div class="mb-3 text-center">
-                            <label for="file-input" class="custom-file-upload">
-                                <i class="fa-solid fa-upload"></i>
-                            </label>
-                            <input type="file" id="file-input" name="screenshot" accept="image/*" required>
-                        </div>
-                        <div class="d-grid">
-                            <input type="submit" class="btn btn-primary btn-block" value="Submit">
-                        </div>
-                    </form>
+                    <h4 class="card-title text-center mb-4">Upload Payment Screenshot</h4>
+                    <div class="mb-3 text-center">
+                        <label for="file-input" class="custom-file-upload ">
+                            <i class="fa-solid fa-upload"></i>
+                        </label>
+                        <input type="file" id="file-input" oninput="handleSubmit(event)" name="screenshot" accept="image/*" required>
+                    </div>
                 </div>
             </div>
         </div>
