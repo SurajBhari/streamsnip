@@ -623,61 +623,56 @@ def convert_sub_count(sub_count: str) -> int:
     return int(sub_count)
 
 
-def take_screenshot(video_url: str, seconds: int) -> str:
-    # Get the video URL using yt-dlp
-    params = {
-        "forceurl": True,
-        "format": "bestvideo",
-        "noprogress": True,
+
+def take_screenshot(video_url: str, seconds: int, cookies: str = None, jar=None) -> str:
+    # Define yt-dlp options to get the best video-only stream URL
+    ydl_opts = {
+        "format": "bestvideo[ext=mp4]/bestvideo",
         "quiet": True,
-        "simulate": True,
+        "noplaylist": True,
+        "skip_download": True,
+        "forceurl": True,
     }
+
     if cookies:
-        params["cookiefile"] = cookies
+        ydl_opts["cookiefile"] = cookies
 
-    with yt_dlp.YoutubeDL(params) as ydl:
+    # Extract the video stream URL
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         video_info = ydl.extract_info(video_url, download=False)
+        video_stream_url = video_info["url"].strip()
 
-    # Remove leading/trailing whitespace and newline characters from the video URL
-    video_url = video_info["url"]
-    file_name = "ss.jpg"
-    r = GET(
-        video_url, cookies=jar
-    )  # this uses Jar because it can't parse a txt file with cookies
-    if r.status_code != 200:
+    # Download the HLS index file (M3U8 playlist)
+    response = GET(video_stream_url, cookies=jar)
+    if response.status_code != 200:
         return None
-    index = "index.m3u8"
-    with open(index, "wb") as f:
-        f.write(r.content)
 
-    # Think Think
-    # FFmpeg command
+    index_file = "index.m3u8"
+    with open(index_file, "wb") as f:
+        f.write(response.content)
+
+    # Build FFmpeg command to extract the screenshot
+    output_file = "ss.jpg"
     ffmpeg_command = [
         "ffmpeg",
-        "-protocol_whitelist",
-        "file,http,https,tcp,tls,crypto",  # Protocol whitelist
-        "-y",  # say yes to prompts
-        "-ss",
-        str(seconds),  # Start time
-        "-i",
-        index,  # Input video URL
-        "-vframes",
-        "1",  # Number of frames to extract (1)
-        "-q:v",
-        "2",  # Video quality (2)
-        "-hide_banner",  # Hide banner
-        "-loglevel",
-        "error",  # Hide logs
-        file_name,  # Output image file
+        "-protocol_whitelist", "file,http,https,tcp,tls,crypto",
+        "-y",
+        "-ss", str(seconds),
+        "-i", index_file,
+        "-vframes", "1",
+        "-q:v", "2",
+        "-hide_banner",
+        "-loglevel", "error",
+        output_file,
     ]
 
     try:
         subprocess.run(ffmpeg_command, check=True)
     except subprocess.CalledProcessError as e:
-        print("Error:", e)
-        exit(1)
+        print("FFmpeg failed:", e)
+        return None
 
-    return file_name
+    return output_file
 
 
 def get_clip_with_desc(clip_desc: str, channel_id: str) -> Optional[Clip]:
