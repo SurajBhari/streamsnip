@@ -624,14 +624,12 @@ def convert_sub_count(sub_count: str) -> int:
 
 
 
-def take_screenshot(video_url: str, seconds: int, cookies: str = None, jar=None) -> str:
+def take_screenshot(video_url: str, seconds: int) -> str:
     # Define yt-dlp options to get the best video-only stream URL
     ydl_opts = {
-        "format": "bestvideo[ext=mp4]/bestvideo",
         "quiet": True,
         "noplaylist": True,
         "skip_download": True,
-        "forceurl": True,
     }
 
     if cookies:
