@@ -371,6 +371,8 @@
         }, 1000);
     }
     function reset_settings(){
+        var reset_button = document.getElementById("reset-button");
+        reset_button.innerHTML = "<i class='fa-solid fa-spinner rotate'></i>";
         response = fetch("/settings/default", {
             method: "POST",
             headers: {
@@ -379,15 +381,18 @@
             body: JSON.stringify({
                 reset: true
             })
-    });
-        var reset_button = document.getElementById("reset-button")
-        reset_button.innerHTML = "<i class='fa-solid fa-spinner rotate'></i>";
-        console.log(response);
-        // wait for 1 second
-        setTimeout(function(){
-            reset_button.innerHTML = "<i class='fa-solid fa-check'></i>";
-            window.location.reload();
-        }, 2000);
+        }).then(response => {
+            if (response.ok) {
+                console.log("Settings reset");
+                reset_button.innerHTML = "<i class='fa-solid fa-check'></i>";
+                window.location.reload();
+            } else {
+                response.text().then(text => {
+                    alert("Error: " + text);
+                    window.location.reload();
+                });
+            }
+        });
     }
     document.addEventListener("DOMContentLoaded", function(event) {
         can_edit= {{ can_edit|tojson|safe }};
@@ -409,7 +414,8 @@
         var message_level = document.getElementById("message_level").value;
         var take_delays = document.getElementById("take_delays").value;
         var comments = document.getElementById("comments").value;
-
+        var save_button = document.getElementById("save-button");
+        save_button.innerHTML = "<i class='fa-solid fa-spinner rotate'></i>";
         response = fetch("/settings", {
             method: "POST",
             headers: {
@@ -430,6 +436,10 @@
         }).then(response => {
             if (response.ok) {
                 console.log("Settings saved");
+                save_button.innerHTML = "<i class='fa-solid fa-check'></i>";
+                setTimeout(function(){
+                    save_button.innerHTML = "<i class='fa-regular fa-floppy-disk'></i>";
+                }, 1000);
             } else {
                 response.text().then(text => {
                     alert("Error: " + text);
@@ -437,18 +447,6 @@
                 });
             }
         })
-        // replace the save button with a loading gif 
-        var save_button = document.getElementById("save-button")
-        // replace with a spinner that is transform rotate
-        save_button.innerHTML = "<i class='fa-solid fa-spinner rotate'></i>";
-        console.log(response);
-        // wait for 1 second
-        setTimeout(function(){
-            save_button.innerHTML = "<i class='fa-solid fa-check'></i>";
-        }, 2000);
-        setTimeout(function(){
-            save_button.innerHTML = "<i class='fa-regular fa-floppy-disk'></i>";
-        }, 4000);
     }
 </script>
 {% endblock %}
