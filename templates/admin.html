@@ -81,7 +81,7 @@
         <option value="">Select a user</option>
         {% for tier, memberss in members.items() %} 
         {% for m in memberss %}
-            <option value="{{m.id}}">{{m.name}}</option>
+            <option value="{{m.channel_id}}">{{m.name}}</option>
         {% endfor %}
         {% endfor %}
     </select>

@@ -1334,6 +1334,8 @@ def settings():
             settings.silent = request.json.get("silent")
             settings.private = request.json.get("private")
             settings.webhook = request.json.get("webhook").strip()
+            if settings.webhook.lower() in ["none", 'null']:
+                settings.webhook = ''
             settings.message_level = request.json.get("message_level")
             settings.take_delays = request.json.get("take_delays")
             settings.comments = request.json.get("comments")
@@ -1353,13 +1355,15 @@ def settings():
                 webhook.add_embed(embed)
                 try:
                     response = webhook.execute()
+                    if response.status_code != 200:
+                        raise Exception(
+                            f"Failed to send test webhook. Status code: {response.status_code}"
+                        )
+                    
                 except Exception as e:
                     print(e)
-                    flash("Invalid webhook URL, If you don't want it. leave it blank.", "danger")
-                    return url_for("settings")
-                if response.status_code != 200:
-                    flash("Invalid webhook URL", "danger")
-                    return url_for("settings")
+                    return "Invalid webhook URL", 400
+                
                 # else welcome the channel
                 if "update_webhook" in config:
                     webhook = DiscordWebhook(

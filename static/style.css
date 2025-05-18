@@ -992,3 +992,9 @@ body .poster{
 body.dark-theme .poster{
   filter: invert(0%);
 }
+.rotate{
+  animation: spinner 1.5s linear infinite; 
+}
+@keyframes spinner {
+  to { transform: rotate(360deg); }
+}

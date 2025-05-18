@@ -427,16 +427,28 @@
                 take_delays: take_delays,
                 comments: comments
             })
-        });
+        }).then(response => {
+            if (response.ok) {
+                console.log("Settings saved");
+            } else {
+                response.text().then(text => {
+                    alert("Error: " + text);
+                    window.location.reload();
+                });
+            }
+        })
         // replace the save button with a loading gif 
         var save_button = document.getElementById("save-button")
-        save_button.innerHTML = "<img src='https://media.tenor.com/wpSo-8CrXqUAAAAi/loading-loading-forever.gif' alt='loader' style='width: 20px; height: 20px;'>";
+        // replace with a spinner that is transform rotate
+        save_button.innerHTML = "<i class='fa-solid fa-spinner rotate'></i>";
         console.log(response);
         // wait for 1 second
         setTimeout(function(){
             save_button.innerHTML = "<i class='fa-solid fa-check'></i>";
-            window.location.reload();
-        }, 1000);
+        }, 2000);
+        setTimeout(function(){
+            save_button.innerHTML = "<i class='fa-regular fa-floppy-disk'></i>";
+        }, 4000);
     }
 </script>
 {% endblock %}
