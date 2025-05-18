@@ -4009,9 +4009,10 @@ def clip(message_id, clip_desc=None):
         else:
             ss_id = None
             ss_link = None
-    except:
+    except Exception as e:
         ss_id = None
         ss_link = None
+        logging.log(logging.ERROR, "Error in taking screenshot"+str(e))
         message_to_return += " Couldn't take screenshot."
 
     if show_link is True:
