@@ -20,8 +20,13 @@ class Membership:
             return
         self.channel_id = data[0]
         self.type = data[1]
-        self.start = datetime.fromtimestamp(data[2])
-        self.end = datetime.fromtimestamp(data[3])
+        try:
+            self.start = datetime.fromtimestamp(data[2])
+            self.end = datetime.fromtimestamp(data[3])
+        except OSError:
+            # make it infinite
+            pass
+        
         self.active = datetime.today() <= self.end
         self.in_db = True
         self.days_left = (self.end - datetime.today()).days
