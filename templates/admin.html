@@ -79,8 +79,10 @@
     <h1> Individual Membership </h1>
     <select id="imember_select" onchange="show_individual_membership()">
         <option value="">Select a user</option>
-        {% for user in users %}
-            <option value="{{user.id}}">{{user.name}}</option>
+        {% for tier, memberss in members.items() %} 
+        {% for m in memberss %}
+            <option value="{{m.id}}">{{m.name}}</option>
+        {% endfor %}
         {% endfor %}
     </select>
     <div id="membership_table" style="display: none;">
