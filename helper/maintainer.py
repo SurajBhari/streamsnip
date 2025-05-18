@@ -149,6 +149,8 @@ def periodic_task():
         "/var/log/apache2/access.log",
         "../queries.db",
         "../record.log",
+        "channel_cache.json",
+        "client_secrets.json",
     ]
     # management_webhook.add_file(file=open("../config.json", "rb"), filename="config.json")
     # consturct a string that contains most important vitals of system
