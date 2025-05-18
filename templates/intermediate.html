@@ -4,7 +4,7 @@
 <title>StreamSnip - Pay</title>
 <style>
     .content {
-        padding-top: 5%;
+        padding-top: 1%;
     }
     .qr-image {
         max-width: 100%;
@@ -108,6 +108,14 @@
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-lg-6 mb-4 text-center position-relative d-inline-block">
+            <a href="https://youtube.com/channel/{{ current_user.id }}" class="d-flex align-items-center">
+                <img src="{{ current_user.image }}" alt="{{ current_user.username }}" class="rounded-circle" style="width: 20%; margin-right: 15px;">
+                <h1>You are buying membership for {{ current_user.username }}</h1>
+            </a>
+        </div>
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-lg-6 mb-4 text-center position-relative d-inline-block">
             <h2 class="mb-3 text-success">{{ transaction_note }}</h2>
 
             <div class="position-relative d-inline-block">
@@ -127,7 +135,7 @@
                     alt="UPI Footer" 
                     style="pointer-events: none; width:50%;">
             </div>
-            <div class="hide-on-pc">
+            <div class="hide-on-pc" style="padding-top: 20px;">
                 <a href="{{ upi_link }}" target="_blank" class="btn btn-success btn-lg">
                     Pay with UPI
                 </a>
