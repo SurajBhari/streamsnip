@@ -345,7 +345,7 @@ class User(UserMixin):
         self.sub_count = sub_count
         self.logged_in = True
         self.email = email
-        self.name = name
+        self.gname = name
         self.gimage = gimage
 
     @property
@@ -405,9 +405,9 @@ class User(UserMixin):
             image,
             sub_count=sub_count,
             email=email,
-            name=name,
+            name=name, 
             gimage=gimage,
-        )
+        ) 
 
 
 def get_channel_settings(user_id) -> UserSettings:
