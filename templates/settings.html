@@ -362,7 +362,7 @@
         });
         // replace the delete button with a loading gif 
         var delete_button = document.getElementById("delete-" + session_token)
-        delete_button.innerHTML = "<img src='https://media.tenor.com/wpSo-8CrXqUAAAAi/loading-loading-forever.gif' alt='loader' style='width: 20px; height: 20px;'>";
+        delete_button.innerHTML = "<i class='fa-solid fa-spinner rotate'></i>";
 
         // wait for 1 second
         setTimeout(function(){
@@ -381,7 +381,7 @@
             })
     });
         var reset_button = document.getElementById("reset-button")
-        reset_button.innerHTML = "<img src='https://media.tenor.com/wpSo-8CrXqUAAAAi/loading-loading-forever.gif' alt='loader' style='width: 20px; height: 20px;'>";
+        reset_button.innerHTML = "<i class='fa-solid fa-spinner rotate'></i>";
         console.log(response);
         // wait for 1 second
         setTimeout(function(){
