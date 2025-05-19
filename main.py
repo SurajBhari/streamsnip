@@ -3970,7 +3970,7 @@ def clip(message_id, clip_desc=None):
     clip_info = f"'{t_clip_desc}' " if t_clip_desc != "None" else ""
     ending_soon = ""
     if not free_trial and time_left.days < 7:
-        ending_soon = f" (subscription ending {time_left.days}{'s' if time_left.days > 1 else ''})"
+        ending_soon = f" (subscription ending {time_left.days} day{'s' if time_left.days > 1 else ''})"
 
     message_to_return += f"{project_name}{ending_soon} successfully clipped {clip_info}({clip_id}) by {user_name}"
 
