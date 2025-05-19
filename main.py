@@ -3965,15 +3965,9 @@ def clip(message_id, clip_desc=None):
                 message_to_return += f"Free Trial Ending in {time_left.days} days. " 
         else:
             message_to_return += "Free Trial - "
-    if t_clip_desc != "None":
-        if time_left.days < 7:
-            message_to_return += f"{project_name} (subscription ending {time_left.days}{'s'if time_left.days > 1 else ''}) successfully clipped '{t_clip_desc}' ({clip_id}) by {user_name} "
-        else:
-            message_to_return += f"{project_name} successfully clipped '{t_clip_desc}' ({clip_id}) by {user_name}"
-    else:
-        message_to_return += (
-            f"{project_name} successfully clipped ({clip_id}) by {user_name}"
-        )
+    clip_info = f"'{t_clip_desc}' " if t_clip_desc != "None" else ""
+    ending_soon = f" (subscription ending {time_left.days}{'s' if time_left.days > 1 else ''})" if time_left.days < 7 else ""
+    message_to_return += f"{project_name}{ending_soon} successfully clipped {clip_info}({clip_id}) by {user_name}"
     if delay:
         message_to_return += f" with a delay of {delay} seconds."
     if webhook_url:  # if webhook is not found then don't send the message
