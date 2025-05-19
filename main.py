@@ -3958,16 +3958,22 @@ def clip(message_id, clip_desc=None):
         t_clip_desc = clip_desc
     message_to_return = ""
     if free_trial:
-        if time_left.total_seconds() < 86400*3: # if its less than 3 days
-            if time_left.days == 0:
-                message_to_return += "Free Trial Ending Today. "
-            else:
-                message_to_return += f"Free Trial Ending in {time_left.days} days. " 
+        if time_left.total_seconds() < 86400 * 3:  # less than 3 days
+            message_to_return += (
+                "Free Trial Ending Today. " if time_left.days == 0
+                else f"Free Trial Ending in {time_left.days} days. "
+            )
         else:
+            # Only add this if not already covered by ending notice
             message_to_return += "Free Trial - "
+
     clip_info = f"'{t_clip_desc}' " if t_clip_desc != "None" else ""
-    ending_soon = f" (subscription ending {time_left.days}{'s' if time_left.days > 1 else ''})" if time_left.days < 7 else ""
+    ending_soon = ""
+    if not free_trial and time_left.days < 7:
+        ending_soon = f" (subscription ending {time_left.days}{'s' if time_left.days > 1 else ''})"
+
     message_to_return += f"{project_name}{ending_soon} successfully clipped {clip_info}({clip_id}) by {user_name}"
+
     if delay:
         message_to_return += f" with a delay of {delay} seconds."
     if webhook_url:  # if webhook is not found then don't send the message
