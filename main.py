@@ -4067,7 +4067,76 @@ def clip(message_id, clip_desc=None):
         return clip_id
     else:
         return " "
+@app.route("/get_other_pov", methods=["POST"])
+def get_other_pov():
+    clip_id = request.json.get("clip_id")
+    if not clip_id:
+        return "No clip id provided", 400
 
+    # This is the OTHER streamer's ID (for POV)
+    other_streamer_id = request.json.get("streamer_id")
+    if not other_streamer_id:
+        return "No streamer id provided", 400
+
+    # Get the original clip and its source stream
+    clip = get_clip(clip_id)  # clip should have stream_id and offset_seconds
+    if not clip:
+        return "Clip not found", 404
+
+    try:
+        # Get the original stream's start time
+        clip_stream = YouTubeChatDownloader(cookies=cookies).get_video_data(
+            video_id=clip.stream_id
+        )
+        clip_stream_start_time = clip_stream["start_time"] / 1_000_000
+        clip_absolute_time = clip.time.timestamp()
+    except Exception as e:
+        print(f"Error getting clip stream data: {e}")
+        return "Failed to get clip stream data", 500
+
+    print(f"Searching POV from {other_streamer_id} for clip at {clip_absolute_time}")
+
+    try:
+        vids = scrapetube.get_channel(other_streamer_id, content_type="streams", sleep=0)
+        for vid in vids:
+            try:
+                vid_data = YouTubeChatDownloader(cookies=cookies).get_video_data(
+                    video_id=vid["videoId"]
+                )
+                other_start = vid_data["start_time"] / 1_000_000
+                duration = vid_data.get("duration", 0)
+                other_end = other_start + duration
+                print(
+                    f"Checking video {vid['videoId']} from {other_start} to {other_end}"
+                )
+                if other_start < clip_absolute_time - 36 * 60 * 60:
+                    break
+                if other_start <= clip_absolute_time:
+                    offset = int(clip_absolute_time - other_start)
+                    offset += clip.delay  # adjust for delay
+                    if duration and offset > duration:
+                        continue
+                    return jsonify({
+                        "other_stream_id": vid["videoId"],
+                        "offset_seconds": int(offset),
+                        "streamer_id": other_streamer_id,
+                        "timestamp_url": f"https://youtu.be/watch?v={vid['videoId']}&t={offset}s"
+                    })                
+            except Exception as inner_e:
+                print(f"Failed to process video {vid['videoId']}: {inner_e}")
+                continue
+    except Exception as outer_e:
+        print(f"Error scraping channel for {other_streamer_id}: {outer_e}")
+        return "Failed to fetch streams for other streamer", 500
+
+    return "No matching POV found", 404
+
+@app.route("/get_other_streamers", methods=["POST"])
+def get_other_streamers():
+    home_data = generate_home_data()
+    # sort the streamers by their name
+    streamers = sorted(home_data, key=lambda x: x["name"])
+    return streamers
 
 @app.route("/delete")
 @app.route("/delete/")

@@ -232,18 +232,7 @@
         search.value = to_add;
         updateClips();
     }
-    function do_magic(clip_id){
-        var clip = null;
-        for(i=0; i<data.length; i++){
-            if(data[i]['id'] == clip_id){
-                clip = data[i];
-                break;
-            }
-        }
-        if(clip == null){
-                return;
-        }
-        var link = clip['link'].replaceAll("youtu.be/", "www.youtube.com/embed/").replaceAll("?t=", "?start=");
+    function open_embed(stream_link){
         // make a new element that comes on top of the screen with the video
         // make the video autoplay
         var div = document.createElement("div");
@@ -257,13 +246,26 @@
         div.style.overflow = "hidden";
         div.style.backgroundColor = "rgb(0,0,0)";
         div.style.backgroundColor = "rgba(0,0,0,0.4)";
-        div.innerHTML = `<iframe height="80%" width="80%" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);" transform src="${link}&autoplay=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe> `;
+        div.innerHTML = `<iframe height="80%" width="80%" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);" transform src="${stream_link}&autoplay=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe> `;
         document.body.appendChild(div);
         div.addEventListener("click", function(){
             div.remove();
         });
-        
 
+    }
+    function do_magic(clip_id){
+        var clip = null;
+        for(i=0; i<data.length; i++){
+            if(data[i]['id'] == clip_id){
+                clip = data[i];
+                break;
+            }
+        }
+        if(clip == null){
+                return;
+        }
+        var link = clip['link'].replaceAll("youtu.be/", "www.youtube.com/embed/").replaceAll("?t=", "?start=");
+        open_embed(link);
     };
     function updateClips() {
         var container = document.getElementById("clips-container");
@@ -332,7 +334,7 @@
             }
             var delete_button = "";
             if(can_edit){
-                delete_button = `<button style="position: absolute; right: 2px; bottom: 2px;" type="button" class="btn btn-outline-danger " onclick="del(this)"><i class="fa-regular fa-trash-can"></i></button>`;
+                delete_button = `<button style="position: absolute; left: 2px; top: 2px;" type="button" class="btn btn-outline-danger " onclick="del(this)"><i class="fa-regular fa-trash-can"></i></button>`;
                 download_button = `<a href="${clip.download_link}"> <button style="position: absolute; right: 2px; top: 2px;" type="button" class="btn btn-outline-primary ")"><i class="fa-solid fa-download"></i></button> </a>`;
             }
             var card_img = `<img class="card-img-top" src="${thumbnail}" alt="Card image cap" onerror="this.src='${alternative}';" onload="if(this.naturalHeight==90 && this.naturalWidth==120){this.src='${hq_live_thumbnail}';this.onload='';}">`
@@ -377,10 +379,14 @@
                             </p>
                         </a>
                     </div>
-                    <div class="card-footer checkbox-wrapper-2">
+                    <div class="card-footer checkbox-wrapper-2 d-flex align-items-center gap-2">
+                        <select id="ot-pov-${clip['id']}" aria-label="Default select example" onfocus="populateselect('${clip['id']}')" onChange="other_pov('${clip['id']}')">
+                            <option value="">Select other POV</option>
+                        </select>
                         <input type="checkbox" class="sc-gJwTLC ikxBAC" id=${clip['id']} value=${clip['id']} onclick='handleClick(this);' ${is_checked ? 'checked' : ''}>
-                        ${delete_button}
+                        
                     </div>
+                    <div>${delete_button}</div>
                 </div>
             </div>`;
 
@@ -409,6 +415,7 @@
         end = endIndex > filteredData.length ? filteredData.length : endIndex;
         document.getElementById("total-clips1").innerHTML = `${startIndex + 1}-${end} of ${filteredData.length}`;
         console.log("Updated clips");
+        update_theme();
     }
     function getUserChannelLink(authorId) {
         return `https://www.youtube.com/channel/${authorId}`;
@@ -525,10 +532,77 @@
             localStorage.removeItem(cb.id);   
         }
     }
+    var other_streamers = [];
+    function populateselect(clip_id){
+        var select = document.getElementById("ot-pov-"+clip_id);
+        select.innerHTML = '<option value="" selected>Select other POV</option>';
+        for (var i = 0; i < other_streamers.length; i++) {
+            var option = document.createElement("option");
+            option.value = other_streamers[i]['id'];
+            option.text = other_streamers[i]['name'];
+            select.appendChild(option);
+        }
+    }
+    function other_pov(clip_id) {
+        // Get the select element and its value
+        var select = document.getElementById("ot-pov-" + clip_id);
+        var selected_value = select.value;
+
+        // Replace the select with a loading spinner
+        var container = select.parentElement;
+        container.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+        // Make the POST request
+        fetch("/get_other_pov", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                clip_id: clip_id,
+                streamer_id: selected_value
+            }),
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(errorText => {
+                    throw new Error("Error: " + errorText);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log(data);
+            if (data['timestamp_url']) {
+                var link = "https://www.youtube.com/embed/"+data['other_stream_id']+"?start="+data['offset_seconds']+"&autoplay=1";
+                console.log(link);
+                open_embed(link);
+            } else {
+                alert("No clips found for this streamer.");
+            }
+        })
+        .catch(error => {
+            alert(error.message);
+        })
+        .finally(() => {
+            updateClips(); // Always refresh clips regardless of success or error
+        });
+    }
+
 
     // Initial update when the page loads
     document.addEventListener("DOMContentLoaded", function () {
         updateClips();
+        fetch('/get_other_streamers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            other_streamers = data;
+        })
     });
 </script>
 {% endblock %}
