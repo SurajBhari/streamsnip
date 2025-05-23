@@ -680,62 +680,64 @@ def get_clip_with_desc(clip_desc: str, channel_id: str) -> Optional[Clip]:
             return clip
     return None
 
-
 def download_and_store(clip_id, format: str = None) -> str:
     with conn:
         cur = conn.cursor()
         data = cur.execute(
-            "SELECT * FROM QUERIES WHERE  message_id LIKE ? AND time_in_seconds >= ? AND time_in_seconds < ?",
+            "SELECT * FROM QUERIES WHERE message_id LIKE ? AND time_in_seconds >= ? AND time_in_seconds < ?",
             (f"%{clip_id[:3]}", int(clip_id[3:]) - 1, int(clip_id[3:]) + 1),
         )
         data = cur.fetchall()
+
     if not data:
         return None
+
     clip = Clip(data[0])
     video_url = clip.stream_link
     timestamp = clip.time_in_seconds
     output_filename = f"./clips/{clip_id}"
-    # if there is a file that start with that clip in current directory then don't download it
+    
+    # Check if file already exists
     for file in os.listdir("./clips"):
         if format:
             if file.startswith(clip_id) and file.endswith(format):
-                return file
+                return os.path.join("clips", file)
         else:
             if file.startswith(clip_id):
-                return file
-    # real thing happened at 50. but we stored timestamp with delay. take back that delay
-    delay = clip.delay
+                return os.path.join("clips", file)
+
+    # Adjust for delay
+    delay = clip.delay or -60
     timestamp += -1 * delay
-    if not delay:
-        delay = -60
-    l = [timestamp, timestamp + delay]
-    start_time = min(l)
-    end_time = max(l)
+    start_time = min(timestamp, timestamp + delay)
+    end_time = max(timestamp, timestamp + delay)
+
     params = {
         "cookiefile": cookies,
-        "download_ranges": yt_dlp.utils.download_range_func(
-            [], [[start_time, end_time]]
-        ),
-        "match_filter": yt_dlp.utils.match_filter_func(
-            "!is_live & live_status!=is_upcoming & availability=public"
-        ),
+        "download_ranges": yt_dlp.utils.download_range_func([], [[start_time, end_time]]),
+        "match_filter": yt_dlp.utils.match_filter_func("!is_live & live_status!=is_upcoming & availability=public"),
         "no_warnings": True,
         "noprogress": True,
         "outtmpl": {"default": output_filename},
         "overwrites": True,
-        "silent": True,
+        "quiet": True,
+        "format": "301",  # <-- Specify an available format here
     }
+
     if format:
+        params["postprocessors"] = [{
+            "key": "FFmpegVideoConvertor",
+            "preferedformat": format
+        }]
         params["final_ext"] = format
-        params["postprocessors"] = [
-            {"key": "FFmpegVideoConvertor", "preferedformat": "mp4"}
-        ]
+
     with yt_dlp.YoutubeDL(params) as ydl:
         try:
             ydl.download([video_url])
         except yt_dlp.utils.DownloadError as e:
-            print(e)
-            return  # this video is still live. we can't download it
+            print(f"Download error: {e}")
+            return None  # Possibly still live or region restricted
+
     files = [
         os.path.join("clips", x) for x in os.listdir("./clips") if x.startswith(clip_id)
     ]
