@@ -721,7 +721,6 @@ def download_and_store(clip_id, format: str = None) -> str:
         "outtmpl": {"default": output_filename},
         "overwrites": True,
         "quiet": True,
-        "format": "301",  # <-- Specify an available format here
     }
 
     if format:
