@@ -273,8 +273,9 @@ with conn:
         print("Added comments column to SETTINGS table")
     # if default of comments is False. change it to True 25/5/25
     cur.execute(
-        "ALTER TABLE SETTINGS ALTER COLUMN comments SET DEFAULT 'True';"
+        "ALTER TABLE settings MODIFY comments BOOLEAN DEFAULT TRUE;"
     )
+
     conn.commit()
     print("Updated comments column to True for all channels")
     # change settings comment to True for all channels
