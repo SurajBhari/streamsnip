@@ -294,8 +294,9 @@ with conn:
         )"""
         )
         cur.execute("""
-            INSERT INTO settings (id, comments)
-            SELECT id, comments FROM settings_old;
+            INSERT INTO settings (channel_id, showlink, screenshot, delay, forcedesc, silent, private, webhook, messagelevel, takedelays, comments)
+            SELECT channel_id, showlink, screenshot, delay, forcedesc, silent, private, webhook, messagelevel, takedelays, 'True' FROM settings_old
+                    
         """)
         cur.execute("DROP TABLE settings_old;")
         conn.commit()
