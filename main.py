@@ -267,10 +267,19 @@ with conn:
     colums = [xp[1] for xp in data]
     if "comments" not in colums:
         cur.execute(
-            "ALTER TABLE SETTINGS ADD COLUMN comments VARCHAR(40) DEFAULT 'False'"
+            "ALTER TABLE SETTINGS ADD COLUMN comments VARCHAR(40) DEFAULT 'True'"
         )
         conn.commit()
         print("Added comments column to SETTINGS table")
+    # if default of comments is False. change it to True 25/5/25
+    cur.execute(
+        "ALTER TABLE SETTINGS ALTER COLUMN comments SET DEFAULT 'True';"
+    )
+    conn.commit()
+    print("Updated comments column to True for all channels")
+    # change settings comment to True for all channels
+    cur.execute("UPDATE SETTINGS SET comments='True' WHERE comments='False'")
+    conn.commit()
 
     cur.execute(
         """
