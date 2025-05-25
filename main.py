@@ -1167,6 +1167,9 @@ def login():
         # set cookies to this password
         creds = get_creds()
         entered_password = request.form["password"]
+        if entered_password.lower() in ["","none", "null"]:
+            flash("You can't login with an empty password", "warning")
+            return render_template("login.html")
         session_token = create_token()
         if entered_password == admin_password:
             session["id"] = "admin"
