@@ -271,16 +271,34 @@ with conn:
         )
         conn.commit()
         print("Added comments column to SETTINGS table")
-    # if default of comments is False. change it to True 25/5/25
-    cur.execute(
-        "ALTER TABLE settings MODIFY comments DEFAULT 'TRUE';"
-    )
-
-    conn.commit()
-    print("Updated comments column to True for all channels")
-    # change settings comment to True for all channels
-    cur.execute("UPDATE SETTINGS SET comments='True' WHERE comments='False'")
-    conn.commit()
+    else:
+        # comments already exists. we will change the default value to True
+        cur.execute("ALTER TABLE settings RENAME TO settings_old;")
+        conn.commit()
+        cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS SETTINGS (
+        channel_id VARCHAR(40) UNIQUE,
+        showlink VARCHAR(40) DEFAULT 'True',
+        screenshot VARCHAR(40) DEFAULT 'False',
+        delay INT DEFAULT 0,
+        forcedesc VARCHAR(40) DEFAULT 'False',
+        silent INT DEFAULT 2,
+        private VARCHAR(40) DEFAULT 'False',
+        webhook VARCHAR(128) DEFAULT 'None',
+        messagelevel INT DEFAULT 0,
+        takedelays INT DEFAULT 'False',
+        comments VARCHAR(40) DEFAULT 'True'
+        )"""
+        )
+        cur.execute("""
+            INSERT INTO settings (id, comments)
+            SELECT id, comments FROM settings_old;
+        """)
+        cur.execute("DROP TABLE settings_old;")
+        conn.commit()
+        # give everyone the comments setting as True
+        cur.execute("UPDATE SETTINGS SET comments='True'")
 
     cur.execute(
         """
