@@ -99,7 +99,7 @@ def list_comments(video_id):
 
 
 def prepare_comment_text(clips: List) -> str:
-    string = "Clips For This stream: (this is a BETA option. please take this with a grain of salt)\n"
+    string = "Clips For This stream: \n"
     for clip in clips:
         if clip.userlevel == "everyone" or not clip.userlevel:
             icon = ""
@@ -113,8 +113,8 @@ def prepare_comment_text(clips: List) -> str:
             icon = regular_icon
         else:
             icon = ""
-        string += f"{clip.hms} | {clip.id} | {clip.desc} -- {icon} {clip.user_name}\n"
-    string += "\nThat's all. \n\nThis is a BETA feature. Please take this with a grain of salt. If you have any feedback, please let me know."
+        string += f"{clip.hms} | {clip.desc} -- {icon} {clip.user_name}\n"
+    string += "\nThat's all. \nIf you have any feedback, please let me know."
     return string
 
 
