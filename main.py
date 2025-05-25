@@ -273,6 +273,8 @@ with conn:
         print("Added comments column to SETTINGS table")
     else:
         # comments already exists. we will change the default value to True
+        cur.execute("DROP TABLE settings_old;")
+
         cur.execute("ALTER TABLE settings RENAME TO settings_old;")
         conn.commit()
         cur.execute(
