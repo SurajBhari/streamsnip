@@ -138,9 +138,18 @@
                 <td>
                     Discord Webhook URL (this can also be used as password to login here.)
                 </td>
-                <td>
-                    <input onchange="calculatepreview()" {%if not can_edit %} disabled {% endif %} type="text" id="webhook" class="form-control" style="width: 100%;" value="{{ settings['webhook'] }}">
-                </td>
+                <td style="position: relative;">
+                <input onchange="calculatepreview()" 
+                    {% if not can_edit %} disabled {% endif %} 
+                    type="password" id="webhook" 
+                    class="form-control" style="width: 100%;" 
+                    value="{{ settings['webhook'] }}">
+                
+                <span onclick="toggleWebhookVisibility()" 
+                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;">
+                    <i id="toggleEye" class="fa-solid fa-eye"></i>
+                </span>
+            </td>
             </tr>
             <tr>
                 <td>
@@ -300,7 +309,13 @@
         }
         return;
     }
-
+    function toggleWebhookVisibility() {
+        const input = document.getElementById("webhook");
+        const eye = document.getElementById("toggleEye");
+        const isPassword = input.type === "password";
+        input.type = isPassword ? "text" : "password";
+        eye.className = isPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+    }
     function calculatediscordpreview(){
         var private = document.getElementById("private").value == "True";
         var screenshot = document.getElementById("screenshot").value == "True";
