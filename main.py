@@ -337,7 +337,9 @@ with conn:
         "CREATE TABLE IF NOT EXISTS TRANSACTIONS(channel_id VARCHAR(40), amount INT, time INT, transaction_id VARCHAR(40), membership_type VARCHAR(40), description VARCHAR(40))"
     )
     conn.commit()
-    
+    cur.execute("CREATE TABLE IF NOT EXISTS ACCESS(channel_id VARCHAR(40), email VARCHAR(40), access_type VARCHAR(40), time INT, description VARCHAR(40))")
+    conn.commit()
+
 with conn:
     cur = conn.cursor()
     cur.execute("SELECT session_token FROM LOGIN_RECORDS")
@@ -1355,10 +1357,11 @@ def settings():
     membership_details = Membership.get(conn, current_user.id)
     membership_details2 = is_subscribed(current_user.id, free_trial=False)
     can_edit = membership_details2 in ["pro", "premium", "FREE"]
+    """
     if not can_edit:
         delay = settings.delay
         settings = DEFAULT_SETTINGS
-        settings.delay = delay  # we don't want to change the delay
+        settings.delay = delay  # we don't want to change the delay""" # even if they can't edit the settings. get their settings.
     try:  # fuck around
         getattr(current_user, "sub_count")
     except AttributeError:  # find out
