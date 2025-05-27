@@ -1121,7 +1121,7 @@ def login_google_callback():
 @login_required
 def change_account():
     accessible_accounts = get_access_by_email(current_user.email)
-    users = [User.get(x) for x in accessible_accounts]
+    users = [User.get(x.channel_id) for x in accessible_accounts]
     next = request.args.get("next", "")
     if not next:
         next = session.pop("next_url", "/")
