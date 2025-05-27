@@ -383,8 +383,6 @@ class User(UserMixin):
         self.email = email
         self.gname = name
         self.gimage = gimage
-        self.is_dummy = False  # dummy are accounts that are inherited. dummy don't have allow to give other access. 
-        self.master_channel_id = self.id
 
     @property
     def logins(self):
@@ -1122,8 +1120,8 @@ def login_google_callback():
 def change_account():
     accessible_accounts = get_access_by_email(current_user.email)
     users = [User.get(x.channel_id) for x in accessible_accounts]
-    if current_user.is_dummy:
-        users = [User.get(current_user.master_channel_id)] # only one way going up
+    if session.get("is_dummy", False):
+        users = [User.get(session["master_channel_id"])] # only one way going up
     next = request.args.get("next", "")
     if not next:
         next = session.pop("next_url", "/")
@@ -1141,12 +1139,12 @@ def change_account():
 @login_required
 def change_account_to(channel_id):
     from_channel_id = current_user.id 
-    from_master_channel_id = current_user.master_channel_id
+    from_master_channel_id = session["master_channel_id"]
     email = current_user.email
     if not email:
         flash("You need to login with Google to change account", "warning")
         return redirect(url_for("login_google"))
-    if channel_id not in [x.channel_id for x in get_access_by_email(email)] and channel_id != current_user.master_channel_id: # we can go back to master id 
+    if channel_id not in [x.channel_id for x in get_access_by_email(email)] and channel_id != session["master_channel_id"]: # we can go back to master id 
         flash("You don't have access to this account", "warning")
         return redirect(url_for("change_account"))
     session["id"] = channel_id
@@ -1170,12 +1168,12 @@ def change_account_to(channel_id):
 
     if from_master_channel_id == channel_id:
         flash("You are now back to your master channel", "info")
-        new_user.is_dummy = False
-        new_user.master_channel_id = channel_id
+        session["is_dummy"] = False
+        session["master_channel_id"] = channel_id
     else:
         flash("You are now using a dummy account", "info")
-        new_user.is_dummy = True
-        new_user.master_channel_id = from_master_channel_id
+        session["is_dummy"] = True
+        session["master_channel_id"] = from_master_channel_id  # we can go back to master id
     login_user(new_user, remember=True)
     return redirect(next)
 
@@ -1447,7 +1445,7 @@ def default_settings():
 @login_required
 def settings_add_access():
     try:
-        if current_user.is_dummy:
+        if session["is_dummy"]:
             return "You are a moderator. you can't add another moderators. please ask the channel owner to do this operation.", 403
     except AttributeError:
         pass # this thing never existed before this so its ok 
@@ -1466,7 +1464,7 @@ def settings_add_access():
 @login_required
 def revoke_access(email_id=None):
     try:
-        if current_user.is_dummy:
+        if session["is_dummy"]:
             return "You are a moderator. you can't add another moderators. please ask the channel owner to do this operation.", 403
     except AttributeError:
         pass # this thing never existed before this so its ok 
