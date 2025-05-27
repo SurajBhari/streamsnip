@@ -121,6 +121,7 @@ app.secret_key = os.environ.get(
 )  # if we are running on apache we have a WSGISecretKey, its not really secret.
 CORS(app)
 ext = Sitemap(app=app)
+app.jinja_options['extensions'] = ['jinja2_humanize_extension.HumanizeExtension']
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -382,6 +383,8 @@ class User(UserMixin):
         self.email = email
         self.gname = name
         self.gimage = gimage
+        self.is_dummy = False  # dummy are accounts that are inherited. dummy don't have allow to give other access. 
+        self.master_channel_id = self.id
 
     @property
     def logins(self):
@@ -443,6 +446,27 @@ class User(UserMixin):
             name=name, 
             gimage=gimage,
         ) 
+
+class Access:
+    def __init__(self, data=None):
+        self.channel_id = None
+        self.email = None
+        self.time = None
+        self.access_type = None
+        self.description = None
+        self.channel_id = data[0] if data else None
+        self.email = data[1] if data else None
+        self.access_type = data[2] if data else None
+        self.time = datetime.fromtimestamp(int(float(data[3]))) if data else None
+        self.description = data[4] if data else None
+    def toJSON(self):
+        return {
+            "channel_id": self.channel_id,
+            "email": self.email,
+            "access_type": self.access_type,
+            "time": self.time.isoformat() if self.time else None,
+            "description": self.description
+        }
 
 
 def get_channel_settings(user_id) -> UserSettings:
@@ -1066,7 +1090,7 @@ def login_google_callback():
             "youtube_data": youtube_data,
             "userinfo": userinfo,
         }  # return this for testing purpose
-
+    email = userinfo.get("email", "")
     collect_user_data = {
         "email": userinfo.get("email", ""),
         "name": userinfo.get("name", ""),
@@ -1084,7 +1108,64 @@ def login_google_callback():
     )
     session["logged_in"] = True
     next = session.pop("next_url", "/")
+    if email:
+        accessible_accounts = get_access_by_email(email)
+        if accessible_accounts:
+            return redirect("/change_account", next=next)
     return redirect(next or url_for("slash"))
+
+@app.route("/change_account", methods=["GET"])
+@login_required
+def change_account():
+    accessible_accounts = get_access_by_email(current_user.email)
+    users = [User.get(x) for x in accessible_accounts]
+    next = request.args.get("next", "")
+    if not next:
+        next = session.pop("next_url", "/")
+    if not next.startswith("/"):
+        next = "/"
+    
+    return render_template(
+        "change_accounts.html",
+        users=users,
+        next=next
+    )
+    
+
+@app.route("/change_account/<channel_id>", methods=["GET"])
+@login_required
+def change_account_to(channel_id):
+    from_channel_id = current_user.id 
+    email = current_user.email
+    if not email:
+        flash("You need to login with Google to change account", "warning")
+        return redirect(url_for("login_google"))
+    if channel_id not in get_access_by_email(email):
+        flash("You don't have access to this account", "warning")
+        return redirect(url_for("change_account"))
+    session["id"] = channel_id
+    session["logged_in"] = True
+    session["session_token"] = create_token()
+    add_login_record(
+        channel_id=channel_id,
+        ip=request.remote_addr,
+        session_token=session["session_token"],
+        user_agent=request.user_agent.string,
+    )
+    login_user(User.get(channel_id), remember=True)
+    next = request.args.get("next", "/")
+    if not next:
+        next = session.pop("next_url", "/")
+    if not next.startswith("/"):
+        next = url_for("slash")
+    if current_user.master_channel_id == channel_id:
+        current_user.is_dummy = False  # this is not a dummy account
+        current_user.master_channel_id = channel_id  # set the master channel id to the current user
+    else:
+        current_user.master_channel_id = from_channel_id  # set the master channel id to the current user
+        current_user.is_dummy = True  # this is a dummy account
+    return redirect(next)
+
 
 
 def create_token():
@@ -1349,6 +1430,40 @@ def default_settings():
     add_default_settings(current_user.id)
     return "OK", 200
 
+@app.route("/settings/add_access", methods=["POST"])
+@login_required
+def settings_add_access():
+    try:
+        if current_user.is_dummy:
+            return "You are a moderator. you can't add another moderators. please ask the channel owner to do this operation.", 403
+    except AttributeError:
+        pass # this thing never existed before this so its ok 
+    email = request.json.get("email")
+    description = request.json.get("description")
+    if not any([email, description]):
+        return "Invalid data. missing description or email", 422
+    
+    with conn:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO ACCESS VALUES(?, ?, ?, ?, ?)", (current_user.id, email, 'all', datetime.now().timestamp(), description)) # we only have all for now. so give everyone all
+        conn.commit()
+    return "OK", 200
+
+@app.route("/settings/revoke-access/<email_id>")
+@login_required
+def revoke_access(email_id=None):
+    try:
+        if current_user.is_dummy:
+            return "You are a moderator. you can't add another moderators. please ask the channel owner to do this operation.", 403
+    except AttributeError:
+        pass # this thing never existed before this so its ok 
+    if not email_id:
+        return redirect("/settings")
+    with conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM ACCESS WHERE channel_id = ? AND email = ?", (current_user.id, email_id))
+    return redirect("/settings")
+
 
 @app.route("/settings", methods=["POST", "GET"])
 @login_required
@@ -1428,6 +1543,7 @@ def settings():
         if not settings.write(conn):
             return "Failed to write settings", 500
         return "OK", 200
+    accesses = get_access(current_user.id)
     return render_template(
         "settings.html",
         session=session,
@@ -1435,7 +1551,32 @@ def settings():
         membership_details=membership_details,
         can_edit=can_edit,
         can_turn_on_comments=membership_details.type == "premium",
+        accesses=accesses,
     )
+def get_access_by_email(email: str):
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM ACCESS WHERE email=?",
+            (email,),
+        )
+        data = cur.fetchall()
+    if not data:
+        return []
+    return [Access(d) for d in data]
+
+def get_access(channel_id: str):
+    with conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM ACCESS WHERE channel_id=?",
+            (channel_id,),
+        )
+        data = cur.fetchall()
+    if not data:
+        return []
+    return [Access(d) for d in data]
+
 
 @app.route("/pay/manual", methods=["GET", "POST"])
 @login_required
