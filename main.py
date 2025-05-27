@@ -1123,7 +1123,7 @@ def change_account():
     accessible_accounts = get_access_by_email(current_user.email)
     users = [User.get(x.channel_id) for x in accessible_accounts]
     if current_user.is_dummy:
-        users.append(User.get(current_user.master_channel_id))  # add the master channel id to the list of users
+        users = [User.get(current_user.master_channel_id)] # only one way going up
     next = request.args.get("next", "")
     if not next:
         next = session.pop("next_url", "/")
@@ -1164,15 +1164,17 @@ def change_account_to(channel_id):
         next = session.pop("next_url", "/")
     if not next.startswith("/"):
         next = url_for("slash")
+    print(f"Changing account from {from_channel_id} to {channel_id}")
     if from_master_channel_id == channel_id:
         # we are going back to the master channel id
         flash("You are now back to your master channel", "info")
         current_user.is_dummy = False  # we are not a dummy account anymore
         current_user.master_channel_id = channel_id  # set the master channel id to the current channel id
     else:
+        print("here")
         current_user.is_dummy = True
         current_user.master_channel_id = from_master_channel_id
-        
+
     return redirect(next)
 
 
