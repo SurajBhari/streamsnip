@@ -1143,7 +1143,7 @@ def change_account_to(channel_id):
     if not email:
         flash("You need to login with Google to change account", "warning")
         return redirect(url_for("login_google"))
-    if channel_id not in get_access_by_email(email):
+    if channel_id not in [x.channel_id for x in get_access_by_email(email)]:
         flash("You don't have access to this account", "warning")
         return redirect(url_for("change_account"))
     session["id"] = channel_id
