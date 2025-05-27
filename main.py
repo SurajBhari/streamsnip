@@ -1165,6 +1165,8 @@ def change_account_to(channel_id):
     if not next.startswith("/"):
         next = url_for("slash")
     print(f"Changing account from {from_channel_id} to {channel_id}")
+    print(f"From master channel id: {from_master_channel_id} to {channel_id}")
+    
     if from_master_channel_id == channel_id:
         # we are going back to the master channel id
         flash("You are now back to your master channel", "info")
