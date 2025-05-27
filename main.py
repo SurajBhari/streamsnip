@@ -1166,17 +1166,17 @@ def change_account_to(channel_id):
         next = url_for("slash")
     print(f"Changing account from {from_channel_id} to {channel_id}")
     print(f"From master channel id: {from_master_channel_id} to {channel_id}")
-    
-    if from_master_channel_id == channel_id:
-        # we are going back to the master channel id
-        flash("You are now back to your master channel", "info")
-        current_user.is_dummy = False  # we are not a dummy account anymore
-        current_user.master_channel_id = channel_id  # set the master channel id to the current channel id
-    else:
-        print("here")
-        current_user.is_dummy = True
-        current_user.master_channel_id = from_master_channel_id
+    new_user = User.get(channel_id)
 
+    if from_master_channel_id == channel_id:
+        flash("You are now back to your master channel", "info")
+        new_user.is_dummy = False
+        new_user.master_channel_id = channel_id
+    else:
+        flash("You are now using a dummy account", "info")
+        new_user.is_dummy = True
+        new_user.master_channel_id = from_master_channel_id
+    login_user(new_user, remember=True)
     return redirect(next)
 
 
