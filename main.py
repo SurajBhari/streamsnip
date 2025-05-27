@@ -1141,6 +1141,7 @@ def change_account():
 @login_required
 def change_account_to(channel_id):
     from_channel_id = current_user.id 
+    from_master_channel_id = current_user.master_channel_id
     email = current_user.email
     if not email:
         flash("You need to login with Google to change account", "warning")
@@ -1163,12 +1164,15 @@ def change_account_to(channel_id):
         next = session.pop("next_url", "/")
     if not next.startswith("/"):
         next = url_for("slash")
-    if current_user.master_channel_id == channel_id:
-        current_user.is_dummy = False  # this is not a dummy account
-        current_user.master_channel_id = channel_id  # set the master channel id to the current user
+    if from_master_channel_id == channel_id:
+        # we are going back to the master channel id
+        flash("You are now back to your master channel", "info")
+        current_user.is_dummy = False  # we are not a dummy account anymore
+        current_user.master_channel_id = channel_id  # set the master channel id to the current channel id
     else:
-        current_user.master_channel_id = from_channel_id  # set the master channel id to the current user
-        current_user.is_dummy = True  # this is a dummy account
+        current_user.is_dummy = True
+        current_user.master_channel_id = from_master_channel_id
+        
     return redirect(next)
 
 
