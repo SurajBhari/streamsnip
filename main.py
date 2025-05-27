@@ -1122,6 +1122,8 @@ def login_google_callback():
 def change_account():
     accessible_accounts = get_access_by_email(current_user.email)
     users = [User.get(x.channel_id) for x in accessible_accounts]
+    if current_user.is_dummy:
+        users.append(User.get(current_user.master_channel_id))  # add the master channel id to the list of users
     next = request.args.get("next", "")
     if not next:
         next = session.pop("next_url", "/")
@@ -1143,7 +1145,7 @@ def change_account_to(channel_id):
     if not email:
         flash("You need to login with Google to change account", "warning")
         return redirect(url_for("login_google"))
-    if channel_id not in [x.channel_id for x in get_access_by_email(email)]:
+    if channel_id not in [x.channel_id for x in get_access_by_email(email)] and channel_id != current_user.master_channel_id: # we can go back to master id 
         flash("You don't have access to this account", "warning")
         return redirect(url_for("change_account"))
     session["id"] = channel_id
