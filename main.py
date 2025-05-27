@@ -1112,7 +1112,9 @@ def login_google_callback():
     if email:
         accessible_accounts = get_access_by_email(email)
         if accessible_accounts:
-            return redirect("/change_account", next=next)
+            # put next_url in session
+            session["next_url"] = next
+            return redirect("/change_account")
     return redirect(next or url_for("slash"))
 
 @app.route("/change_account", methods=["GET"])
