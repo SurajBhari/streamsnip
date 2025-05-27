@@ -1099,6 +1099,8 @@ def login_google_callback():
     login_user(User.get(youtube_id), remember=True)
     token = create_token()
     session["session_token"] = token
+    session["is_dummy"] = False  # litreally logged in with actual credentials
+    session["master_channel_id"] = youtube_id
     add_login_record(
         channel_id=youtube_id,
         ip=request.remote_addr,
@@ -1121,7 +1123,7 @@ def change_account():
     accessible_accounts = get_access_by_email(current_user.email)
     users = [User.get(x.channel_id) for x in accessible_accounts]
     if session.get("is_dummy", False):
-        users = [User.get(session["master_channel_id"])] # only one way going up
+        users = [User.get(session.get("master_channel_id", ""))] # only one way going up
     next = request.args.get("next", "")
     if not next:
         next = session.pop("next_url", "/")
@@ -1139,12 +1141,12 @@ def change_account():
 @login_required
 def change_account_to(channel_id):
     from_channel_id = current_user.id 
-    from_master_channel_id = session["master_channel_id"]
+    from_master_channel_id = session.get("master_channel_id", "")
     email = current_user.email
     if not email:
         flash("You need to login with Google to change account", "warning")
         return redirect(url_for("login_google"))
-    if channel_id not in [x.channel_id for x in get_access_by_email(email)] and channel_id != session["master_channel_id"]: # we can go back to master id 
+    if channel_id not in [x.channel_id for x in get_access_by_email(email)] and channel_id != session.get("master_channel_id", ""): # we can go back to master id 
         flash("You don't have access to this account", "warning")
         return redirect(url_for("change_account"))
     session["id"] = channel_id
@@ -1269,6 +1271,8 @@ def login():
             session["id"] = "admin"
             session["logged_in"] = True
             session["session_token"] = session_token
+            session["is_dummy"] = False  # admin is never a dummy account
+            session["master_channel_id"] = "admin"
             add_login_record(
                 channel_id="admin",
                 ip=request.remote_addr,
@@ -1284,6 +1288,8 @@ def login():
                 session["id"] = cred
                 session["logged_in"] = True
                 session["session_token"] = session_token
+                session["is_dummy"] = False  # litreally logged in with actual credentials
+                session["master_channel_id"] = cred
                 add_login_record(
                     channel_id=cred,
                     ip=request.remote_addr,
