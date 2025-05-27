@@ -16,3 +16,4 @@ player_response_info.json
 helper/token.pickle
 helper/client_secrets.json
 helper/queries*
+*.db
