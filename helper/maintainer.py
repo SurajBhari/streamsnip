@@ -177,7 +177,6 @@ def valorant_clip_task():
             print(f"Skipping {riot.channel_id} as they are not a pro member")
             continue
         # if streamer is live skip them
-        if 
         matches = get_match_list(riot.id, riot.tag, riot.region)
         for match in matches:
             if match.get("metadata", {}).get("mode_id") != "competitive":
@@ -289,7 +288,7 @@ def valorant_clip_task():
                             "videoID": vid['videoId'],
                             "timestamp": str(clip_time),
                         }
-                        link = f"http://localhost/clip/AUTOMATED_CLIP/{message}"
+                        link = f"https://localhost/clip/AUTOMATED_CLIP/{message}"
                         r = request.get(link, headers=headers)
                         response += r.text + "\n"
                         print(response)
@@ -395,7 +394,6 @@ def periodic_task():
     management_webhook.content = f"<t:{int(time.time())}:F>"
     download_clips = os.listdir("../clips")
     vclip = valorant_clip_task()
-    return
     deleted_clips = []
     not_deleted_clips = []
     for clip in download_clips:
