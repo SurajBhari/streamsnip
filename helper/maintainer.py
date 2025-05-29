@@ -157,7 +157,21 @@ def round_is_clutch(round_data):
             clutcher_puuid = list(alive[winning_team])[0]
 
     return puuid_to_name[clutcher_puuid] if can_be_clutch else False
-
+def is_streamer_live(channel_id: str) -> bool:
+    """
+    Check if a streamer is live on YouTube.
+    """
+    try:
+        vids = scrapetube.get_channel(channel_id, content_type="streams", sleep=0)
+        for vid in vids:
+            if (vid["thumbnailOverlays"][0]["thumbnailOverlayTimeStatusRenderer"]["style"]== "LIVE"):
+                print(f"Streamer {channel_id} is live with video ID {vid['videoId']}")
+                return True
+        print(f"Streamer {channel_id} is not live")
+        return False
+    except Exception as e:
+        print(f"Error checking if streamer {channel_id} is live: {e}")
+        return False
 def valorant_clip_task():
     response = ""
     if not henrik_api_key:
@@ -175,7 +189,9 @@ def valorant_clip_task():
     for riot in riots:
         if riot.channel_id not in members:
             continue
-        # if streamer is live skip them
+        if is_streamer_live(riot.channel_id):
+            print(f"Streamer {riot.channel_id} is live. Skipping clip processing")
+            continue
         matches = get_match_list(riot.id, riot.tag, riot.region)
         for match in matches:
             if match.get("metadata", {}).get("mode_id") != "competitive":
@@ -297,7 +313,6 @@ def valorant_clip_task():
                 except Exception as e:
                     print(f"Error processing video {vid['videoId']}: {e}")
                     continue
-            break
     return response
 
 
