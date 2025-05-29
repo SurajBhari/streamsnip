@@ -174,7 +174,6 @@ def valorant_clip_task():
 
     for riot in riots:
         if riot.channel_id not in members:
-            print(f"Skipping {riot.channel_id} as they are not a pro member")
             continue
         # if streamer is live skip them
         matches = get_match_list(riot.id, riot.tag, riot.region)
@@ -288,7 +287,7 @@ def valorant_clip_task():
                             "videoID": vid['videoId'],
                             "timestamp": str(clip_time),
                         }
-                        link = f"https://localhost/clip/AUTOMATED_CLIP/{message}"
+                        link = f"https://localhost/clip/AUTOMATED_CLIP_{vid['videoId']}/{message}"
                         r = request.get(link, headers=headers)
                         response += r.text + "\n"
                         print(response)
@@ -332,13 +331,10 @@ def comment_task() -> str:
         comment_count = 0
         for clip in clips:
             if clip.channel not in comments_subscribers:
-                print(f"Skipping {clip.channel} as comments are disabled")
                 continue
             if clip.channel not in members:
-                print(f"Skipping {clip.channel} as they are not a member")
                 continue
             if clip.stream_id in previously_done:
-                print(f"Skipping {clip.stream_id} as it is already commented")
                 continue
             cur.execute(
                 """
