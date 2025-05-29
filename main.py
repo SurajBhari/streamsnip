@@ -64,6 +64,7 @@ from helper.util import *
 from helper.Clip import Clip, time_since
 from helper.UserSettings import UserSettings
 from helper.Membership import Membership
+from helper.Riot import Riot
 
 # we are in /var/www/streamsnip
 import os
@@ -340,7 +341,12 @@ with conn:
     conn.commit()
     cur.execute("CREATE TABLE IF NOT EXISTS ACCESS(channel_id VARCHAR(40), email VARCHAR(40), access_type VARCHAR(40), time INT, description VARCHAR(40))")
     conn.commit()
-
+    # table riot having channel_id, id, tag, region, 3k, 4k, ace, clutch
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS RIOT(channel_id VARCHAR(40), id VARCHAR(40), tag VARCHAR(40), region VARCHAR(40), three_kills VARCHAR(40) DEFAULT 'False', four_kills VARCHAR(40) DEFAULT 'False', ace VARCHAR(40) DEFAULT 'False', clutch VARCHAR(40) DEFAULT 'False', enabled VARCHAR(40) DEFAULT 'False', last_match_id VARCHAR(40) DEFAULT '')"
+    )
+    conn.commit()
+   
 with conn:
     cur = conn.cursor()
     cur.execute("SELECT session_token FROM LOGIN_RECORDS")

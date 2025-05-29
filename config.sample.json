@@ -25,5 +25,9 @@
         "client_id": "google client id",
         "client_secret": "google client secret",
         "discovery_url": "https://accounts.google.com/.well-known/openid-configuration"
-    }
+    },
+    "henrik_api_key": "",
+    "project_youtube_channe_id": "UCuhCyczWE_p06DjDRhKrJKg"
+
+
 }
