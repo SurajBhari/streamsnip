@@ -288,7 +288,7 @@ def valorant_clip_task():
                             "timestamp": str(clip_time),
                         }
                         link = f"https://localhost/clip/AUTOMATED_CLIP_{vid['videoId']}/{message}"
-                        r = request.get(link, headers=headers)
+                        r = request.get(link, headers=headers, verify=False)
                         response += r.text + "\n"
                         print(response)
 
