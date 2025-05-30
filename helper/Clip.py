@@ -68,7 +68,6 @@ class Clip:
         level = data[10]
         if not level:
             level = "everyone"
-        self.userlevel = level
         self.stream_link = data[7]
         self.stream_id = data[7].split("/")[-1].split("?")[0]
         self.channel = data[0]
@@ -86,6 +85,10 @@ class Clip:
         self.hms = time_to_hms(self.time_in_seconds)
         self.download_link = f"/video/{self.id}"
         self.private = str(data[13]) == "1"
+        if "automated" in self.message_id:
+            level = "automated"
+        self.userlevel = level
+
         try:
             self.message_level = int(data[14])
         except (ValueError, TypeError):

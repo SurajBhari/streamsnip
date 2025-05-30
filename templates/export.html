@@ -51,6 +51,7 @@
                 <option value="owner">Owner</option>
                 <option value="regular">Regular</option>
                 <option value="subscriber">Subscriber</option>
+                <option value="automated">Automated</option>
             </select>
         </div>
     </div>
@@ -504,6 +505,8 @@
                 return 'border-success';
             case 'owner':
                 return 'border-warning';
+            case 'automated':
+                return 'border-danger'; 
             default:
                 return 'border-secondary';
         }
@@ -519,6 +522,8 @@
                 return '{{ subscriber_icon }}';
             case 'regular':
                 return '{{ regular_icon }}';
+            case 'automated':
+                return '{{ automated_icon }}';
             default:
                 return '';
         }

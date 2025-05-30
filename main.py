@@ -141,6 +141,7 @@ owner_icon = "👑"
 mod_icon = "🔧"
 regular_icon = "🧑‍🌾"
 subscriber_icon = "⭐"
+automated_icon = "🤖"
 allowed_ip = [
     "127.0.0.1",
     "10.20.0.2",
@@ -2019,6 +2020,7 @@ def exports_all():
         mod_icon=mod_icon,
         regular_icon=regular_icon,
         subscriber_icon=subscriber_icon,
+        automated_icon=automated_icon,
         channel_id="all",
         emoji_lookup_table=emoji_lookup_table,
     )
@@ -2145,6 +2147,7 @@ def clips(channel_id=None):
         owner_icon=owner_icon,
         mod_icon=mod_icon,
         regular_icon=regular_icon,
+        automated_icon=automated_icon,
         subscriber_icon=subscriber_icon,
         channel_id=get_channel_at(channel_id),
         emoji_lookup_table=emoji_lookup_table,
@@ -2206,6 +2209,7 @@ def exports(channel_id=None):
         owner_icon=owner_icon,
         mod_icon=mod_icon,
         regular_icon=regular_icon,
+        automated_icon=automated_icon,
         subscriber_icon=subscriber_icon,
         channel_id=get_channel_at(channel_id),
         emoji_lookup_table=emoji_lookup_table,
