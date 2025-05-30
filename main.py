@@ -307,7 +307,7 @@ with conn:
         cur.execute("DROP TABLE settings_old;")
         conn.commit()
         # give everyone the comments setting as True
-        cur.execute("UPDATE SETTINGS SET comments='True'")
+        #cur.execute("UPDATE SETTINGS SET comments='True'")
 
     cur.execute(
         """
