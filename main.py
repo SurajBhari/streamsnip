@@ -307,7 +307,7 @@ with conn:
         cur.execute("DROP TABLE settings_old;")
         conn.commit()
         # give everyone the comments setting as True
-        #cur.execute("UPDATE SETTINGS SET comments='True'")
+        #cur.execute("UPDATE SETTINGS SET comments='True'") only 1 time had to be done. am dumb
 
     cur.execute(
         """
@@ -1525,6 +1525,7 @@ def settings():
             settings.force_desc = request.json.get("force_desc")
             settings.silent = request.json.get("silent")
             settings.private = request.json.get("private")
+            old_webhook = str(settings.webhook)
             settings.webhook = request.json.get("webhook").strip()
             if settings.webhook.lower() in ["none", 'null']:
                 settings.webhook = ''
@@ -1532,7 +1533,7 @@ def settings():
             settings.take_delays = request.json.get("take_delays")
             settings.comments = request.json.get("comments")
             # test the settings.webhook if its valid then also send welcome to streamsnip thing
-            if settings.webhook:
+            if settings.webhook != old_webhook:
                 webhook = DiscordWebhook(url=settings.webhook)
                 embed = DiscordEmbed(
                     title=f"Welcome to {project_name}!",
