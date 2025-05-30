@@ -1,8 +1,8 @@
 import sqlite3
-
+from .Riot import Riot
 
 class UserSettings:
-    def __init__(self, data: list = None):
+    def __init__(self, data: list = None, riot:Riot=None):
         # default values
         self.channel_id = ""
         self.show_link = True
@@ -42,6 +42,7 @@ class UserSettings:
         self.message_level = data[8]
         self.take_delays = data[9]
         self.comments = data[10]
+        self.riot = riot
 
     """CREATE TABLE IF NOT EXISTS SETTINGS (
         channel_id VARCHAR(40) UNIQUE,

@@ -1,17 +1,18 @@
 import sqlite3
 class Riot:
     def __init__(self, data=None):
-        self.channel_id = None
-        self.id = None
-        self.tag = None
-        self.region = None
+        self.channel_id = ''
+        self.id = ''
+        self.tag = ''
+        self.region = ''
         self.three_kills = False
         self.four_kills = False
         self.ace = False
         self.clutch = False
         self.enabled = False
         self.combined_username = None
-        self.last_match_id  = None
+        self.last_match_id  = ''
+        self.in_db = False
 
         if data:
             self.channel_id = data[0]
@@ -25,6 +26,7 @@ class Riot:
             self.enabled = True if data[8] == "True" else False
             self.combined_username = f"{self.id}#{self.tag}"
             self.last_match_id = data[9] if len(data) > 4 else None
+            self.in_db = True
 
     def toJSON(self):
         return {
@@ -45,7 +47,10 @@ class Riot:
             cur.execute("SELECT * FROM RIOT WHERE channel_id=?", (channel_id,))
             data = cur.fetchone()
         if not data:
-            return None
+            rr = Riot()
+            rr.channel_id = channel_id
+            
+            return rr # Return an empty Riot object if not found
         return Riot(data)
     @staticmethod
     def get_all_enabled(conn:sqlite3.Connection):
@@ -56,4 +61,62 @@ class Riot:
         if not data:
             return []
         return [Riot(x) for x in data]
- 
+    
+    def write(self, conn: sqlite3.Connection):
+        with conn:
+            cur = conn.cursor()
+            print(self.in_db)
+            if self.in_db:
+                # then get the last_match_id anre delete previous data
+                cur.execute(
+                    """
+                    UPDATE RIOT SET
+                    id = ?,
+                    tag = ?,
+                    region = ?,
+                    three_kills = ?,
+                    four_kills = ?,
+                    ace = ?,
+                    clutch = ?,
+                    enabled = ?,
+                    last_match_id = ?
+                    WHERE channel_id = ?
+                    """,
+                    (
+                        self.id,
+                        self.tag,
+                        self.region,
+                        str(self.three_kills),
+                        str(self.four_kills),
+                        str(self.ace),
+                        str(self.clutch),
+                        str(self.enabled),
+                        self.last_match_id,
+                        self.channel_id
+                    )
+                )
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO RIOT (
+                        channel_id, id, tag, region,
+                        three_kills, four_kills, ace, clutch,
+                        enabled, last_match_id
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        self.channel_id,
+                        self.id,
+                        self.tag,
+                        self.region,
+                        str(self.three_kills),
+                        str(self.four_kills),
+                        str(self.ace),
+                        str(self.clutch),
+                        str(self.enabled),
+                        self.last_match_id
+                    )
+                )
+            self.in_db = True
+            conn.commit()
+        return True

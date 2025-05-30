@@ -215,6 +215,79 @@
                 </td>
             </tr>
             <tr>
+                <td>Enable Valorant Clipping</td>
+                <td>
+                    <select id="val_clip_enabled" onchange="toggleValorantFields()" {%if not can_edit %} disabled {% endif %}>
+                        {% if settings.riot.enabled %}
+                            <option value="True" selected>Yes - Will Auto clip valorant moments after stream ends (BETA).</option>
+                            <option value="False">No</option>
+                        {% else %}
+                            <option value="True">Yes - Will Auto clip valorant moments after stream ends (BETA).</option>
+                            <option value="False" selected>No</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tbody id="valorant-fields" style="display: none;">
+                <tr>
+                    <td>Riot ID</td>
+                    <td><input type="text" id="riot_id" class="form-control" value="{{settings.riot.id}}"></td>
+                </tr>
+                <tr>
+                    <td>Tag</td>
+                    <td><input type="text" id="riot_tag" value="{{settings.riot.tag}}" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td>Region</td>
+                    <td>
+                        <select id="riot_region" class="form-control">
+                            <option value="ap" {%if settings.riot.region == 'ap'%} selected {%endif%}>AP</option>
+                            <option value="na" {%if settings.riot.region == 'na'%} selected {%endif%}>NA</option>
+                            <option value="eu" {%if settings.riot.region == 'eu'%} selected {%endif%}>EU</option>
+                            <option value="latam" {%if settings.riot.region == 'latam'%} selected {%endif%}>Latin Ameria</option>
+                            <option value="br" {%if settings.riot.region == 'br'%} selected {%endif%}>BR</option>
+                            <option value="kr" {%if settings.riot.region == 'kr'%} selected {%endif%}>KR</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>3K Clipping</td>
+                    <td>
+                        <select id="enable_3k" class="form-control">
+                            <option value="False">No</option>
+                            <option value="True">Yes</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>4K Clipping</td>
+                    <td>
+                        <select id="enable_4k" class="form-control">
+                            <option value="False">No</option>
+                            <option value="True">Yes</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Clutch Clipping</td>
+                    <td>
+                        <select id="enable_clutch" class="form-control">
+                            <option value="False">No</option>
+                            <option value="True">Yes</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Ace Clipping</td>
+                    <td>
+                        <select id="enable_ace" class="form-control">
+                            <option value="False">No</option>
+                            <option value="True">Yes</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+            <tr>
                 <td>
                     <h4>Nightbot Response</h4>
                     <div>
@@ -311,6 +384,11 @@
 
 </div>
 <script>
+
+    function toggleValorantFields() {
+        const isEnabled = document.getElementById("val_clip_enabled").value === "True";
+        document.getElementById("valorant-fields").style.display = isEnabled ? "table-row-group" : "none";
+    }
     function calculatepreview(){
         calculatediscordpreview();
         calculatenightbotpreview();
@@ -496,6 +574,7 @@
         if (!can_edit){
             alert("You are not allowed to edit settings. Please upgrade your membership.");
         }
+        toggleValorantFields();
         calculatepreview();
     });
     function save_settings(){
@@ -511,7 +590,22 @@
         var take_delays = document.getElementById("take_delays").value;
         var comments = document.getElementById("comments").value;
         var save_button = document.getElementById("save-button");
+        var val_clip_enabled = document.getElementById("val_clip_enabled").value;
+        var riot_id = document.getElementById("riot_id").value;
+        var riot_tag = document.getElementById("riot_tag").value;
+        var riot_region = document.getElementById("riot_region").value;
+        var enable_3k = document.getElementById("enable_3k").value;
+        var enable_4k = document.getElementById("enable_4k").value;
+        var enable_clutch = document.getElementById("enable_clutch").value;
+        var enable_ace = document.getElementById("enable_ace").value;
+        // if there is riot id there must be tag
+        if(riot_id.length >0 && riot_tag.length == 0){
+            alert("Please enter Riot Tag.");
+            return;
+        }
+
         save_button.innerHTML = "<i class='fa-solid fa-spinner rotate'></i>";
+
         response = fetch("/settings", {
             method: "POST",
             headers: {
@@ -527,7 +621,15 @@
                 webhook: webhook,
                 message_level: message_level,
                 take_delays: take_delays,
-                comments: comments
+                comments: comments,
+                val_clip_enabled: val_clip_enabled,
+                riot_id: riot_id,
+                riot_tag: riot_tag,
+                riot_region: riot_region,
+                enable_3k:enable_3k,
+                enable_4k:enable_4k,
+                enable_clutch:enable_clutch,
+                enable_ace:enable_ace
             })
         }).then(response => {
             if (response.ok) {

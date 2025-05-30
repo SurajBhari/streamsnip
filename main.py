@@ -484,7 +484,8 @@ def get_channel_settings(user_id) -> UserSettings:
             x.channel_id = user_id
             add_default_settings(x.channel_id)
             return x
-    return UserSettings(list(data))
+    riot = Riot.get_by_channel_id(user_id, conn)
+    return UserSettings(list(data), riot=riot)
 
 
 # if there is no folder named clips then make one
@@ -562,7 +563,7 @@ def get_channel_clips(channel_id=None) -> List[Clip]:
     with conn:
         cur = conn.cursor()
         if channel_id:
-            cur.execute(f"select * from QUERIES where channel_id=?", (channel_id,))
+            cur.execute(f"select * from QUERIES where channel_id=? ORDER BY time ASC", (channel_id,))
         else:
             cur.execute(f"select * from QUERIES ORDER BY time ASC")
         data = cur.fetchall()
@@ -1451,6 +1452,9 @@ def default_settings():
         cur = conn.cursor()
         cur.execute("DELETE FROM SETTINGS WHERE channel_id=?", (current_user.id,))
         conn.commit()
+        cur.execute("DELETE FROM RIOT WHERE channel_id=?", (current_user.id,))
+        conn.commit()
+        
     add_default_settings(current_user.id)
     return "OK", 200
 
@@ -1507,6 +1511,14 @@ def settings():
         current_user.sub_count = channel_info[current_user.id]["sub_count"]
     if request.method == "POST":
         if can_edit:
+            settings.riot.enabled = request.json.get("val_clip_enabled") == "True"
+            settings.riot.id = request.json.get('riot_id')
+            settings.riot.tag = request.json.get("riot_tag")
+            settings.riot.region = request.json.get("riot_region")
+            settings.riot.three_kills = request.json.get("enable_3k") == "True"
+            settings.riot.four_kills = request.json.get("enable_4k") == "True"
+            settings.riot.clutch = request.json.get("enable_clutch") == "True"
+            settings.riot.ace = request.json.get("enable_ace") == "True"
             settings.show_link = request.json.get("show_link")
             settings.screenshot = request.json.get("screenshot")
             settings.force_desc = request.json.get("force_desc")
@@ -1566,6 +1578,8 @@ def settings():
         settings.channel_id = current_user.id
         if not settings.write(conn):
             return "Failed to write settings", 500
+        if not settings.riot.write(conn):
+            return "Failed to write riot settings", 500
         return "OK", 200
     accesses = get_access(current_user.id)
     return render_template(
