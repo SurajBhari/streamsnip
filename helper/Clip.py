@@ -85,7 +85,7 @@ class Clip:
         self.hms = time_to_hms(self.time_in_seconds)
         self.download_link = f"/video/{self.id}"
         self.private = str(data[13]) == "1"
-        if "automated" in self.message_id:
+        if "automated" in self.message_id.lower():
             level = "automated"
         self.userlevel = level
 
