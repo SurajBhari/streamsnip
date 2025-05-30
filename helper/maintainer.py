@@ -192,7 +192,7 @@ def valorant_clip_task():
         if is_streamer_live(riot.channel_id):
             print(f"Streamer {riot.channel_id} is live. Skipping clip processing")
             continue
-        matches = get_match_list(riot.id, riot.tag, riot.region)
+        matches = get_match_list(riot.id, riot.tag, riot.region) 
         for match in matches:
             if match.get("metadata", {}).get("mode_id") != "competitive":
                 continue
@@ -270,17 +270,6 @@ def valorant_clip_task():
                     vid_data = YouTubeChatDownloader(cookies=cookies).get_video_data(
                         video_id=vid["videoId"]
                     )
-                    if vid_data["start_time"] is None:
-                        print(f"Streamer is live. lets not process this video {vid['videoId']}")
-                        with conn:
-                            cur = conn.cursor()
-                            # update the last match id for the riot
-                            cur.execute(
-                                "UPDATE RIOT SET last_match_id = ? WHERE channel_id = ?",
-                                (match_id, riot.channel_id),
-                            )
-                            conn.commit()
-                        break
                     stream_start_time = vid_data["start_time"] / 1_000_000
                     stream_end_time = vid_data.get("end_time", None)
                     if not stream_end_time:
@@ -313,6 +302,19 @@ def valorant_clip_task():
                 except Exception as e:
                     print(f"Error processing video {vid['videoId']}: {e}")
                     continue
+        with conn:
+            cur = conn.cursor()
+            if not matches:
+                print(f"No matches found for {riot.channel_id}")
+                continue
+            first_match_id = matches[0].get("metadata", {}).get("matchid")
+
+            # update the last match id for the riot
+            cur.execute(
+                "UPDATE RIOT SET last_match_id = ? WHERE channel_id = ?",
+                (first_match_id, riot.channel_id),
+            )
+            conn.commit()
     return response
 
 
