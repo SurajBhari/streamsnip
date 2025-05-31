@@ -3971,6 +3971,8 @@ def clip(message_id, clip_desc=None):
         return "Headers not found. Are you sure you are using nightbot ?"
     channel_id = channel.get("providerId")[0]
     user_level = user.get("userLevel")[0]
+    if "automated" in user_level.lower():
+        user_level = "automated"
     user_id = user.get("providerId")[0]
     user_name = user.get("displayName")[0]
     channel___name, channel___image = get_channel_name_image(channel_id)
@@ -4175,6 +4177,8 @@ def clip(message_id, clip_desc=None):
             webhook_name += f" {regular_icon}"
         elif user_level == "subscriber":
             webhook_name += f" {subscriber_icon}"
+        elif user_level == "automated":
+            webhook_name += f" {automated_icon}"
 
     if clip_desc and len(clip_desc) > 26:
         t_clip_desc = clip_desc[:26] + "..."

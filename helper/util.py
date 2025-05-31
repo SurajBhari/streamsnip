@@ -11,6 +11,7 @@ owner_icon = "👑"
 mod_icon = "🔧"
 regular_icon = "🧑‍🌾"
 subscriber_icon = "⭐"
+automated_icon = "🤖"
 
 
 def time_to_hms(seconds: int):
@@ -111,6 +112,8 @@ def prepare_comment_text(clips: List) -> str:
             icon = subscriber_icon
         elif clip.userlevel == "regular":
             icon = regular_icon
+        elif clip.userlevel == "automated":
+            icon = automated_icon
         else:
             icon = ""
         string += f"{clip.hms} | {clip.desc} -- {icon} {clip.user_name}\n"
