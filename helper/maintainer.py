@@ -200,10 +200,19 @@ def valorant_clip_task():
             if riot.last_match_id == match_id:
                 break
 
-            match_info = get_match(match_id)
-            match_start_epoch = match_info.get("metadata", {}).get("game_start")
             print(f"Checking match {match_id} for {riot.channel_id}")
 
+            match_info = get_match(match_id)
+            match_start_epoch = match_info.get("metadata", {}).get("game_start")
+            agent_played = "unknown"
+            for player in match_info.get("all_players", []):
+                player_name = player.get("name") 
+                player_tag = player.get("tag")
+                if riot.id not in player_name:
+                    continue
+                if riot.tag not in player_tag:
+                    continue
+                agent_played = player.get("character", agent_played)
             clips_to_process = []
             for round_count, round in enumerate(match_info.get("rounds", []), start=1):
                 kill_times = [
@@ -252,7 +261,7 @@ def valorant_clip_task():
                     clip_message += "CLUTCH "
 
                 if is_clutch or is_3k or is_4k or is_ace:
-                    clip_message += f"Round {round_count} | {match.get('metadata', {}).get('map', 'Unknown Map')}"
+                    clip_message += f"Round {round_count} | {match.get('metadata', {}).get('map', 'Unknown Map')} | {agent_played}"
                     print(f"Queuing clip for {riot.channel_id} in match {match_id} Round {round_count}")
                     clips_to_process.append((round_start, clip_message))
 
