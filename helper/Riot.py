@@ -17,7 +17,7 @@ class Riot:
         if data:
             self.channel_id = data[0]
             self.id = data[1]
-            self.tag = data[2]
+            self.tag = data[2].replace("#", "") # must have no hash tag
             self.region = data[3]
             self.three_kills = True if data[4] == "True" else False
             self.four_kills = True if data[5] == "True" else False
