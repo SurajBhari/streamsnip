@@ -205,7 +205,7 @@ def valorant_clip_task():
             match_info = get_match(match_id)
             match_start_epoch = match_info.get("metadata", {}).get("game_start")
             agent_played = "unknown"
-            for player in match_info.get("all_players", []):
+            for player in match_info.get("players", {}).get("all_players", []):
                 player_name = player.get("name") 
                 player_tag = player.get("tag")
                 if riot.id not in player_name:
@@ -269,7 +269,6 @@ def valorant_clip_task():
                 print(f"No clips found for {riot.channel_id} in match {match_id}")
                 continue
             
-
             vids = scrapetube.get_channel(riot.channel_id, content_type="streams", sleep=0)
             for vid_counter, vid in enumerate(vids):
                 if vid_counter > 5:
