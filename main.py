@@ -1628,8 +1628,7 @@ def pay_manual():
     mtype, month = get_membership_from_amount(amount)
     # Check if the requested membership matches the current membership
     
-    transaction_note = "Paying Suraj Bhari Subscription for " + mtype + " membership for " + str(month*28) + " days"
-
+    transaction_note = f"{current_user.name} {mtype} for {str(month*28)} days"
     upi_link = f"upi://pay?pa=surajbhari@upi&pn={project_name}&cu=INR&tn={transaction_note}&am={amount}"
     upi_link_encoded = parse.quote(upi_link, safe="")
 
