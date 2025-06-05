@@ -37,9 +37,21 @@
         message_level 
         take_delays -->
         <p>These settings are number 2 in the priority list. Highest priority is of the request arg i.e in <a href="https://github.com/SurajBhari/streamsnip?tab=readme-ov-file#optional-arguments">this.</a></p>
-        <table>
+        <table class="table">
             <tr>
                 <td>
+                    <div class="tier-basic"></div><br>
+                    Delay
+                    <p style="font-size: smaller;">This is an artificial delay that is added to timestamp. if the !clip is called at 1:20:40 and with delay of "-40". then it is stored as 1:20:00. so that you always jump into action.</p>
+                </td>
+                <td>
+                    
+                    <input type="number" id="delay" class="form-control" style="width: 100%;" value="{{ settings['delay'] }}">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="tier-pro"></div><br>
                     Show Link
                 </td>
                 <td>
@@ -68,15 +80,6 @@
                             <option value="False" selected>No - Will not do any screenshots to discord.</option>
                         {% endif %}
                     </select>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    Delay
-                </td>
-                <td>
-                    <p>This is an artificial delay that is added to timestamp. if the !clip is called at 1:20:40 and with delay of "-40". then it is stored as 1:20:00. so that you always jump into action.</p>
-                    <input type="number" id="delay" class="form-control" style="width: 100%;" value="{{ settings['delay'] }}">
                 </td>
             </tr>
             <tr>
@@ -199,23 +202,7 @@
                 </td>
             </tr>
             <tr>
-                <td>
-                    Comments | THIS IS STILL A BETA FEATURE. PLEASE TAKE THIS WITH A GRAIN OF SALT.
-                </td>
-                <td>
-                    <select id="comments" {%if not can_turn_on_comments %} disabled title="Only Premium Members can use comments." {% endif %}>
-                        {% if settings['comments'] == 1 %}
-                            <option value="True" selected>Yes - Will post a comment after live stream ends contaning all the clips details.</option>
-                            <option value="False">No</option>
-                        {% else %}
-                            <option value="True">Yes - Will post a comment after live stream ends contaning all the clips details.</option>
-                            <option value="False" selected>No</option>
-                        {% endif %}
-                    </select>
-                </td>
-            </tr>
-            <tr>
-                <td>Enable Valorant Clipping</td>
+                <td>Enable Valorant Clipping (BETA)</td>
                 <td>
                     <select id="val_clip_enabled" onchange="toggleValorantFields()" {%if not can_edit %} disabled {% endif %}>
                         {% if settings.riot.enabled %}
@@ -287,6 +274,30 @@
                     </td>
                 </tr>
             </tbody>
+
+            <tr>
+                <td>
+                    <div class="tier-premium"></div><br>
+                    Comments
+                </td>
+                <td>
+                    <select id="comments" {%if not can_turn_on_comments %} disabled title="Only Premium Members can use comments." {% endif %}>
+                        {% if settings['comments'] == 1 %}
+                            <option value="True" selected>Yes - Will post a comment after live stream ends contaning all the clips details.</option>
+                            <option value="False">No</option>
+                        {% else %}
+                            <option value="True">Yes - Will post a comment after live stream ends contaning all the clips details.</option>
+                            <option value="False" selected>No</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: right;">
+                    <button type="button" class="btn btn-success" type="submit" value="Submit" name="add" id="save-button" title="Save" onclick="save_settings()"><i class="fa-regular fa-floppy-disk"></i></button>
+                    <button type="button" class="btn btn-secondary" type="reset" value="reset" name="reset" id="reset-button" title="Reset To Default" onclick="reset_settings()"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                </td>
+            </tr>
             <tr>
                 <td>
                     <h4>Nightbot Response</h4>
@@ -307,22 +318,17 @@
                     </div>
                 </td>
             </tr>
-            <tr>
-                <td>
-                    <button type="button" class="btn btn-success" type="submit" value="Submit" name="add" id="save-button" title="Save" onclick="save_settings()"><i class="fa-regular fa-floppy-disk"></i></button>
-                    <button type="button" class="btn btn-secondary" type="reset" value="reset" name="reset" id="reset-button" title="Reset To Default" onclick="reset_settings()"><i class="fa-solid fa-arrow-rotate-left"></i></button>
-                </td>
-            </tr>
+            
+
 
         </table>
     </div>
     <!-- a horizontal line -->
-    <hr>
-    {% if current_user.logins|length > 0 and current_user.logins|length < 10 %}
+    {% if current_user.logins|length > 0 %}
     <div class="row">
         <h2>Previous Logins</h2>
         <h3>Current Session token: {{session["session_token"]}}</h3>
-        <table>
+        <table class="table">
             <tr>
                 <th>Login Time</th>
                 <th>Login ID</th>
@@ -341,7 +347,7 @@
     </div>
     {% endif %}
     <h2>Account Access</h2>
-    <table id="accesses-table" class="styled-table">
+    <table id="accesses-table" class="table">
         <thead>
             <td>
                 Email
@@ -373,7 +379,7 @@
         </tr>
     {%endfor%}
     <tr>
-        <td id="add_new" onclick="addaccess()">
+        <td id="add_new" colspan="4" onclick="addaccess()">
             <i class="fa-regular fa-plus"></i>
         </td>
     </tr>

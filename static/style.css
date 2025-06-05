@@ -92,7 +92,6 @@ body footer {
 
 .form-control.dark-theme,
 .table.dark-theme, .tr.dark-theme, .td.dark-theme {
-  background-color: #212529;
   color: white;
 }
 
@@ -968,4 +967,61 @@ body.dark-theme .poster{
 }
 @keyframes spinner {
   to { transform: rotate(360deg); }
+}
+
+.tier-basic,
+.tier-pro,
+.tier-premium {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px 4px 10px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid;
+  gap: 6px;
+  position: relative;
+  line-height: 1;
+}
+
+/* Common check icon using ::before (SVG path via background-image) */
+.tier-basic::before,
+.tier-pro::before,
+.tier-premium::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="none" stroke="black" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 13l4 4L19 7"/></svg>');
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+/* Tier-specific styles */
+.tier-basic {
+  background-color: #f0f0f0;
+  color: #333;
+  border-color: #ccc;
+}
+.tier-basic::after {
+  content: "BASIC";
+}
+
+.tier-pro {
+  background-color: #e0f0ff;
+  color: #0066cc;
+  border-color: #99ccff;
+}
+.tier-pro::after {
+  content: "PRO";
+}
+
+.tier-premium {
+  background-color: #fff8cc;
+  color: #b38600;
+  border-color: #ffe066;
+}
+.tier-premium::after {
+  content: "PREMIUM";
 }

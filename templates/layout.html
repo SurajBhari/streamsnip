@@ -53,6 +53,7 @@
             var site_icon = document.getElementsByClassName("site_icon");
             var dropdown_items = document.getElementsByClassName("dropdown-item");
             var footer = document.getElementsByTagName("footer");
+            var tables = document.getElementsByClassName("table");
             if (isDarkTheme) {
                 if(signs_in.length){ 
                     for(var i=0; i<signs_in.length; i++){
@@ -72,6 +73,9 @@
                 body.classList.add("dark-theme");
                 for (var i = 0; i < form_control.length; i++) {
                     form_control[i].classList.add("dark-theme");
+                }
+                for (var i = 0; i < tables.length; i++) {
+                    tables[i].classList.add("dark-theme");
                 }
                 for (var i = 0; i < a.length; i++) {
                     a[i].classList.toggle("dark-theme");
@@ -111,6 +115,9 @@
                 }
                 for (var i = 0; i < form_control.length; i++) {
                     form_control[i].classList.remove("dark-theme");
+                }
+                for (var i = 0; i < tables.length; i++) {
+                    tables[i].classList.remove("dark-theme");
                 }
                 for (var i = 0; i < a.length; i++) {
                     a[i].classList.toggle("dark-theme");
