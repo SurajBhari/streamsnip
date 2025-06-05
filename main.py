@@ -67,8 +67,6 @@ from helper.Membership import Membership
 from helper.Riot import Riot
 
 # we are in /var/www/streamsnip
-import os
-
 try:
     os.chdir("/var/www/streamsnip")
 except FileNotFoundError:
@@ -1773,7 +1771,7 @@ def upgrade_manual():
         return "Invalid upgrade request.", 400
     # round off ammount to second decimal place
     amount = round(amount, 2)
-    transaction_note = f"Paying Suraj Bhari Subscription for upgrading from {membership_details.type} to {switch_to}"
+    transaction_note = f"{current_user.name} upgrade {membership_details.type} to {switch_to}"
 
     upi_link = f"upi://pay?pa=surajbhari@upi&pn={project_name}&cu=INR&tn={transaction_note}&am={amount}"
     upi_link_encoded = parse.quote(upi_link, safe="")
