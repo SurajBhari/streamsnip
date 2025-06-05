@@ -16,10 +16,12 @@ class Membership:
         self.days_left = 0
         self.free_trial = False
         self.time_left = timedelta(0)
+        self.last_state = None
         if not data:
             return
         self.channel_id = data[0]
         self.type = data[1]
+        self.last_state = data[1] # if its not active type gets changed to None
         try:
             self.start = datetime.fromtimestamp(data[2])
             self.end = datetime.fromtimestamp(data[3])

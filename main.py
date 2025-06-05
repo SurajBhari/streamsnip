@@ -3164,20 +3164,28 @@ def stats():
 
 def get_members(tier: str = None):
     # returns all of membership details
-    if not tier:
-        members = {k: get_members(k) for k in subscription_model.keys()}
-        members["FREE"] = get_members("FREE")
-        return members
     with conn:
-        cur.execute("SELECT * FROM MEMBERSHIP WHERE type=?", (tier,))
+        cur = conn.cursor()
+        if tier:
+            cur.execute(
+                "SELECT * FROM MEMBERSHIP WHERE membership_type=? ORDER BY start DESC",
+                (tier,),
+            )
+        else:
+            cur.execute("SELECT * FROM MEMBERSHIP ORDER BY start DESC")
         data = cur.fetchall()
-    if not data:
-        return []
-    members = []
-    for x in data:
-        m = Membership(x)
-        m.name = get_channel_name_image(m.channel_id)[0]
-        members.append(m)
+    members = {}
+    for m in data:
+        m = Membership(m)
+
+        m.name, m.image = get_channel_name_image(m.channel_id)
+        if not m.active:
+            m.type = "expired"
+            m.name = m.name + " ("+ m.last_state + ")"
+
+        if m.type not in members:
+            members[m.type] = []
+        members[m.type].append(m)
     return members
 
 
@@ -3203,12 +3211,13 @@ def admin():
     users = generate_home_data()
     settings = vars(UserSettings())
     members = get_members()
+    tiers = [x for x in members.keys()]
     return render_template(
         "admin.html",
         users=users,
         settings=settings,
         members=members,
-        tiers=[x for x in members.keys()],
+        tiers=tiers,
     )
 
 @app.route("/del_membership", methods=["POST"])
