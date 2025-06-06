@@ -73,7 +73,7 @@ def get_player_uuid(tag: str, region: str) -> Optional[str]:
     
 def get_match_list(name,tag,region):
 
-    url = f"{valorant_api_base}/valorant/v3/matches/{region}/{name}/{tag}?mode=competitive"
+    url = f"{valorant_api_base}/valorant/v3/matches/{region}/{name}/{tag}?mode=competitive&size=10"
     headers = {
         "Authorization": henrik_api_key,
     }
