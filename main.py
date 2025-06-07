@@ -1090,12 +1090,12 @@ def login_google_callback():
         return redirect(
             url_for("login_google")
         )  # we do need to get the scope to validate the user
-    """if youtube_id in ["UCuhCyczWE_p06DjDRhKrJKg", "UCd__w3MzW2lVxdL7wA4nYYg"]:
+    if youtube_id in ["UCuhCyczWE_p06DjDRhKrJKg", "UCd__w3MzW2lVxdL7wA4nYYg"]:
         return {
             "youtube_data": youtube_data,
             "userinfo": userinfo,
         }  # return this for testing purpose
-    """
+    
     email = userinfo.get("email", "")
     collect_user_data = {
         "email": userinfo.get("email", ""),
@@ -1254,9 +1254,7 @@ def login_google():
         authorization_endpoint,
         redirect_uri=redirect_uri,
         scope=[
-            "openid",
-            "email",
-            "profile",
+            "https://www.googleapis.com/auth/userinfo.email"
             "https://www.googleapis.com/auth/youtube.readonly",
         ],
     )
