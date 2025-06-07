@@ -1254,8 +1254,8 @@ def login_google():
         authorization_endpoint,
         redirect_uri=redirect_uri,
         scope=[
-            "https://www.googleapis.com/auth/userinfo.email"
-            "https://www.googleapis.com/auth/youtube.readonly",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/youtube.readonly"
         ],
     )
     return redirect(request_uri)
