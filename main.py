@@ -2154,48 +2154,56 @@ def clips(channel_id=None):
 @app.route("/e/<channel_id>")
 def exports(channel_id=None):
     channel_id = get_channel_id_any(channel_id)
+    
     if not channel_id:
         return redirect(url_for("slash"))  # not found
+    
     try:
         channel_name, channel_image = get_channel_name_image(channel_id)
     except Exception as e:
-        print(e)
         return redirect(url_for("slash"))
+    
     data = get_channel_clips(channel_id)
+    
     sub_detail = is_subscribed(channel_id, free_trial=False)
+    
     can_edit = current_user.id == channel_id or current_user.admin
     if sub_detail not in ["pro", "premium", "FREE"]:
         can_edit = False
+    
     if current_user.admin:  # no data should be hidden from admin
         data = [x.json() for x in data]
     else:
         data = [x.json() for x in data if not x.private]
-    for clip in data:
-        if clip["discord"]["webhook"]:
-            if (
-                clip["channel"] in prefix_webhook
-                and prefix_webhook.get(clip["channel"]) is not None
-            ):
-                clip["discord_url"] = (
-                    f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
-                )
-            else:
-                webhook_url = get_channel_settings(clip["channel"]).webhook
-                if not webhook_url:
-                    continue
-                response = get(webhook_url)
-                if response.status_code != 200:
-                    prefix_webhook[clip["channel"]] = None
-                    continue
-                j = response.json()
-                prefix_webhook[clip["channel"]] = (
-                    f"https://discord.com/channels/{j['guild_id']}/{j['channel_id']}"
-                )
-                clip["discord_url"] = (
-                    f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
-                )
-        else:
+    webhook_url = get_channel_settings(channel_id).webhook
+    if not webhook_url:
+        for clip in data:
             clip["discord_url"] = "#"
+    else:
+        for i, clip in enumerate(data):
+            if clip["discord"]["webhook"]:
+                if (
+                    clip["channel"] in prefix_webhook
+                ):
+                    clip["discord_url"] = (
+                        f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
+                    )
+                else:
+                    response = get(webhook_url)
+                    if response.status_code != 200: # its ok if the code is 200. we don't have history of all webhooks
+                        prefix_webhook[clip["channel"]] = None
+                    else:
+                        j = response.json()
+                        prefix_webhook[clip["channel"]] = (
+                            f"https://discord.com/channels/{j['guild_id']}/{j['channel_id']}"
+                        )
+                        clip["discord_url"] = (
+                            f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
+                        )
+            else:
+                clip["discord_url"] = "#"
+
+
     return render_template(
         "export.html",
         data=data,
@@ -2211,6 +2219,7 @@ def exports(channel_id=None):
         emoji_lookup_table=emoji_lookup_table,
         can_edit=can_edit,
     )
+
 
 
 @app.route("/channelstats")
