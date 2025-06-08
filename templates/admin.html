@@ -118,6 +118,45 @@
             </tbody>
         </table>
     </div>
+    <h1> Recent Trasanctions Total Earned: {{total_earn}}rs</h1>
+    <table class="recent-transactions table ">
+        <thead>
+            <tr>
+                <th>Channel</th>
+                <th>Amount</th>
+                <th>Time</th>
+                <th>Membership Type</th>
+                <th>Description</th>
+                <th>Transaction ID</th>
+            </tr>
+        </thead>
+        {% for t in transactions %}
+        <tr>
+            <td>
+                <a href="/e/{{t.channel_id}}">
+                <img src="{{t.channel_image}}" alt="Avatar" style="width: 20px; height: 20px; border-radius: 50%;">
+                {{t.channel_name}}</a>
+            </td>
+            <td>
+                {{t.amount}}
+            </td>
+            <td>
+                {{t.time}}
+            </td>
+            <td>
+                {{t.membership_type}}
+            </td>
+            <td>
+                {{t.description}}
+            </td>
+            <td>
+                {{t.transaction_id}}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+
 </center>
 <script>
     var settings = {{settings|tojson}}

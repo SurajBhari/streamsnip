@@ -354,6 +354,32 @@ with conn:
     known_session_tokens = {x[0] for x in data}
     # this is a set of all the session tokens that are already in the database. we will use this to check if the session token is already used or not
 
+
+class Transactions:
+    def __init__(self, trans:List[str]):
+        self.channel_id = None
+        self.amount = 0
+        self.time = datetime.fromtimestamp(10000)
+        self.transaction_id = ""
+        self.membership_type = ""
+        self.description = ""
+        self.in_db = False
+        self.channel_name = ""
+        self.channel_image = "https://yt3.googleusercontent.com/a/default-user=s100-c-k-c0x00ffffff-no-rj"
+        if trans:
+            self.in_db = True
+            self.channel_id = trans[0]
+            self.amount = float(trans[1])
+            self.time = datetime.fromtimestamp(trans[2])
+            self.transaction_id = trans[3]
+            self.membership_type = trans[4]
+            self.description = trans[5]
+            self.channel_name, self.channel_image = get_channel_name_image(self.channel_id)
+
+
+
+
+
 class AnonymousUser(AnonymousUserMixin):
     def __init__(self):
         super().__init__()
@@ -1689,7 +1715,7 @@ def pay_manual_callback():
     )
 
     reference_number = f"screenshot_{filename}"
-    description = f"Membership {mtype} extended for {months} month{'s' if months != 1 else ''}"
+    description = f"{current_user.name} {mtype} for {str(months*28)} days"
     cur.execute(
         "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
         (
@@ -1841,8 +1867,7 @@ def callback_upgrade_manual():
             current_user.id,
         ),
     )
-
-    description = f"Membership upgraded from {current_type} to {new_type}"
+    description = f"{current_user.name} upgrade {current_type} to {new_type}"
     cur.execute(
         "INSERT INTO TRANSACTIONS VALUES (?, ?, ?, ?, ?, ?)",
         (
@@ -3217,8 +3242,13 @@ def admin():
     settings = vars(UserSettings())
     members = get_members()
     tiers = [x for x in members.keys()]
+    transactions = get_transactions_all()
+    transactions = [Transactions(x) for x in transactions if float(x[1]) != 0] # only get positive transactions
+    total_earn = sum([x.amount for x in transactions])
     return render_template(
         "admin.html",
+        transactions=transactions,
+        total_earn = total_earn,
         users=users,
         settings=settings,
         members=members,
