@@ -4366,7 +4366,9 @@ def get_other_pov():
         return "Failed to get clip stream data", 500
 
     print(f"Searching POV from {other_streamer_id} for clip at {clip_absolute_time}")
-
+    return get_other_streamer_pov(other_streamer_id, clip_absolute_time, clip.delay)
+    
+def get_other_streamer_pov(other_streamer_id, clip_absolute_time, clip_delay):
     try:
         vids = scrapetube.get_channel(other_streamer_id, content_type="streams", sleep=0)
         for vid in vids:
@@ -4384,7 +4386,7 @@ def get_other_pov():
                     break
                 if other_start <= clip_absolute_time:
                     offset = int(clip_absolute_time - other_start)
-                    offset += clip.delay  # adjust for delay
+                    offset += clip_delay  # adjust for delay
                     if duration and offset > duration:
                         continue
                     return jsonify({
