@@ -449,7 +449,6 @@
         end = endIndex > filteredData.length ? filteredData.length : endIndex;
         document.getElementById("total-clips1").innerHTML = `${startIndex + 1}-${end} of ${filteredData.length}`;
         console.log("Updated clips");
-        update_theme();
     }
     function getUserChannelLink(authorId) {
         return `https://www.youtube.com/channel/${authorId}`;
