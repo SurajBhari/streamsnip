@@ -1,366 +1,226 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+  <head>
+    <!-- ========= META ========= -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Streamline clipping YouTube livestreams with the help of your viewers" />
+    <meta name="keywords" content="Livestream, YouTube, StreamSnip, !clip, Nightbot, Nightbot‑clip" />
+    <meta name="author" content="Suraj Bhari" />
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="Streamline clipping youtube livestream with the help of your viewers">
-    <meta name="keywords" content="Livestream, youtube, streamsnip, !clip, nightbot, nightobt-clip">
-    <meta name="author" content="Suraj Bhari">
-
-    <meta property="og:title" content="StreamSnip - Stream Clipping Simplified" />
-    <meta property="og:image" content="/static/logo.png" />
+    <!-- Social (OG) -->
+    <meta property="og:title" content="StreamSnip – Stream‑clipping simplified" />
     <meta property="og:type" content="website" />
-    
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.5.1/css/all.css">
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/gh/xcash/bootstrap-autocomplete@v2.3.7/dist/latest/bootstrap-autocomplete.min.js"></script>
-    <script>
-        var is_home = false; // this will be overwritten on home page only
-        var is_first_load = true;
-        var all = false; 
-        
-        function update_theme(){
-            var isDarkTheme = localStorage.getItem("darkTheme") === "true";
-            const darkThemeMq = window.matchMedia("(prefers-color-scheme: dark)");
-            var form_control = document.getElementsByClassName("form-control");
-            var a = document.getElementsByTagName("a");
-            var ul = document.getElementsByTagName("ul");
-            var cards = document.getElementsByClassName("card");
-            var signs_in = document.getElementsByClassName("google_sign_in");
-            var alerts = document.getElementsByClassName("alert");
-            var theads = document.getElementsByTagName("thead");
-            // append "select" objects to "a" list 
-            var select = document.getElementsByTagName("select");
-            if (!localStorage.getItem("darkTheme")) {
-                if (darkThemeMq.matches) {
-                    isDarkTheme = true;
-                }
-            }
-            if (!window.matchMedia){ // for phone we just assume dark theme
-                isDarkTheme = true;
-            }
-            var body = document.body;
-            var theme_button = document.getElementById("theme_button");
-            var navbar = document.getElementsByClassName("navbar");
-            var site_icon = document.getElementsByClassName("site_icon");
-            var dropdown_items = document.getElementsByClassName("dropdown-item");
-            var footer = document.getElementsByTagName("footer");
-            var tables = document.getElementsByClassName("table");
-            if (isDarkTheme) {
-                if(signs_in.length){ 
-                    for(var i=0; i<signs_in.length; i++){
-                        if(signs_in[i].id == "sign_in"){
-                            sign_in.src = "/static/sign_in_dark.png";
-                        }
-                        else{
-                            signs_in[i].src = "/static/sign_up_dark.png";
-                        }
-                    }
-                }
-                if(footer.length){
-                    for(var i=0; i<footer.length; i++){
-                        footer[i].classList.add("dark-theme");
-                    }
-                }
-                body.classList.add("dark-theme");
-                for (var i = 0; i < form_control.length; i++) {
-                    form_control[i].classList.add("dark-theme");
-                }
-                for (var i = 0; i < tables.length; i++) {
-                    tables[i].classList.add("dark-theme");
-                }
-                for (var i = 0; i < a.length; i++) {
-                    a[i].classList.toggle("dark-theme");
-                }
-                for(var i=0; i<select.length; i++){
-                    select[i].classList.add("dark-theme");
-                }
-                for(var i=0; i<ul.length; i++){
-                    ul[i].classList.add("dark-theme");
-                }
-                for(var i=0; i<cards.length; i++){
-                    cards[i].classList.add("dark-theme");
-                }
-                for(var i=0; i<dropdown_items.length; i++){
-                    dropdown_items[i].classList.add("dark-theme");
-                }
-                for(var i=0; i<theads.length; i++){
-                    theads[i].classList.add("dark-theme");
-                }
-            }
-            else{
-                if(signs_in.length){ 
-                    for(var i=0; i<signs_in.length; i++){
-                        if(signs_in[i].id == "sign_in"){
-                            sign_in.src = "/static/sign_in_light.png";
-                        }
-                        else{
-                            signs_in[i].src = "/static/sign_up_light.png";
-                        }
-                    }
-                }
-                body.classList.remove("dark-theme");
-                if(footer.length){
-                    for(var i=0; i<footer.length; i++){
-                        footer[i].classList.remove("dark-theme");
-                    }
-                }
-                for (var i = 0; i < form_control.length; i++) {
-                    form_control[i].classList.remove("dark-theme");
-                }
-                for (var i = 0; i < tables.length; i++) {
-                    tables[i].classList.remove("dark-theme");
-                }
-                for (var i = 0; i < a.length; i++) {
-                    a[i].classList.toggle("dark-theme");
-                }
+    <meta property="og:image" content="/static/logo.png" />
 
-                for(var i=0; i<select.length; i++){
-                    select[i].classList.remove("dark-theme");
-                }
-                for(var i=0; i<ul.length; i++){
-                    ul[i].classList.remove("dark-theme");
-                }
-                for(var i=0; i<cards.length; i++){
-                    cards[i].classList.remove("dark-theme");
-                }
-                for(var i=0; i<dropdown_items.length; i++){
-                    dropdown_items[i].classList.remove("dark-theme");
-                }
-                for(var i=0; i<theads.length; i++){
-                    theads[i].classList.remove("dark-theme");
-                }
-            }
-            if(isDarkTheme){
-                theme_button.innerHTML = '<i class="fa-solid fa-moon"></i>';
-                for(let i=0; i<navbar.length; i++){
-                    navbar[i].classList.add("bg-dark");
-                    navbar[i].classList.remove("bg-light");
-                    navbar[i].classList.add("navbar-dark");
-                    navbar[i].classList.remove("navbar-light");
-                }
-                for(let i=0; i<alerts.length; i++){
-                    alerts[i].classList.add("dark-theme");
-                }
-                for(let i=0; i<site_icon.length; i++){
-                    site_icon[i].classList.add("dark-theme");
-                    site_icon[i].src = "/static/logo.svg"
-                }
-            } else {
-                theme_button.innerHTML = '<i class="fa-solid fa-sun"></i>';
-                for(let i=0; i<navbar.length; i++){
-                    navbar[i].classList.add("bg-light");
-                    navbar[i].classList.remove("bg-dark");
-                    navbar[i].classList.add("navbar-light");
-                    navbar[i].classList.remove("navbar-dark");
-                }
-                for(let i=0; i<alerts.length; i++){
-                    alerts[i].classList.remove("dark-theme");
-                }
-                for(let i=0; i<site_icon.length; i++){
-                    site_icon[i].classList.remove("dark-theme");
-                    site_icon[i].src = "/static/logo-grey.svg"
-                }
-            }
-        }
-        document.addEventListener("DOMContentLoaded", function () {
-            // Check user preference and set the initial theme
-            update_theme();
-        });
-        function toggleDarkTheme() {
-            isDarkTheme = document.body.classList.contains("dark-theme");
-            if(isDarkTheme){
-                document.body.classList.remove("dark-theme");
-            } else {
-                document.body.classList.add("dark-theme");
-            }
-            localStorage.setItem("darkTheme", !isDarkTheme);
-            update_theme();
-        }
+    <title>StreamSnip</title>
 
-        
-        function update_mini_stats(){
-            if(!is_first_load && document.hidden){
-                return; // why care to update if the page is not visible
-            }
-            if(is_home){
-                link = "/mini_stats?home=true";
-            }
-            else{
-                link = "/mini_stats";
-            }
-            fetch(link).then((response) => response.json()).then((data) => {
-                var last_clip = data.last_clip;
-                var last_clip_time = document.getElementById("last_clip_time");
-                if(last_clip){
-                    last_clip_time.innerHTML = ` Last Clip - ${last_clip.timesince}`;
-                    var today_count = data.today_count;
-                    var today_count_element = document.getElementById("today_count");
-                    today_count_element.innerHTML = '<i class="fa-solid fa-clipboard-list"></i> ' + today_count + " Clips Today";
-                }
-                var data = data.data;
-                if(is_home){
-                    add_channel_to_container(all=all, data=data);
-                }
-                is_first_load = false;
-            });
-            
-        }
-        document.addEventListener("DOMContentLoaded", function () {
-            document.body.classList.add("loaded");
-            update_mini_stats();
-            setInterval(update_mini_stats, 30000);
-            give_alert();
-            
-        });
-        function give_alert(){
-            {% if current_user.logged_in %}
-                var days_left = {{current_user.membership.days_left}};
-                var is_free_trial = {{current_user.membership.free_trial|tojson}};
-                if(days_left< 15 || is_free_trial){
-                    var color = ""
-                    if(is_free_trial){
-                        var alert = `Your free trial will end in ${days_left} days. <a style="color:blue;" href='/membership'>Please consider upgrading your membership.</a>`;
-                    }
-                    else{
-                        var alert = `Your membership will end in ${days_left} days. <a style="color:blue;" href='/membership'>Please consider renewing your membership. </a>`;
-                    }
-                    if(days_left < 7){
-                        color = "danger"
-                    }
-                    else if(days_left < 15){
-                        color = "warning"
-                    }
-                    else if(days_left == 0){
-                        color = "danger";
-                        var alert = "Your free trial has ended. <a style='color:blue;' href='/membership'>Please consider renewing your membership.</a>";
-                    }
-                    else{
-                        if(!is_free_trial){
-                            return;
-                        }
-                        color="danger";
-                    }
-                    var alert_div = document.getElementById("alert");
-                    alert_div.innerHTML = `<div style="color:black;" class="alert alert-${color} alert-dismissible fade show mb-0 d-flex justify-content-center align-items-center text-center" role="alert">${alert}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
-                }
-                var can_avail = {{current_user.can_avail_trial|tojson}};
-                if(can_avail){
-                    var alert_div = document.getElementById("alert");
-                    alert_div.innerHTML = `<div class="alert alert-warning alert-dismissible fade show mb-0 d-flex justify-content-center align-items-center text-center" role="alert">You are eligible for a free trial. <a style="color:blue;" href='/start_free_trial'>Click here to avail it.</a><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
-                }
-                
-            {%endif%}
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    document.getElementById("alert").innerHTML += `<div class="alert alert-{{category}} alert-dismissible fade show mb-0 d-flex justify-content-center align-items-center text-center" role="alert">{{message}}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
-                {% endfor %}
-            {% endif %}
-            {% endwith %}
-        }
-    </script>
-    {% block head_content %}
-    {% endblock %}
-</head>
-<header>
+    <!-- ========= STYLES ========= -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.5.1/css/all.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+
+    {% block head_content %}{% endblock %}
+  </head>
+
+  <body>
+    <!-- ========= ALERTS ========= -->
     <div id="alert"></div>
-    
-    <div class="container">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="navbar_id">
-            <a class="navbar-brand" href="/"><img src="/static/logo-grey.svg" alt="logo" width="32" height="32" class="bi me-2 site_icon" id="site_icon">StreamSnip</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
-                <ul class="navbar-nav mr-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="update_mini_stats()"><i id="today_count"></i>&nbsp; &nbsp;<i id="last_clip_time"></i></a>
-                    </li>
-                    <!--
-                    <li class="nav-item">
-                        <a class="nav-link" href="/exports"><i class="fa-solid fa-earth-asia"></i> All Clips</a>
-                    </li>
-                    -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="https://github.com/SurajBhari/streamsnip?tab=readme-ov-file#nightbot-command"><i class="fa-solid fa-plus"></i> Get Started</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/settings#webhook"><i class="fa-solid fa-link"></i> Connect with Discord</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="https://chromewebstore.google.com/detail/streamsnip/jpnlipcmklpfniaheflfnkomjdkhiani"><i class="fa-solid fa-puzzle-piece"></i> Chrome Extension</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/stats"><i class="fa-solid fa-chart-line"></i> </a>
-                    </li>
-                    <li class="nav-item" title="Discord">
-                        <a class="nav-link" href="https://discord.gg/2XVBWK99Vy"><i class="fa-brands fa-discord"></i> </a>
-                    </li>
-                    <li class="nav-item" title="Toggle Theme">
-                        <a class="nav-link" href="#" onclick="toggleDarkTheme()" id="theme_button"></a>
-                    </li>
-                    {% if current_user.is_authenticated %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="{{current_user.image}}" alt="Profile" class="rounded-circle" width="32" height="32">
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="/e/{{current_user.id}}"><i class="fa-solid fa-scissors"></i> My Clips</a></li>
-                            <li><a class="dropdown-item" href="/clips"><i class="fa-solid fa-scissors"></i> Clips Made by me</a></li>
-                            <li><a class="dropdown-item" href="/cs/{{current_user.id}}"><i class="fa-solid fa-chart-line"></i> Channel Stats</a></li>
-                            <li><a class="dropdown-item" href="/membership"><i class="fa-solid fa-money-bill-wave"></i> Membership</a></li>
-                            <li><a class="dropdown-item" href="/settings"><i class="fa-solid fa-gear"></i> Settings</a></li>
-                            <li><a class="dropdown-item" href="/change_account"><i class="fa-solid fa-repeat"></i> Switch Accounts</a></li>
-                            <li><a class="dropdown-item" href="/logout"><i class="fa-solid fa-sign-out"></i> Logout</a></li>
-                        </ul>
-                    </li>                    
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="/login?next={{request.path}}">Login <i class="fa-solid fa-sign-in"></i></a>
-                        </li>
-                    {% endif %}
-                    
+
+    <!-- ========= NAVBAR ========= -->
+    <header class="">
+      <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-dark" id="navbar_id">
+          <a class="navbar-brand d-flex align-items-center" href="/">
+            <img src="/static/logo-grey.svg" alt="logo" width="32" height="32" class="me-2 site_icon" id="site_icon" />
+            StreamSnip
+          </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                <a class="nav-link" href="#" onclick="updateMiniStats()">
+                  <i id="today_count"></i>
+                  &nbsp;&nbsp;
+                  <i id="last_clip_time"></i>
+                </a>
+              </li>
+
+              <li class="nav-item"><a class="nav-link" href="https://github.com/SurajBhari/streamsnip?tab=readme-ov-file#nightbot-command"><i class="fa-solid fa-plus"></i> Get&nbsp;Started</a></li>
+              <li class="nav-item"><a class="nav-link" href="/settings#webhook"><i class="fa-solid fa-link"></i> Connect&nbsp;Discord</a></li>
+              <li class="nav-item"><a class="nav-link" href="https://chromewebstore.google.com/detail/streamsnip/jpnlipcmklpfniaheflfnkomjdkhiani"><i class="fa-solid fa-puzzle-piece"></i> Chrome&nbsp;Extension</a></li>
+              <li class="nav-item"><a class="nav-link" href="/stats"><i class="fa-solid fa-chart-line"></i></a></li>
+              <li class="nav-item" title="Discord"><a class="nav-link" href="https://discord.gg/2XVBWK99Vy"><i class="fa-brands fa-discord"></i></a></li>
+              <li class="nav-item" title="Toggle Theme"><a class="nav-link" href="#" id="theme_button" onclick="toggleDarkTheme()"></a></li>
+
+              {% if current_user.is_authenticated %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                  <img src="{{ current_user.image }}" alt="Profile" class="rounded-circle" width="32" height="32" />
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                  <li><a class="dropdown-item" href="/e/{{ current_user.id }}"><i class="fa-solid fa-scissors"></i> My&nbsp;Clips</a></li>
+                  <li><a class="dropdown-item" href="/clips"><i class="fa-solid fa-scissors"></i> Clips&nbsp;Made&nbsp;by&nbsp;Me</a></li>
+                  <li><a class="dropdown-item" href="/cs/{{ current_user.id }}"><i class="fa-solid fa-chart-line"></i> Channel&nbsp;Stats</a></li>
+                  <li><a class="dropdown-item" href="/membership"><i class="fa-solid fa-money-bill-wave"></i> Membership</a></li>
+                  <li><a class="dropdown-item" href="/settings"><i class="fa-solid fa-gear"></i> Settings</a></li>
+                  <li><a class="dropdown-item" href="/change_account"><i class="fa-solid fa-repeat"></i> Switch&nbsp;Accounts</a></li>
+                  <li><a class="dropdown-item" href="/logout"><i class="fa-solid fa-sign-out"></i> Logout</a></li>
                 </ul>
-            </div>
-        </nav>       
-    </div>
-</header>
-<div id="loader-wrapper">
-    <img src="/static/logo.svg" id="loader" alt="site logo">
-    <div class="loader-section section-left"></div>
-    <div class="loader-section section-right"></div>
-</div>
-<div class="content">
-    {% block content %}{% endblock %}
-</div>
+              </li>
+              {% else %}
+              <li class="nav-item"><a class="nav-link" href="/login?next={{ request.path }}">Login <i class="fa-solid fa-sign-in"></i></a></li>
+              {% endif %}
+            </ul>
+          </div>
+        </nav>
+      </div>
+    </header>
 
-<footer>
-    <div class="container py-4">
-        <div class="row">
-            <div class="col-md-6">
-                <p>© 2025 Suraj Bhari</p>
-            </div>
-            <div class="col-md-6 text-end">
-                <a href="https://github.com/surajbhari/streamsnip">Source Code</a> |
-                <a href="/privacy-policy">Privacy Policy</a> |
-                <a href="/aboutus">About Us</a> |
-                <a href="/contactus">Contact Us</a> |
-                <a href="/tnc">Terms & Conditions</a>
-            </div>
+    <!-- ========= LOADER ========= -->
+    <div id="loader-wrapper">
+      <img src="/static/logo.svg" id="loader" alt="site logo" />
+      <div class="loader-section section-left"></div>
+      <div class="loader-section section-right"></div>
+    </div>
+
+    <!-- ========= MAIN CONTENT ========= -->
+    <main class="content">{% block content %}{% endblock %}</main>
+
+    <!-- ========= FOOTER ========= -->
+    <footer class="mt-auto py-4 border-top">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-6">© 2025&nbsp;Suraj&nbsp;Bhari</div>
+          <nav class="col-md-6 text-md-end">
+            <a href="https://github.com/surajbhari/streamsnip">Source Code</a> |
+            <a href="/privacy-policy">Privacy&nbsp;Policy</a> |
+            <a href="/aboutus">About&nbsp;Us</a> |
+            <a href="/contactus">Contact&nbsp;Us</a> |
+            <a href="/tnc">Terms&nbsp;&amp;&nbsp;Conditions</a>
+          </nav>
         </div>
-    </div>
-</footer>
-<!-- Bootstrap Bundle with Popper -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
-</body>
+      </div>
+    </footer>
 
+    <!-- ========= SCRIPTS ========= -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/xcash/bootstrap-autocomplete@v2.3.7/dist/latest/bootstrap-autocomplete.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous" defer></script>
+
+    <script defer>
+      /* =================== THEME =================== */
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+      const storageKey = 'darkTheme';
+
+      function setTheme(dark) {
+        document.body.classList.toggle('dark-theme', dark);
+        const themeBtnIcon = dark ? 'fa-moon' : 'fa-sun';
+        document.getElementById('theme_button').innerHTML = `<i class="fa-solid ${themeBtnIcon}"></i>`;
+
+        // navbar / site‑icon color tweaks
+        const navbar = document.getElementById('navbar_id');
+        navbar.classList.toggle('bg-dark', dark);
+        navbar.classList.toggle('bg-light', !dark);
+        navbar.classList.toggle('navbar-dark', dark);
+        navbar.classList.toggle('navbar-light', !dark);
+
+        document.querySelectorAll('.site_icon').forEach(icon => {
+          icon.src = dark ? '/static/logo.svg' : '/static/logo-grey.svg';
+        });
+
+        // bulk toggle of dark‑theme utility class
+        const selectors = ['.form-control', '.table', 'a', 'select', 'ul', '.card', '.dropdown-item', 'thead', 'footer', '.alert'];
+        selectors.forEach(sel => document.querySelectorAll(sel).forEach(el => el.classList.toggle('dark-theme', dark)));
+
+        // google sign‑in buttons (if present)
+        document.querySelectorAll('.google_sign_in').forEach(img => {
+          const darkSrc = img.id === 'sign_in' ? '/static/sign_in_dark.png' : '/static/sign_up_dark.png';
+          const lightSrc = img.id === 'sign_in' ? '/static/sign_in_light.png' : '/static/sign_up_light.png';
+          img.src = dark ? darkSrc : lightSrc;
+        });
+
+        localStorage.setItem(storageKey, dark);
+      }
+
+      function initTheme() {
+        const stored = localStorage.getItem(storageKey);
+        const dark = stored ? stored === 'true' : prefersDark.matches || !window.matchMedia; // default dark on small devices
+        setTheme(dark);
+      }
+
+      function toggleDarkTheme() {
+        setTheme(!document.body.classList.contains('dark-theme'));
+      }
+
+      /* =================== MINI‑STATS =================== */
+      let isHome = false; // overwritten on home routes
+      let isFirstLoad = true;
+
+      async function updateMiniStats() {
+        if (!isFirstLoad && document.hidden) return; // skip updates in bg
+        const url = isHome ? '/mini_stats?home=true' : '/mini_stats';
+        const res = await fetch(url);
+        if (!res.ok) return;
+
+        const { last_clip, today_count, data } = await res.json();
+        if (last_clip) {
+          document.getElementById('last_clip_time').textContent = `Last Clip – ${last_clip.timesince}`;
+          document.getElementById('today_count').innerHTML = `<i class='fa-solid fa-clipboard-list'></i> ${today_count} Clips Today`;
+        }
+
+        if (isHome) {
+          add_channel_to_container({ all, data }); // existing helper from other script
+        }
+        isFirstLoad = false;
+      }
+
+      /* =================== ALERTS =================== */
+      function showMembershipAlerts() {
+        const alertDiv = document.getElementById('alert');
+        {% if current_user.logged_in %}
+        const daysLeft = {{ current_user.membership.days_left }};
+        const isFreeTrial = {{ current_user.membership.free_trial|tojson }};
+        const canAvailTrial = {{ current_user.can_avail_trial|tojson }};
+        let html = '';
+
+        if (canAvailTrial) {
+          html += `<div class="alert alert-warning alert-dismissible fade show mb-0 text-center" role="alert">You are eligible for a free trial. <a href='/start_free_trial' class='text-primary'>Click here to avail it.</a><button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button></div>`;
+        } else if (daysLeft < 15 || isFreeTrial) {
+          const state = daysLeft < 7 ? 'danger' : daysLeft < 15 ? 'warning' : 'danger';
+          const msg = isFreeTrial
+            ? `Your free trial will end in ${daysLeft} days. <a href='/membership' class='text-primary'>Please consider upgrading your membership.</a>`
+            : daysLeft === 0
+            ? `Your membership has ended. <a href='/membership' class='text-primary'>Renew now.</a>`
+            : `Your membership will end in ${daysLeft} days. <a href='/membership' class='text-primary'>Please consider renewing.</a>`;
+          html += `<div class="alert alert-${state} alert-dismissible fade show mb-0 text-center" role="alert">${msg}<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button></div>`;
+        }
+        alertDiv.innerHTML = html;
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        alertDiv.innerHTML += `<div class="alert alert-{{ category }} alert-dismissible fade show mb-0 text-center" role="alert">{{ message }}<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button></div>`;
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+      }
+
+      /* =================== INIT =================== */
+      document.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.add('loaded');
+        initTheme();
+        updateMiniStats();
+        setInterval(updateMiniStats, 30_000);
+        showMembershipAlerts();
+      });
+    </script>
+  </body>
 </html>

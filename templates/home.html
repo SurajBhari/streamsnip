@@ -1,207 +1,182 @@
 {% extends 'layout.html' %}
 
-
-{% block head_content%}
-{% set channel_names = [] %}
-{% for channel in data[:10] %}
-    {% set _ = channel_names.append(channel['name']) %}
-{% endfor %}
-{% set channel_names_str = channel_names|join(', ') %}
-<meta property="og:description" content="A way for streamers to clip stuff with single nightbot command. used mainly in IGC 
-{{channel_names_str}}" />
-<title> StreamSnip - Stream Clipping Simplified</title>
-<script>
-    is_home = true; 
-</script>
+{% block head_content %}
+    {% set channel_names = data[:10] | map(attribute='name') | list %}
+    <meta property="og:description" content="A way for streamers to clip stuff with single nightbot command. used mainly in IGC {{ channel_names | join(', ') }}" />
+    <title>StreamSnip - Stream Clipping Simplified</title>
+    <script>is_home = true;</script>
 {% endblock %}
 
 {% block content %}
 <center>
-    <div class="container">
-        <div class="row">
-            <div class="col-sm d-lg-block">
-                <a href="/membership">
+<div class="container">
+    <div class="row">
+        <div class="col-sm d-lg-block">
+            <a href="/membership">
                 <img src="/static/ss_poster.png" alt="StreamSnip Poster" width="100%" class="poster">
-                </a>
-            </div>
-              <div class="col-sm d-none d-lg-block">
-                <iframe width="100%" height="315" src="https://www.youtube.com/embed/JKVr7r37aso" title="Add !Clip Command To Capture Best Live Moments Instantly | Streamsnip" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-            </div>
+            </a>
         </div>
-        <div class="row">
-            <div class="col-md-12">
-                <nav aria-label="Search and Sort">
-                    <ul class="pagination" style="display: flex; align-items: center; justify-content: center;">
-                        <li class="page-item" id="search-container" style="flex-grow: 1;">
-                            <input type="text" id="search" class="form-control search" placeholder="Search for channels..." style="border: 0px; width: 100%;">
-                        </li>
-                        <li class="page-item" id="sort-container">
-                            <select name="sortby" id="sortby" class="form-select" onchange="update_sort_by()" style="border-top-right-radius: 0px; border-bottom-right-radius: 0px">
-                                {% if sub_based_sort==1 %}
+        <div class="col-sm d-none d-lg-block">
+            <iframe width="100%" height="315" src="https://www.youtube.com/embed/JKVr7r37aso" title="Add !Clip Command To Capture Best Live Moments Instantly | Streamsnip" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="Search and Sort">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item flex-grow-1">
+                        <input type="text" id="search" class="form-control search w-100" placeholder="Search for channels..." style="border: 0px;">
+                    </li>
+                    <li class="page-item">
+                        <select id="sortby" class="form-select rounded-0" onchange="update_sort_by()">
+                            {% if sub_based_sort == 1 %}
                                 <option value="sub_count">Sub Count</option>
                                 <option value="default">Latest Clip Time</option>
                                 <option value="alphabetical">Alphabetical</option>
                                 <option value="clip_count">Clip Count</option>
                                 <option value="first_clip">First Clip Time</option>
-                                {% else %}
+                            {% else %}
                                 <option selected value="default">Default</option>
                                 <option value="alphabetical">Alphabetical</option>
                                 <option value="sub_count">Sub Count</option>
                                 <option value="clip_count">Clip Count</option>
                                 <option value="first_clip">First Clip Time</option>
-                                {% endif %}
-                            </select>
-                        </li>
-                        <li class="page-item" id="invert-page">
-                            <a class="page-link" href="#" aria-label="Invert" name="invert-button" onclick="inverse_sort_by()"> 
-                                <span aria-hidden="true">↑↓</i></span>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
+                            {% endif %}
+                        </select>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="inverse_sort_by()" aria-label="Invert">
+                            <span aria-hidden="true">↑↓</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
-        <div id="clips-container" class="row"></div>
-    </div>          
     </div>
+    <div id="clips-container" class="row"></div>
+</div>
 </center>
 <script>
-    var data = {{ data|tojson }};
-    var pinned = {{ pinned|tojson }};
-    var premium_members = {{ premium_members|tojson }};
-    var all=false;
-    var sort_by = document.getElementById("sortby").value;
-    var view_limit = 50;
-    function update_sort_by(){
+    let data = {{ data|tojson }};
+    const pinned = {{ pinned|tojson }};
+    const premium_members = {{ premium_members|tojson }};
+    let all = false;
+    let inverse = false;
+    let sort_by = "default";
+    let view_limit = 50;
+
+    function update_sort_by() {
         sort_by = document.getElementById("sortby").value;
-        add_channel_to_container(all=all);
+        const url = new URL(window.location);
+        url.searchParams.set('sortby', sort_by === "default" ? null : sort_by);
+        history.pushState({}, '', url);
+        add_channel_to_container(all);
     }
-    var inverse = false;    
-    function inverse_sort_by(){
-        if(inverse){
-            inverse = false;
-        }
-        else{
-            inverse = true;
-        }
-        add_channel_to_container(all=all);
-    }
-    function put_pinned_forward(data, pinned){
-        for(var i=0; i<data.length; i++){
-            if(pinned.includes(data[i]['id'])){
-                var temp = data[i];
-                data.splice(i, 1);
-                data.unshift(temp);
-            }
-        }
-        return data;
 
+    function inverse_sort_by() {
+        inverse = !inverse;
+        const url = new URL(window.location);
+        if (inverse) url.searchParams.set('inverse', 'true');
+        else url.searchParams.delete('inverse');
+        history.pushState({}, '', url);
+        add_channel_to_container(all);
     }
-    function extend_view(all=false){
-        if(all){
-            new_limit = data.length;
-            view_limit = new_limit;
+
+    function extend_view(show_all = false) {
+        if (show_all) {
+            view_limit = data.length;
+        } else {
+            view_limit += 50;
         }
-        view_limit += 50;
-        add_channel_to_container(all=all);
+        add_channel_to_container(show_all);
     }
-    function add_channel_to_container(all=false, data_=null){
-        if(data_){
-            data = data_;
-        }
-        var original_data = data;
-        // make a local copy of data so that we don't loose the order for default.
-        data = JSON.parse(JSON.stringify(data)); // stupid JS 
-        if(sort_by == "alphabetical"){
-            data.sort((a, b) => (a['name'] > b['name']) ? 1 : -1);
-        }
-        else if(sort_by == "sub_count"){
-            data.sort((a, b) => (a['sub_count'] < b['sub_count']) ? 1 : -1);
-        }
-        else if(sort_by == "clip_count"){
-            data.sort((a, b) => (a['clip_count'] < b['clip_count']) ? 1 : -1);
-        }
-        else if(sort_by == "first_clip"){
-            data.sort((a, b) => (a['first_clip_time'] > b['first_clip_time']) ? 1 : -1);
-        }
-        else{
-            data = original_data;
-        }
-        if(inverse){
-            data.reverse();
-        }
-        console.log("Adding channels to container");
-        var container = document.getElementById("clips-container");
-        var limit = view_limit;
-        if(all){
-            limit = data.length;
-        }
-        if(data.length < limit){
-            limit = data.length;
-        }
-        search_query = document.getElementById("search").value;
-        temporary_html = "";
-        data = put_pinned_forward(data, pinned);
-        console.log(data);
-        for (var i = 0; i < limit; i++) {
-            if (search_query) {
-                if (!(data[i]['name'] + " " + data[i]['id']).toLowerCase().includes(search_query.toLowerCase())) {
-                    continue;
-                }
-            }
-            var html = "";
-            html += '<div class="col-3">';
-            html += `<span title="Last Clip - ${data[i]['last_clip']['timesince']}\n${data[i]['sub_count']} Subscribers\nFirst Clip - ${data[i]['first_clip_timesince']}\n${data[i]['clip_count']} Clips">`;
-            html += '<a href="' + data[i]['link'] + '">';
-            if(premium_members.includes(data[i]['id']))
-                html += '<div class="card noborder card-glow position-relative">';
-            else{
-                html += '<div class="card noborder position-relative">';
-            }
 
-            // Image with pinned icon
-            html += '<div class="position-relative">';
-            html += '<img class="card-img-top rounded" src="' + data[i]['image'] + `" alt="Card image cap" load="lazy" onerror="this.src='https://i.pinimg.com/564x/3b/27/a8/3b27a87fcf7d90ae564be23d7a37f778.jpg';this.onerror=''">`;
-            
-            // Pinned icon in top-right corner
-            if (pinned.includes(data[i]['id'])) {
-                html += '<i class="hide-on-mobile fa-solid fa-thumbtack position-absolute" style="top: 18px; right: 18px; color: white; transform: rotate(45deg) scale(1.5);"></i>';
-            }
-            else if (premium_members.includes(data[i]['id'])) {
-                html += '<i class="hide-on-mobile fa-solid fa-heart position-absolute" style="top: 18px; right: 18px; color: white; transform: scale(1.5);"></i>';
-            }
-
-            html += '</div>'; // Close image wrapper
-
-            html += '<div class="card-body card-no-left-right-padding">';
-            if (data[i]['deleted']) {
-                html += '<h6 class="card-title" id="' + data[i]['id'] + '"> DELETED CHANNEL ( ' + data[i]['id'] + ' )</h6>';
-            } else {
-                html += '<h6 class="card-title" id="' + data[i]['id'] + '">' + data[i]['name'] + '</h6>';
-            }
-            html += '</div>';
-            html += '</div>';
-            html += '</a>';
-            html += '</span>';
-            html += '</div>';
-            
-            temporary_html += html;
-        }
-        container.innerHTML = temporary_html;
-        data = original_data;
+    function put_pinned_forward(dataList) {
+        return [...dataList.filter(d => pinned.includes(d.id)), ...dataList.filter(d => !pinned.includes(d.id))];
     }
-    document.addEventListener("DOMContentLoaded", function(event) {
-        add_channel_to_container(all=false);
+
+    function add_channel_to_container(show_all = false, data_ = data) {
+        let filtered_data = [...data_];
+        if (sort_by === "alphabetical") filtered_data.sort((a, b) => a.name.localeCompare(b.name));
+        else if (sort_by === "sub_count") filtered_data.sort((a, b) => b.sub_count - a.sub_count);
+        else if (sort_by === "clip_count") filtered_data.sort((a, b) => b.clip_count - a.clip_count);
+        else if (sort_by === "first_clip") filtered_data.sort((a, b) => new Date(a.first_clip_time) - new Date(b.first_clip_time));
+
+        if (inverse) filtered_data.reverse();
+
+        filtered_data = put_pinned_forward(filtered_data);
+
+        const container = document.getElementById("clips-container");
+        const limit = show_all ? filtered_data.length : Math.min(view_limit, filtered_data.length);
+        const search_query = document.getElementById("search").value.toLowerCase();
+        let html = "";
+
+        for (let i = 0, added = 0; i < filtered_data.length && added < limit; i++) {
+            const channel = filtered_data[i];
+            if (search_query && !(channel.name + " " + channel.id).toLowerCase().includes(search_query)) continue;
+
+            html += `<div class="col-3">
+                        <span title="Last Clip - ${channel.last_clip.timesince}\n${channel.sub_count} Subscribers\nFirst Clip - ${channel.first_clip_timesince}\n${channel.clip_count} Clips">
+                            <a href="${channel.link}">
+                                <div class="card noborder ${premium_members.includes(channel.id) ? 'card-glow' : ''} position-relative">
+                                    <div class="position-relative">
+                                        <img class="card-img-top rounded" src="${channel.image}" alt="Card image cap" loading="lazy"
+                                            onerror="this.src='https://i.pinimg.com/564x/3b/27/a8/3b27a87fcf7d90ae564be23d7a37f778.jpg';">
+                                        ${pinned.includes(channel.id) ? '<i class="hide-on-mobile fa-solid fa-thumbtack position-absolute" style="top: 18px; right: 18px; color: white; transform: rotate(45deg) scale(1.5);"></i>' : premium_members.includes(channel.id) ? '<i class="hide-on-mobile fa-solid fa-heart position-absolute" style="top: 18px; right: 18px; color: white; transform: scale(1.5);"></i>' : ''}
+                                    </div>
+                                    <div class="card-body card-no-left-right-padding">
+                                        <h6 class="card-title" id="${channel.id}">${channel.deleted ? `DELETED CHANNEL (${channel.id})` : channel.name}</h6>
+                                    </div>
+                                </div>
+                            </a>
+                        </span>
+                    </div>`;
+            added++;
+        }
+        container.innerHTML = html;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const url = new URL(window.location);
+        if (url.searchParams.get('inverse') === 'true') inverse = true;
+        const query = url.searchParams.get('q');
+        if (query) {
+            document.getElementById("search").value = query;
+            all = true;
+            extend_view(true);
+        }
+        const sortParam = url.searchParams.get('sortby');
+        if (sortParam) {
+            document.getElementById("sortby").value = sortParam;
+            sort_by = sortParam;
+        }
+        add_channel_to_container();
     });
-    document.addEventListener("scroll", (event) => {
-        // if the current position is more or at 80% of page height. then call set_all()
-        if(window.scrollY >= (document.body.scrollHeight - window.innerHeight) * 0.8){
-            extend_view(false);
+
+    document.addEventListener("scroll", () => {
+        if (window.scrollY >= (document.body.scrollHeight - window.innerHeight) * 0.8) {
+            extend_view();
         }
-    } )
-    document.getElementById("search").addEventListener('input', function(event) {
-        extend_view(all=true);
-        add_channel_to_container(all=all);
+    });
+
+    window.addEventListener("popstate", () => {
+        const url = new URL(window.location);
+        const query = url.searchParams.get('q') || '';
+        document.getElementById("search").value = query;
+        sort_by = url.searchParams.get('sortby') || 'default';
+        inverse = url.searchParams.get('inverse') === 'true';
+        document.getElementById("sortby").value = sort_by;
+        add_channel_to_container(all);
+    });
+
+    document.getElementById("search").addEventListener('input', (e) => {
+        const query = e.target.value;
+        const url = new URL(window.location);
+        if (query) url.searchParams.set('q', query);
+        else url.searchParams.delete('q');
+        history.pushState({}, '', url);
+        all = true;
+        extend_view(true);
     });
 </script>
 {% endblock %}

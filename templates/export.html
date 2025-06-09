@@ -163,12 +163,45 @@
     });
     document.getElementById("search").addEventListener("keyup", function () {
         currentPage = 1; // Reset to the first page when the search changes
+        // put the search in the url
+        var url = new URL(window.location.href);
+        url.searchParams.set('q', this.value);
+        window.history.pushState({ q: this.value }, '', url);
         updateClips();
     });
+    window.addEventListener("popstate", function () {
+        console.log("Popstate event triggered");
+        // Get the current value of `q` from the URL
+        var urlParams = new URLSearchParams(window.location.search);
+        var query = urlParams.get('q') || '';
+
+        var filterValue = urlParams.get('f') || 'all';
+        // Update the search input value
+        document.getElementById("search").value = query;
+        // Update the filter select value
+        var filterSelect = document.getElementById("filter");
+        var filteroptions = document.getElementById("filter").options;
+            for (var i = 0; i < filteroptions.length; i++) {
+                if (filteroptions[i].value === filterValue) {
+                    filteroptions[i].selected = true;
+                    filter = filterValue; // Update the filter variable
+                    break;
+                }
+            }
+
+        // Reset to first page and update clips
+        currentPage = 1;
+        updateClips();
+    });
+
 
     document.getElementById("filter").addEventListener("change", function () {
         filter = this.value;
         currentPage = 1; // Reset to the first page when the filter changes
+        // put the filter in the url
+        var url = new URL(window.location.href);
+        url.searchParams.set('f', filter);
+        window.history.pushState({ f: this.value }, '', url);
         updateClips();
     });
 
@@ -597,6 +630,27 @@
 
     // Initial update when the page loads
     document.addEventListener("DOMContentLoaded", function () {
+        // check if there is a search query in the url
+        var urlParams = new URLSearchParams(window.location.search);
+        var searchQuery = urlParams.get('q');
+        if (searchQuery) {
+            document.getElementById("search").value = searchQuery;
+        }
+        // check if there is a filter in the url
+        var filterQuery = urlParams.get('f');
+        if (filterQuery) {
+            // filteroptions 
+            var filteroptions = document.getElementById("filter").options;
+            for (var i = 0; i < filteroptions.length; i++) {
+                if (filteroptions[i].value === filterQuery) {
+                    filteroptions[i].selected = true;
+                    filter = filterQuery; // Update the filter variable
+                    break;
+                }
+            }
+            
+        }
+
         updateClips();
         fetch('/get_other_streamers', {
             method: 'POST',
