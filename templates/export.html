@@ -171,6 +171,10 @@
     });
     window.addEventListener("popstate", function () {
         console.log("Popstate event triggered");
+        // if the change of url is either addition of "#" then ignore this
+        if (window.location.hash && window.location.hash !== '#') {
+            return; // Ignore changes that are just hash changes
+        }
         // Get the current value of `q` from the URL
         var urlParams = new URLSearchParams(window.location.search);
         var query = urlParams.get('q') || '';
@@ -469,6 +473,7 @@
         if(clip_description == ""){
             return;
         }
+        console.log("Editing clip: " + clip_id);
         element.parentElement.innerHTML = `<input type="text" id="edit-${clip_id}" style="width:90%" value="${clip_description}"> <br> <button type="button" class="btn btn-primary" onclick="save(this)">Save</button> <button type="button" class="btn btn-danger" onclick="cancel(this)">Cancel</button>`;
     }
 

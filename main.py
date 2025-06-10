@@ -1412,9 +1412,7 @@ def webdelete():
     if not clip:
         return "Clip not found", 404
     channel_id = clip.channel
-    sub_detail = is_subscribed(channel_id)
-    if not sub_detail:
-        return f"You do not have any membership. Get the subscription at {base_domain}/membership"
+    # a person have rights to delete. even if he/she is not subscribed
     if not current_user.admin:
         if clip.channel != current_user.id:
             flash("You can't do this. You are not the owner of this channel", "danger")
