@@ -2106,73 +2106,11 @@ def get_user_clips(user_id):
         l.append(x)
     l.reverse()
     return l
-
-@app.route("/c")
-@app.route("/clips")
+# this is for specific channel
 @app.route("/clips/<channel_id>")
 @app.route("/clips/<channel_id>/")
 @app.route("/c/<channel_id>/")
 @app.route("/c/<channel_id>")
-def clips(channel_id=None):
-    if not channel_id:
-        if not current_user.logged_in:
-            return redirect(url_for("slash"))
-        channel_id = current_user.id
-    channel_id = get_channel_id_any(channel_id)
-    if not channel_id:
-        return redirect(url_for("slash"))
-    data = get_user_clips(channel_id)
-    channel_name, channel_image = get_channel_name_image(channel_id)
-    can_edit = False
-    if current_user.admin:  # no data should be hidden from admin
-        data = [x.json() for x in data]
-    else:
-        data = [x.json() for x in data if not x.private]
-    data_copy = data.copy()
-    for clip in data:
-        if clip["discord"]["webhook"]:
-            if (
-                clip["channel"] in prefix_webhook
-                and prefix_webhook.get(clip["channel"]) is not None
-            ):
-                clip["discord_url"] = (
-                    f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
-                )
-            else:
-                webhook_url = get_channel_settings(clip["channel"]).webhook
-                if not webhook_url:
-                    continue
-                response = get(webhook_url)
-                if response.status_code != 200:
-                    prefix_webhook[clip["channel"]] = None
-                    continue
-                j = response.json()
-                prefix_webhook[clip["channel"]] = (
-                    f"https://discord.com/channels/{j['guild_id']}/{j['channel_id']}"
-                )
-                clip["discord_url"] = (
-                    f"{prefix_webhook[clip['channel']]}/{clip['discord']['webhook']}"
-                )
-        else:
-            clip["discord_url"] = "#"
-        clip["author"]["name"], _ = get_channel_name_image(clip["channel"])
-        clip["author"]["id"] = clip["channel"]
-    return render_template(
-        "export.html",
-        data=data,
-        clips_string=create_simplified(data_copy),
-        channel_name=channel_name,
-        channel_image=channel_image,
-        owner_icon=owner_icon,
-        mod_icon=mod_icon,
-        regular_icon=regular_icon,
-        automated_icon=automated_icon,
-        subscriber_icon=subscriber_icon,
-        channel_id=get_channel_at(channel_id),
-        emoji_lookup_table=emoji_lookup_table,
-        can_edit=can_edit,
-    ) 
-# this is for specific channel
 @app.route("/exports/<channel_id>")
 @app.route("/e/<channel_id>")
 def exports(channel_id=None):
@@ -2191,8 +2129,6 @@ def exports(channel_id=None):
     sub_detail = is_subscribed(channel_id, free_trial=False)
     
     can_edit = current_user.id == channel_id or current_user.admin
-    if sub_detail not in ["pro", "premium", "FREE"]:
-        can_edit = False
     
     if current_user.admin:  # no data should be hidden from admin
         data = [x.json() for x in data]
