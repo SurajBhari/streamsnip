@@ -512,7 +512,7 @@
 
     function del(element){
         clip_id = element.parentElement.parentElement.id;
-        element.parentElement.parentElement.parentElement.classList.add("bouncing-gradient-red");
+        element.parentElement.parentElement.classList.add("bouncing-gradient-red");
         // send a request to the server to delete the clip
         fetch("/webdelete", {
             method: 'POST',
