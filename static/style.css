@@ -1025,3 +1025,34 @@ body.dark-theme .poster{
 .tier-premium::after {
   content: "PREMIUM";
 }
+
+@keyframes bounce-gradient {
+	0%,
+	100% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+}
+
+.bouncing-gradient {
+	background: linear-gradient(to right, transparent, blue, transparent);
+	background-size: 200% 100%;
+	animation: bounce-gradient 2s ease infinite;
+}
+.bouncing-gradient-green {
+	background: linear-gradient(to right, transparent, green, transparent);
+	background-size: 200% 100%;
+	animation: bounce-gradient 2s ease infinite;
+}
+.bouncing-gradient-white {
+	background: linear-gradient(to right, transparent, white, transparent);
+	background-size: 200% 100%;
+	animation: bounce-gradient 2s ease infinite;
+}
+.bouncing-gradient-red {
+	background: linear-gradient(to right, transparent, red, transparent);
+	background-size: 200% 100%;
+	animation: bounce-gradient 2s ease infinite;
+}

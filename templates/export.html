@@ -430,9 +430,10 @@
 
 
             container.innerHTML += cardHtml;
-            initTheme()
             
         });
+        initTheme()
+
         /*
         displayedClips.forEach(clip => {
             var elem = document.getElementById(clip['id']);
@@ -511,6 +512,7 @@
 
     function del(element){
         clip_id = element.parentElement.parentElement.id;
+        element.parentElement.parentElement.parentElement.classList.add("bouncing-gradient-red");
         // send a request to the server to delete the clip
         fetch("/webdelete", {
             method: 'POST',
@@ -593,8 +595,8 @@
 
         // Replace the select with a loading spinner
         var container = select.parentElement;
-        container.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-
+        // put class bouncing-gradient to it
+        container.classList.add("bouncing-gradient");
         // Make the POST request
         fetch("/get_other_pov", {
             method: 'POST',

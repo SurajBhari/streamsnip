@@ -542,7 +542,7 @@
         });
         // replace the delete button with a loading gif 
         var delete_button = document.getElementById("delete-" + session_token)
-        delete_button.innerHTML = "<i class='fa-solid fa-spinner rotate'></i>";
+        delete_button.classList.add("bouncing-gradient-red");
 
         // wait for 1 second
         setTimeout(function(){
@@ -552,7 +552,7 @@
     }
     function reset_settings(){
         var reset_button = document.getElementById("reset-button");
-        reset_button.innerHTML = "<i class='fa-solid fa-spinner rotate'></i>";
+        container.classList.add("bouncing-gradient");
         response = fetch("/settings/default", {
             method: "POST",
             headers: {
@@ -610,7 +610,7 @@
             return;
         }
 
-        save_button.innerHTML = "<i class='fa-solid fa-spinner rotate'></i>";
+        save_button.classList.add("bouncing-gradient-green");
 
         response = fetch("/settings", {
             method: "POST",
