@@ -552,7 +552,7 @@
     }
     function reset_settings(){
         var reset_button = document.getElementById("reset-button");
-        container.classList.add("bouncing-gradient");
+        reset_button.parentElement.classList.add("bouncing-gradient");
         response = fetch("/settings/default", {
             method: "POST",
             headers: {
@@ -565,6 +565,7 @@
             if (response.ok) {
                 console.log("Settings reset");
                 reset_button.innerHTML = "<i class='fa-solid fa-check'></i>";
+                reset_button.parentElement.classList.remove("bouncing-gradient");
                 window.location.reload();
             } else {
                 response.text().then(text => {
@@ -610,7 +611,7 @@
             return;
         }
 
-        save_button.classList.add("bouncing-gradient-green");
+        save_button.parentElement.classList.add("bouncing-gradient-green");
 
         response = fetch("/settings", {
             method: "POST",
@@ -641,6 +642,7 @@
             if (response.ok) {
                 console.log("Settings saved");
                 save_button.innerHTML = "<i class='fa-solid fa-check'></i>";
+                save_button.parentElement.classList.remove("bouncing-gradient-green");
                 setTimeout(function(){
                     save_button.innerHTML = "<i class='fa-regular fa-floppy-disk'></i>";
                 }, 1000);
